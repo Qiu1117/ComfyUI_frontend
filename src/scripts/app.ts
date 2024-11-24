@@ -1837,6 +1837,12 @@ export class ComfyApp {
     await this.registerNodes()
     initWidgets(this)
 
+    localStorage.setItem('Comfy.PreviousWorkflow', 'New Workflow.json')
+    localStorage.setItem(
+      'workflow',
+      '{"last_node_id":0,"last_link_id":0,"nodes":[],"links":[],"groups":[],"config":{},"extra":{"ds":{"scale":1,"offset":[0,0]}},"version":0.4}'
+    )
+
     // Load previous workflow
     let restored = false
     try {

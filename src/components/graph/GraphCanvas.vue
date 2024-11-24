@@ -7,10 +7,10 @@
       v-if="comfyAppReady && betaMenuEnabled && !workspaceStore.focusMode"
     >
       <template #side-bar-panel>
-        <SideToolbar />
+        <SideToolbar v-if="false" />
       </template>
       <template #bottom-panel>
-        <BottomPanel />
+        <BottomPanel v-if="false" />
       </template>
       <template #graph-canvas-panel>
         <GraphCanvasMenu v-if="canvasMenuEnabled" />
@@ -304,6 +304,7 @@ onMounted(async () => {
 
   window['app'] = comfyApp
   window['graph'] = comfyApp.graph
+  window['graphcanvas'] = comfyApp.canvas
 
   comfyAppReady.value = true
   emit('ready')

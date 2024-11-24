@@ -62,6 +62,7 @@ class ComfyApi extends EventTarget {
   }
 
   apiURL(route: string): string {
+    return 'connect://localhost/external' + '/api' + route
     return this.api_base + '/api' + route
   }
 
@@ -120,6 +121,9 @@ class ComfyApi extends EventTarget {
    */
   #createSocket(isReconnect?: boolean) {
     if (this.socket) {
+      return
+    }
+    if (this.socket === null) {
       return
     }
 
