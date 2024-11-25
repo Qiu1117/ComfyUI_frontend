@@ -62,7 +62,7 @@ class ComfyApi extends EventTarget {
   }
 
   apiURL(route: string): string {
-    if (false) {
+    if (!route) {
       return 'connect://localhost' + '/external' + '/api' + route
     } else {
       return (
