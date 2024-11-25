@@ -17,71 +17,46 @@
       />
     </ScrollPanel>
     <Divider layout="vertical" class="mx-1 2xl:mx-4" />
-    <ScrollPanel class="settings-content flex-grow">
-      <Tabs :value="tabValue" :lazy="true">
-        <FirstTimeUIMessage v-if="tabValue === 'Comfy'" />
-        <TabPanels class="settings-tab-panels">
-          <TabPanel key="search-results" value="Search Results">
-            <div v-if="searchResults.length > 0">
-              <SettingGroup
-                v-for="(group, i) in searchResults"
-                :key="group.label"
-                :divider="i !== 0"
-                :group="group"
-              />
-            </div>
-            <NoResultsPlaceholder
-              v-else
-              icon="pi pi-search"
-              :title="$t('noResultsFound')"
-              :message="$t('searchFailedMessage')"
-            />
-          </TabPanel>
-          <TabPanel
-            v-for="category in categories"
-            :key="category.key"
-            :value="category.label"
-          >
-            <SettingGroup
-              v-for="(group, i) in sortedGroups(category)"
-              :key="group.label"
-              :divider="i !== 0"
-              :group="{
-                label: group.label,
-                settings: flattenTree<SettingParams>(group)
-              }"
-            />
-          </TabPanel>
-          <TabPanel key="about" value="About">
-            <AboutPanel />
-          </TabPanel>
-          <TabPanel key="keybinding" value="Keybinding">
-            <Suspense>
-              <KeybindingPanel />
-              <template #fallback>
-                <div>Loading keybinding panel...</div>
-              </template>
-            </Suspense>
-          </TabPanel>
-          <TabPanel key="extension" value="Extension">
-            <Suspense>
-              <ExtensionPanel />
-              <template #fallback>
-                <div>Loading extension panel...</div>
-              </template>
-            </Suspense>
-          </TabPanel>
-          <TabPanel key="server-config" value="Server-Config">
-            <Suspense>
-              <ServerConfigPanel />
-              <template #fallback>
-                <div>Loading server config panel...</div>
-              </template>
-            </Suspense>
-          </TabPanel>
-        </TabPanels>
-      </Tabs>
-    </ScrollPanel>
+    <Tabs :value="tabValue" :lazy="true" class="settings-content h-full w-full">
+      <TabPanels class="settings-tab-panels h-full w-full pr-0">
+        <PanelTemplate value="Search Results">
+          <SettingsPanel :settingGroups="searchResults" />
+        </PanelTemplate>
+
+        <PanelTemplate
+          v-for="category in settingCategories"
+          :key="category.key"
+          :value="category.label"
+        >
+          <template #header>
+            <FirstTimeUIMessage v-if="tabValue === 'Comfy'" />
+          </template>
+          <SettingsPanel :settingGroups="sortedGroups(category)" />
+        </PanelTemplate>
+
+        <AboutPanel />
+        <Suspense>
+          <KeybindingPanel />
+          <template #fallback>
+            <div>Loading keybinding panel...</div>
+          </template>
+        </Suspense>
+
+        <Suspense>
+          <ExtensionPanel />
+          <template #fallback>
+            <div>Loading extension panel...</div>
+          </template>
+        </Suspense>
+
+        <Suspense>
+          <ServerConfigPanel />
+          <template #fallback>
+            <div>Loading server config panel...</div>
+          </template>
+        </Suspense>
+      </TabPanels>
+    </Tabs>
   </div>
 </template>
 
@@ -90,17 +65,16 @@ import { ref, computed, onMounted, watch, defineAsyncComponent } from 'vue'
 import Listbox from 'primevue/listbox'
 import Tabs from 'primevue/tabs'
 import TabPanels from 'primevue/tabpanels'
-import TabPanel from 'primevue/tabpanel'
 import Divider from 'primevue/divider'
 import ScrollPanel from 'primevue/scrollpanel'
 import { SettingTreeNode, useSettingStore } from '@/stores/settingStore'
-import { SettingParams } from '@/types/settingTypes'
-import SettingGroup from './setting/SettingGroup.vue'
+import { ISettingGroup, SettingParams } from '@/types/settingTypes'
 import SearchBox from '@/components/common/SearchBox.vue'
-import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
-import { flattenTree } from '@/utils/treeUtil'
+import SettingsPanel from './setting/SettingsPanel.vue'
+import PanelTemplate from './setting/PanelTemplate.vue'
 import AboutPanel from './setting/AboutPanel.vue'
 import FirstTimeUIMessage from './setting/FirstTimeUIMessage.vue'
+import { flattenTree } from '@/utils/treeUtil'
 import { isElectron } from '@/utils/envUtil'
 
 const KeybindingPanel = defineAsyncComponent(
@@ -112,11 +86,6 @@ const ExtensionPanel = defineAsyncComponent(
 const ServerConfigPanel = defineAsyncComponent(
   () => import('./setting/ServerConfigPanel.vue')
 )
-
-interface ISettingGroup {
-  label: string
-  settings: SettingParams[]
-}
 
 const aboutPanelNode: SettingTreeNode = {
   key: 'about',
@@ -158,8 +127,11 @@ const serverConfigPanelNodeList = computed<SettingTreeNode[]>(() => {
 
 const settingStore = useSettingStore()
 const settingRoot = computed<SettingTreeNode>(() => settingStore.settingTree)
+const settingCategories = computed<SettingTreeNode[]>(
+  () => settingRoot.value.children ?? []
+)
 const categories = computed<SettingTreeNode[]>(() => [
-  ...(settingRoot.value.children || []),
+  ...settingCategories.value,
   keybindingPanelNode,
   ...extensionPanelNodeList.value,
   ...serverConfigPanelNodeList.value,
@@ -178,10 +150,13 @@ onMounted(() => {
   activeCategory.value = categories.value[0]
 })
 
-const sortedGroups = (category: SettingTreeNode) => {
-  return [...(category.children || [])].sort((a, b) =>
-    a.label.localeCompare(b.label)
-  )
+const sortedGroups = (category: SettingTreeNode): ISettingGroup[] => {
+  return [...(category.children ?? [])]
+    .sort((a, b) => a.label.localeCompare(b.label))
+    .map((group) => ({
+      label: group.label,
+      settings: flattenTree<SettingParams>(group)
+    }))
 }
 
 const searchQuery = ref<string>('')

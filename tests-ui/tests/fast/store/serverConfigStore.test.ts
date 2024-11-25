@@ -170,20 +170,116 @@ describe('useServerConfigStore', () => {
     const configs: ServerConfig<any>[] = [
       { ...dummyFormItem, id: 'test.config1', defaultValue: 'default1' },
       { ...dummyFormItem, id: 'test.config2', defaultValue: 'default2' },
-      { ...dummyFormItem, id: 'test.config3', defaultValue: 'default3' }
+      { ...dummyFormItem, id: 'test.config3', defaultValue: 'default3' },
+      { ...dummyFormItem, id: 'test.config4', defaultValue: null }
     ]
 
     store.loadServerConfig(configs, {
       'test.config1': undefined,
       'test.config2': null,
-      'test.config3': ''
+      'test.config3': '',
+      'test.config4': 0
     })
 
-    expect(Object.keys(store.launchArgs)).toHaveLength(0)
-    expect(Object.keys(store.serverConfigValues)).toEqual([
-      'test.config1',
-      'test.config2',
-      'test.config3'
+    expect(Object.keys(store.launchArgs)).toEqual([
+      'test.config3',
+      'test.config4'
     ])
+    expect(Object.values(store.launchArgs)).toEqual(['', '0'])
+    expect(store.serverConfigById['test.config3'].value).toBe('')
+    expect(store.serverConfigById['test.config4'].value).toBe(0)
+    expect(Object.values(store.serverConfigValues)).toEqual([
+      undefined,
+      undefined,
+      '',
+      0
+    ])
+  })
+
+  it('should convert true to empty string in launch arguments', () => {
+    store.loadServerConfig(
+      [
+        {
+          ...dummyFormItem,
+          id: 'test.config1',
+          defaultValue: 0
+        }
+      ],
+      {
+        'test.config1': true
+      }
+    )
+    expect(store.launchArgs['test.config1']).toBe('')
+    expect(store.commandLineArgs).toBe('--test.config1')
+  })
+
+  it('should convert number to string in launch arguments', () => {
+    store.loadServerConfig(
+      [
+        {
+          ...dummyFormItem,
+          id: 'test.config1',
+          defaultValue: 1
+        }
+      ],
+      {
+        'test.config1': 123
+      }
+    )
+    expect(store.launchArgs['test.config1']).toBe('123')
+    expect(store.commandLineArgs).toBe('--test.config1 123')
+  })
+
+  it('should drop nullish values in launch arguments', () => {
+    store.loadServerConfig(
+      [
+        {
+          ...dummyFormItem,
+          id: 'test.config1',
+          defaultValue: 1
+        }
+      ],
+      {
+        'test.config1': null
+      }
+    )
+    expect(Object.keys(store.launchArgs)).toHaveLength(0)
+  })
+
+  it('should track modified configs', () => {
+    const configs = [
+      {
+        ...dummyFormItem,
+        id: 'test.config1',
+        defaultValue: 'default1'
+      },
+      {
+        ...dummyFormItem,
+        id: 'test.config2',
+        defaultValue: 'default2'
+      }
+    ]
+
+    store.loadServerConfig(configs, {
+      'test.config1': 'initial1'
+    })
+
+    // Initially no modified configs
+    expect(store.modifiedConfigs).toHaveLength(0)
+
+    // Modify config1's value after loading
+    store.serverConfigById['test.config1'].value = 'custom1'
+
+    // Now config1 should be in modified configs
+    expect(store.modifiedConfigs).toHaveLength(1)
+    expect(store.modifiedConfigs[0].id).toBe('test.config1')
+    expect(store.modifiedConfigs[0].value).toBe('custom1')
+    expect(store.modifiedConfigs[0].initialValue).toBe('initial1')
+
+    // Change config1 back to default
+    store.serverConfigById['test.config1'].value = 'initial1'
+
+    // Should go back to no modified configs
+    expect(store.modifiedConfigs).toHaveLength(0)
   })
 })

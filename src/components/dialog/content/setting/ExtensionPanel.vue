@@ -1,6 +1,35 @@
 <template>
-  <div class="extension-panel">
-    <DataTable :value="extensionStore.extensions" stripedRows size="small">
+  <PanelTemplate value="Extension" class="extension-panel">
+    <template #header>
+      <SearchBox
+        v-model="filters['global'].value"
+        :placeholder="$t('searchExtensions') + '...'"
+      />
+      <Message v-if="hasChanges" severity="info" pt:text="w-full">
+        <ul>
+          <li v-for="ext in changedExtensions" :key="ext.name">
+            <span>
+              {{ extensionStore.isExtensionEnabled(ext.name) ? '[-]' : '[+]' }}
+            </span>
+            {{ ext.name }}
+          </li>
+        </ul>
+        <div class="flex justify-end">
+          <Button
+            :label="$t('reloadToApplyChanges')"
+            @click="applyChanges"
+            outlined
+            severity="danger"
+          />
+        </div>
+      </Message>
+    </template>
+    <DataTable
+      :value="extensionStore.extensions"
+      stripedRows
+      size="small"
+      :filters="filters"
+    >
       <Column field="name" :header="$t('extensionName')" sortable></Column>
       <Column
         :pt="{
@@ -15,28 +44,7 @@
         </template>
       </Column>
     </DataTable>
-    <div class="mt-4">
-      <Message v-if="hasChanges" severity="info">
-        <ul>
-          <li v-for="ext in changedExtensions" :key="ext.name">
-            <span>
-              {{ extensionStore.isExtensionEnabled(ext.name) ? '[-]' : '[+]' }}
-            </span>
-            {{ ext.name }}
-          </li>
-        </ul>
-      </Message>
-      <Button
-        :label="$t('reloadToApplyChanges')"
-        icon="pi pi-refresh"
-        @click="applyChanges"
-        :disabled="!hasChanges"
-        text
-        fluid
-        severity="danger"
-      />
-    </div>
-  </div>
+  </PanelTemplate>
 </template>
 
 <script setup lang="ts">
@@ -48,6 +56,13 @@ import Column from 'primevue/column'
 import ToggleSwitch from 'primevue/toggleswitch'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
+import { FilterMatchMode } from '@primevue/core/api'
+import PanelTemplate from './PanelTemplate.vue'
+import SearchBox from '@/components/common/SearchBox.vue'
+
+const filters = ref({
+  global: { value: '', matchMode: FilterMatchMode.CONTAINS }
+})
 
 const extensionStore = useExtensionStore()
 const settingStore = useSettingStore()
