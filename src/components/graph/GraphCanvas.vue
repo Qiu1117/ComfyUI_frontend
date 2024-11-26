@@ -11,6 +11,7 @@
       </template>
       <template #bottom-panel>
         <BottomPanel v-if="false" />
+        <ActionPanel v-else />
       </template>
       <template #graph-canvas-panel>
         <GraphCanvasMenu v-if="canvasMenuEnabled" />
@@ -29,6 +30,7 @@
 import TitleEditor from '@/components/graph/TitleEditor.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
+import ActionPanel from '@/components/pmtOverride/ActionPanel.vue'
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
