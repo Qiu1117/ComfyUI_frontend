@@ -114,10 +114,15 @@ import type { MenuItem } from 'primevue/menuitem'
 import Popover from 'primevue/popover'
 import ProgressSpinner from 'primevue/progressspinner'
 import TaskItem from './queue/TaskItem.vue'
+import OutputFilters from './queue/OutputFilters.vue'
 import ResultGallery from './queue/ResultGallery.vue'
 import SidebarTabTemplate from './SidebarTabTemplate.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
-import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
+import {
+  TaskItemDisplayStatus,
+  TaskItemImpl,
+  useQueueStore
+} from '@/stores/queueStore'
 import { api } from '@/scripts/api'
 import { ComfyNode } from '@/types/comfyWorkflow'
 import { useSettingStore } from '@/stores/settingStore'
@@ -169,9 +174,7 @@ const allTasks = computed(() =>
     ? folderTask.value
       ? folderTask.value.flatten()
       : []
-    : isExpanded.value
-      ? queueStore.flatTasks
-      : queueStore.tasks
+    : filterTasks(isExpanded.value ? queueStore.flatTasks : queueStore.tasks)
 )
 const allGalleryItems = computed(() =>
   allTasks.value.flatMap((task: TaskItemImpl) => {
@@ -181,30 +184,24 @@ const allGalleryItems = computed(() =>
 )
 
 const filterTasks = (tasks: TaskItemImpl[]) =>
-  tasks
-    .filter((t) => {
-      if (
-        hideCanceled.value &&
-        t.status?.messages?.at(-1)?.[0] === 'execution_interrupted'
-      ) {
-        return false
-      }
+  tasks.filter((task: TaskItemImpl) => {
+    if (
+      hideCanceled.value &&
+      task.displayStatus === TaskItemDisplayStatus.Cancelled
+    ) {
+      return false
+    }
 
-      if (
-        hideCached.value &&
-        t.flatOutputs?.length &&
-        t.flatOutputs.every((o) => o.cached)
-      ) {
-        return false
-      }
+    if (hideCached.value && task.isCached) {
+      return false
+    }
 
-      return true
-    })
-    .slice(0, ITEMS_PER_PAGE)
+    return true
+  })
 
 const loadMoreItems = () => {
   const currentLength = visibleTasks.value.length
-  const newTasks = filterTasks(allTasks.value).slice(
+  const newTasks = allTasks.value.slice(
     currentLength,
     currentLength + ITEMS_PER_PAGE
   )
@@ -239,7 +236,7 @@ useResizeObserver(scrollContainer, () => {
 })
 
 const updateVisibleTasks = () => {
-  visibleTasks.value = filterTasks(allTasks.value)
+  visibleTasks.value = allTasks.value
 }
 
 const toggleExpanded = () => {
@@ -282,11 +279,6 @@ const confirmRemoveAll = (event: Event) => {
       })
     }
   })
-}
-
-const onStatus = async () => {
-  await queueStore.update()
-  updateVisibleTasks()
 }
 
 const menu = ref(null)
@@ -351,12 +343,11 @@ const toggleImageFit = () => {
 }
 
 onMounted(() => {
-  api.addEventListener('status', onStatus)
-  queueStore.update()
+  api.addEventListener('status', updateVisibleTasks)
 })
 
 onUnmounted(() => {
-  api.removeEventListener('status', onStatus)
+  api.removeEventListener('status', updateVisibleTasks)
 })
 
 // Watch for changes in allTasks and reset visibleTasks if necessary
