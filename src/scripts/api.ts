@@ -66,7 +66,7 @@ class ComfyApi extends EventTarget {
       return 'connect://localhost' + '/external' + '/api' + route
     } else {
       return (
-        '/external' +
+        'external' +
         '/api' +
         route.split('?')[0] +
         (route.endsWith('.json') ? '' : '.json')
