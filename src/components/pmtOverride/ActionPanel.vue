@@ -9,6 +9,7 @@
           icon="pi pi-play-circle"
           severity="secondary"
           :loading="running"
+          :disabled="saving"
           @click="run"
         />
         <Button
@@ -18,6 +19,7 @@
           icon="pi pi-circle-fill"
           severity="secondary"
           :style="{ color: pipeline.color }"
+          :disabled="running || saving"
           @click="togglePipOver"
         />
         <Popover ref="pipOver">
@@ -57,7 +59,7 @@
                 :severity="delBtnHovered ? 'danger' : 'secondary'"
                 :loading="false"
                 :disabled="false"
-                @click.stop
+                @click="comfirmDelete"
               />
             </div>
             <div class="flex items-center justify-end mt-3">
@@ -89,6 +91,7 @@
           icon="pi pi-save"
           severity="secondary"
           :loading="saving"
+          :disabled="running"
           @click="save"
         />
         <Button
@@ -97,9 +100,12 @@
           :aria-label="'Export'"
           icon="pi pi-download"
           severity="secondary"
+          :loading="false"
+          :disabled="false"
           @click="exportJson"
         />
       </ButtonGroup>
+      <ConfirmDialog :draggable="false"></ConfirmDialog>
     </div>
   </teleport>
 </template>
@@ -113,6 +119,8 @@ import Popover from 'primevue/popover'
 import InputGroup from 'primevue/inputgroup'
 import InputGroupAddon from 'primevue/inputgroupaddon'
 import InputText from 'primevue/inputtext'
+import { useConfirm } from 'primevue/useconfirm'
+import ConfirmDialog from 'primevue/confirmdialog'
 import { SYSTEM_NODE_DEFS } from '@/stores/nodeDefStore'
 
 const pipeline = shallowRef({
@@ -154,6 +162,58 @@ function togglePipOver(e) {
 const delBtn = ref()
 const delBtnHovered = useElementHover(delBtn)
 
+const confirm = useConfirm()
+const comfirmDelete = (e) => {
+  confirm.require({
+    header: 'Delete Pipeline',
+    message: 'Do you want to delete this pipeline?',
+    icon: 'pi pi-exclamation-circle',
+    rejectLabel: 'Cancel',
+    rejectProps: {
+      label: 'Cancel',
+      severity: 'secondary',
+      outlined: true
+    },
+    acceptProps: {
+      label: 'Delete',
+      severity: 'danger'
+    },
+    reject: () => {},
+    accept: async () => {
+      console.log('deleting...')
+      // ...
+    }
+  })
+  togglePipOver(e)
+}
+
+const running = ref(false)
+async function run() {
+  if (running.value) {
+    return
+  }
+  running.value = true
+  // ...
+  await new Promise((r) => setTimeout(r, 1000))
+  running.value = false
+}
+
+const saving = ref(false)
+async function save() {
+  if (saving.value) {
+    return
+  }
+  saving.value = true
+  // ...
+  await new Promise((r) => setTimeout(r, 1000))
+  saving.value = false
+}
+
+function exportJson() {
+  console.log(getWorkflowJson())
+  // ...
+}
+
 function getWorkflowJson() {
   const workflow = window.graph.serialize()
   workflow.nodes.sort((a, b) => a.order - b.order)
@@ -163,29 +223,6 @@ function getWorkflowJson() {
     // ...
   })
   return workflow
-}
-
-const running = ref(false)
-function run() {
-  if (running.value) {
-    return
-  }
-  console.log(getWorkflowJson())
-  // ...
-}
-
-const saving = ref(false)
-function save() {
-  if (saving.value) {
-    return
-  }
-  console.log(getWorkflowJson())
-  // ...
-}
-
-function exportJson() {
-  console.log(getWorkflowJson())
-  // ...
 }
 </script>
 
@@ -199,5 +236,11 @@ function exportJson() {
   display: flex;
   justify-content: center;
   align-items: center;
+}
+</style>
+
+<style>
+#pmt-action-panel .p-buttongroup {
+  display: flex;
 }
 </style>
