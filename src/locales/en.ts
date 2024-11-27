@@ -62,7 +62,7 @@ export default {
       'python-setup': 'Setting up Python Environment...',
       'starting-server': 'Starting ComfyUI server...',
       ready: 'Finishing...',
-      error: 'Unable to start ComfyUI'
+      error: 'Unable to start ComfyUI Desktop'
     }
   },
   serverConfig: {
@@ -71,6 +71,8 @@ export default {
     revertChanges: 'Revert Changes',
     restart: 'Restart'
   },
+  empty: 'Empty',
+  noWorkflowsFound: 'No workflows found.',
   comingSoon: 'Coming Soon',
   firstTimeUIMessage:
     'This is the first time you use the new UI. Choose "Menu > Use New Menu > Disabled" to restore the old UI.',

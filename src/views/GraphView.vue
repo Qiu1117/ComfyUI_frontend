@@ -112,10 +112,8 @@ const init = () => {
 }
 
 const queuePendingTaskCountStore = useQueuePendingTaskCountStore()
-const queueStore = useQueueStore()
-const onStatus = async (e: CustomEvent<StatusWsMessageStatus>) => {
+const onStatus = (e: CustomEvent<StatusWsMessageStatus>) => {
   queuePendingTaskCountStore.update(e)
-  await queueStore.update()
 }
 
 const reconnectingMessage: ToastMessageOptions = {

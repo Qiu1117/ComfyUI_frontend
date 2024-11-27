@@ -1,18 +1,6 @@
 <template>
   <SidebarTabTemplate :title="$t('sideToolbar.queue')">
     <template #tool-buttons>
-      <Popover ref="outputFilterPopup">
-        <OutputFilters />
-      </Popover>
-
-      <Button
-        icon="pi pi-filter"
-        text
-        severity="secondary"
-        @click="outputFilterPopup.toggle($event)"
-        v-tooltip="$t(`sideToolbar.queueTab.filter`)"
-        :class="{ 'text-yellow-500': anyFilter }"
-      />
       <Button
         :icon="
           imageFit === 'cover'
@@ -111,27 +99,19 @@ import Button from 'primevue/button'
 import ConfirmPopup from 'primevue/confirmpopup'
 import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem } from 'primevue/menuitem'
-import Popover from 'primevue/popover'
 import ProgressSpinner from 'primevue/progressspinner'
 import TaskItem from './queue/TaskItem.vue'
-import OutputFilters from './queue/OutputFilters.vue'
 import ResultGallery from './queue/ResultGallery.vue'
 import SidebarTabTemplate from './SidebarTabTemplate.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
-import {
-  TaskItemDisplayStatus,
-  TaskItemImpl,
-  useQueueStore
-} from '@/stores/queueStore'
+import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 import { api } from '@/scripts/api'
 import { ComfyNode } from '@/types/comfyWorkflow'
 import { useSettingStore } from '@/stores/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { app } from '@/scripts/app'
 
-const SETTING_FIT = 'Comfy.Queue.ImageFit'
-const SETTING_FLAT = 'Comfy.Queue.ShowFlatList'
-const SETTING_FILTER = 'Comfy.Queue.Filter'
+const IMAGE_FIT = 'Comfy.Queue.ImageFit'
 const confirm = useConfirm()
 const toast = useToast()
 const queueStore = useQueueStore()
@@ -140,7 +120,7 @@ const commandStore = useCommandStore()
 const { t } = useI18n()
 
 // Expanded view: show all outputs in a flat list.
-const isExpanded = computed<boolean>(() => settingStore.get(SETTING_FLAT))
+const isExpanded = ref(false)
 const visibleTasks = ref<TaskItemImpl[]>([])
 const scrollContainer = ref<HTMLElement | null>(null)
 const loadMoreTrigger = ref<HTMLElement | null>(null)
@@ -148,23 +128,7 @@ const galleryActiveIndex = ref(-1)
 // Folder view: only show outputs from a single selected task.
 const folderTask = ref<TaskItemImpl | null>(null)
 const isInFolderView = computed(() => folderTask.value !== null)
-const imageFit = computed<string>(() => settingStore.get(SETTING_FIT))
-const hideCached = computed<boolean>(
-  () => settingStore.get(SETTING_FILTER)?.hideCached
-)
-const hideCanceled = computed<boolean>(
-  () => settingStore.get(SETTING_FILTER)?.hideCanceled
-)
-const anyFilter = computed(() => hideCanceled.value || hideCached.value)
-
-watch(hideCached, () => {
-  updateVisibleTasks()
-})
-watch(hideCanceled, () => {
-  updateVisibleTasks()
-})
-
-const outputFilterPopup = ref(null)
+const imageFit = computed<string>(() => settingStore.get(IMAGE_FIT))
 
 const ITEMS_PER_PAGE = 8
 const SCROLL_THRESHOLD = 100 // pixels from bottom to trigger load
@@ -174,7 +138,9 @@ const allTasks = computed(() =>
     ? folderTask.value
       ? folderTask.value.flatten()
       : []
-    : filterTasks(isExpanded.value ? queueStore.flatTasks : queueStore.tasks)
+    : isExpanded.value
+      ? queueStore.flatTasks
+      : queueStore.tasks
 )
 const allGalleryItems = computed(() =>
   allTasks.value.flatMap((task: TaskItemImpl) => {
@@ -182,22 +148,6 @@ const allGalleryItems = computed(() =>
     return previewOutput ? [previewOutput] : []
   })
 )
-
-const filterTasks = (tasks: TaskItemImpl[]) =>
-  tasks.filter((task: TaskItemImpl) => {
-    if (
-      hideCanceled.value &&
-      task.displayStatus === TaskItemDisplayStatus.Cancelled
-    ) {
-      return false
-    }
-
-    if (hideCached.value && task.isCached) {
-      return false
-    }
-
-    return true
-  })
 
 const loadMoreItems = () => {
   const currentLength = visibleTasks.value.length
@@ -236,11 +186,11 @@ useResizeObserver(scrollContainer, () => {
 })
 
 const updateVisibleTasks = () => {
-  visibleTasks.value = allTasks.value
+  visibleTasks.value = allTasks.value.slice(0, ITEMS_PER_PAGE)
 }
 
 const toggleExpanded = () => {
-  settingStore.set(SETTING_FLAT, !isExpanded.value)
+  isExpanded.value = !isExpanded.value
   updateVisibleTasks()
 }
 
@@ -279,6 +229,11 @@ const confirmRemoveAll = (event: Event) => {
       })
     }
   })
+}
+
+const onStatus = async () => {
+  await queueStore.update()
+  updateVisibleTasks()
 }
 
 const menu = ref(null)
@@ -336,18 +291,16 @@ const exitFolderView = () => {
 }
 
 const toggleImageFit = () => {
-  settingStore.set(
-    SETTING_FIT,
-    imageFit.value === 'cover' ? 'contain' : 'cover'
-  )
+  settingStore.set(IMAGE_FIT, imageFit.value === 'cover' ? 'contain' : 'cover')
 }
 
 onMounted(() => {
-  api.addEventListener('status', updateVisibleTasks)
+  api.addEventListener('status', onStatus)
+  queueStore.update()
 })
 
 onUnmounted(() => {
-  api.removeEventListener('status', updateVisibleTasks)
+  api.removeEventListener('status', onStatus)
 })
 
 // Watch for changes in allTasks and reset visibleTasks if necessary
