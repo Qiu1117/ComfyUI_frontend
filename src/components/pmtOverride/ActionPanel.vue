@@ -105,7 +105,7 @@
           @click="exportJson"
         />
       </ButtonGroup>
-      <ConfirmDialog :draggable="false"></ConfirmDialog>
+      <ConfirmDialog dismissable-mask :draggable="false"></ConfirmDialog>
     </div>
   </teleport>
 </template>
