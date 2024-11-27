@@ -42,7 +42,7 @@ export const getNodeSource = (python_module?: string): NodeSource => {
       type: NodeSourceType.CustomNodes,
       className: 'comfy-custom-nodes',
       displayText: displayName,
-      badgeText: displayName
+      badgeText: displayName === 'PMT Core' ? '' : displayName
     }
   } else {
     return UNKNOWN_NODE_SOURCE
