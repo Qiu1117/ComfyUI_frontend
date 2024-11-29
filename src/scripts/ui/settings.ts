@@ -55,15 +55,11 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
   }
 
   async load() {
-    if (this.app.storageLocation === 'browser') {
-      this.settingsValues = localStorage
-    } else {
-      this.settingsValues = await api.getSettings()
-    }
+    this.settingsValues = await api.getSettings()
 
     // Trigger onChange for any settings added before load
     for (const id in this.settingsLookup) {
-      const compatId = this.getId(id)
+      const compatId = id
       this.settingsValues[compatId] = this.tryMigrateDeprecatedValue(
         id,
         this.settingsValues[compatId]
@@ -74,25 +70,11 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
     }
   }
 
-  getId(id: string) {
-    if (this.app.storageLocation === 'browser') {
-      id = 'Comfy.Settings.' + id
-    }
-    return id
-  }
-
   getSettingValue<K extends keyof Settings>(
     id: K,
     defaultValue?: Settings[K]
   ): Settings[K] {
-    let value = this.settingsValues[this.getId(id)]
-    if (value != null) {
-      if (this.app.storageLocation === 'browser') {
-        try {
-          value = JSON.parse(value)
-        } catch (error) {}
-      }
-    }
+    let value = this.settingsValues[id]
     return (value ?? defaultValue) as Settings[K]
   }
 
@@ -107,11 +89,8 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
   ) {
     value = this.tryMigrateDeprecatedValue(id, value)
 
-    const json = JSON.stringify(value)
-    localStorage['Comfy.Settings.' + id] = json // backwards compatibility for extensions keep setting in storage
-
     let oldValue = this.getSettingValue(id, undefined)
-    this.settingsValues[this.getId(id)] = value
+    this.settingsValues[id] = value
 
     if (id in this.settingsLookup) {
       this.settingsLookup[id].onChange?.(value, oldValue)
@@ -160,20 +139,7 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
       throw new Error(`Setting ${id} of type ${type} must have a unique ID.`)
     }
 
-    let value = this.getSettingValue(id)
-    if (value == null) {
-      if (this.app.isNewUserSession) {
-        // Check if we have a localStorage value but not a setting value and we are a new user
-        const localValue = localStorage['Comfy.Settings.' + id]
-        if (localValue) {
-          value = JSON.parse(localValue)
-          this.setSettingValue(id, value) // Store on the server
-        }
-      }
-      if (value == null) {
-        value = defaultValue
-      }
-    }
+    const value = this.getSettingValue(id) ?? defaultValue
 
     // Trigger initial setting of value
     onChange?.(value, undefined)

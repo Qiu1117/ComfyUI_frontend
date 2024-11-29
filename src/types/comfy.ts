@@ -1,11 +1,12 @@
-import type { LGraphNode } from './litegraph'
-import type { ComfyApp } from '../scripts/app'
+import type { LGraphNode } from '@comfyorg/litegraph'
+import type { ComfyApp } from '@/scripts/app'
 import type { ComfyNodeDef } from '@/types/apiTypes'
 import type { Keybinding } from '@/types/keyBindingTypes'
 import type { ComfyCommand } from '@/stores/commandStore'
-import type { SettingParams } from './settingTypes'
-import type { BottomPanelExtension } from './extensionTypes'
+import type { SettingParams } from '@/types/settingTypes'
+import type { BottomPanelExtension } from '@/types/extensionTypes'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
+import type { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 
 export type Widgets = Record<string, ComfyWidgetConstructor>
 
@@ -158,21 +159,3 @@ export interface ComfyExtension {
 
   [key: string]: any
 }
-
-/**
- * @deprecated Use ComfyNodeDef instead
- */
-export type ComfyObjectInfo = {
-  name: string
-  display_name?: string
-  description?: string
-  category: string
-  input?: {
-    required?: Record<string, ComfyObjectInfoConfig>
-    optional?: Record<string, ComfyObjectInfoConfig>
-  }
-  output?: string[]
-  output_name: string[]
-}
-
-export type ComfyObjectInfoConfig = [string | any[]] | [string | any[], any]

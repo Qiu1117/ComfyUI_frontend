@@ -3,6 +3,23 @@ export default {
     title: 'Welcome to ComfyUI',
     getStarted: 'Get Started'
   },
+  userSelect: {
+    newUser: 'New user',
+    enterUsername: 'Enter a username',
+    existingUser: 'Existing user',
+    selectUser: 'Select a user',
+    next: 'Next'
+  },
+  notSupported: {
+    title: 'Your device is not supported',
+    message: 'Only following devices are supported:',
+    learnMore: 'Learn More',
+    reportIssue: 'Report Issue',
+    supportedDevices: {
+      macos: 'MacOS (M1 or later)',
+      windows: 'Windows (Nvidia GPU with CUDA support)'
+    }
+  },
   install: {
     installLocation: 'Install Location',
     migration: 'Migration',
@@ -137,6 +154,7 @@ export default {
   newFolder: 'New Folder',
   sideToolbar: {
     themeToggle: 'Toggle Theme',
+    logout: 'Logout',
     queue: 'Queue',
     nodeLibrary: 'Node Library',
     workflows: 'Workflows',
