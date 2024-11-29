@@ -111,7 +111,7 @@
 </template>
 
 <script setup>
-import { shallowRef, ref, onMounted } from 'vue'
+import { shallowRef, ref, onMounted, onUnmounted } from 'vue'
 import { useElementHover } from '@vueuse/core'
 import ButtonGroup from 'primevue/buttongroup'
 import Button from 'primevue/button'
@@ -121,7 +121,10 @@ import InputGroupAddon from 'primevue/inputgroupaddon'
 import InputText from 'primevue/inputtext'
 import { useConfirm } from 'primevue/useconfirm'
 import ConfirmDialog from 'primevue/confirmdialog'
-import { SYSTEM_NODE_DEFS } from '@/stores/nodeDefStore'
+import { app as comfyApp } from '@/scripts/app'
+import { useNodeDefStore, SYSTEM_NODE_DEFS } from '@/stores/nodeDefStore'
+
+const nodeDefStore = useNodeDefStore()
 
 const pipeline = shallowRef({
   name: 'New Pipeline',
@@ -149,9 +152,21 @@ onMounted(() => {
   Object.keys(SYSTEM_NODE_DEFS).forEach((type) => {
     window.LiteGraph.unregisterNodeType(type)
   })
+  comfyApp.canvasEl.addEventListener('drop', onDrop)
 
   initNameAndColor()
 })
+
+onUnmounted(() => {
+  comfyApp.canvasEl.removeEventListener('drop', onDrop)
+})
+
+function onDrop(e) {
+  console.log('Drop:', JSON.parse(e.dataTransfer.getData('text') || 'null'))
+  // ...
+
+  e.preventDefault()
+}
 
 const pipOver = ref()
 function togglePipOver(e) {
@@ -217,10 +232,60 @@ function exportJson() {
 function getWorkflowJson() {
   const workflow = window.graph.serialize()
   workflow.nodes.sort((a, b) => a.order - b.order)
-  workflow.nodes.forEach(({ id }, i, nodes) => {
+  workflow.nodes.forEach(({ id, type, inputs, outputs }, i, nodes) => {
     const node = window.graph.getNodeById(id)
-    console.log(node)
-    // ...
+    const nodeDef = nodeDefStore.nodeDefsByName[node.type]
+    const pmt_fields = {
+      type: nodeDef.category.startsWith('plugins/')
+        ? 'plugin'
+        : nodeDef.category,
+      plugin_name: null,
+      function_name: null,
+      inputs: (inputs || []).map((i) => {
+        return {}
+      }),
+      args: (node.widgets || []).reduce((args, { name, value }) => {
+        args[name] = value
+        return args
+      }, {}),
+      outputs: (outputs || []).map((o) => {
+        return {
+          oid: [],
+          path: []
+        }
+      }),
+      status: nodes[i].pmt_fields?.status || 'pending'
+    }
+    if (pmt_fields.type === 'input') {
+      // temp test
+      if (type === 'Input.2D') {
+        pmt_fields.outputs[0].oid = [
+          pmt_fields.args.source || '123sacza-12312aas'
+        ]
+        pmt_fields.outputs[0].path = ['./data/cache/a.dcm']
+      }
+    } else if (pmt_fields.type === 'plugin') {
+      pmt_fields.plugin_name = nodeDef.category.slice('plugins/'.length)
+      pmt_fields.function_name = nodeDef.display_name
+    } else if (pmt_fields.type === 'output') {
+      pmt_fields.plugin_name = 'export'
+      pmt_fields.function_name = nodeDef.display_name
+      if (pmt_fields.outputs) {
+        pmt_fields.outputs = []
+      }
+    } else if (pmt_fields.type === 'preview') {
+      pmt_fields.plugin_name = 'preview'
+      pmt_fields.function_name = nodeDef.display_name
+      if (pmt_fields.outputs) {
+        pmt_fields.outputs = [
+          {
+            oid: [],
+            path: []
+          }
+        ]
+      }
+    }
+    nodes[i].pmt_fields = pmt_fields
   })
   return workflow
 }
