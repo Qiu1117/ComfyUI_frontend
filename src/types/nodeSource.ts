@@ -37,12 +37,12 @@ export const getNodeSource = (python_module?: string): NodeSource => {
       badgeText: '🦊'
     }
   } else if (modules[0] === 'custom_nodes') {
-    const displayName = shortenNodeName(modules[1])
+    const displayName = modules[2] || shortenNodeName(modules[1])
     return {
       type: NodeSourceType.CustomNodes,
       className: 'comfy-custom-nodes',
       displayText: displayName,
-      badgeText: displayName === 'PMT Core' ? '' : displayName
+      badgeText: displayName
     }
   } else {
     return UNKNOWN_NODE_SOURCE

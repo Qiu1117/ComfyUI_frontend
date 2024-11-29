@@ -292,7 +292,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
   const visibleNodeDefs = computed(() =>
     nodeDefs.value.filter(
       (nodeDef: ComfyNodeDefImpl) =>
-        nodeDef.python_module === 'custom_nodes.PMT Core' &&
+        (nodeDef.python_module || '').startsWith('custom_nodes.PMT Core') &&
         (showDeprecated.value || !nodeDef.deprecated) &&
         (showExperimental.value || !nodeDef.experimental)
     )
