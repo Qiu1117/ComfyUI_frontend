@@ -232,13 +232,11 @@ function exportJson() {
 function getWorkflowJson() {
   const workflow = window.graph.serialize()
   workflow.nodes.sort((a, b) => a.order - b.order)
-  workflow.nodes.forEach(({ id, type, inputs, outputs }, i, nodes) => {
+  workflow.nodes.forEach(({ id, inputs, outputs }, i, nodes) => {
     const node = window.graph.getNodeById(id)
     const nodeDef = nodeDefStore.nodeDefsByName[node.type]
     const pmt_fields = {
-      type: nodeDef.category.startsWith('plugins/')
-        ? 'plugin'
-        : nodeDef.category,
+      type: nodeDef.category.split('/')[0].replace('plugins', 'plugin'),
       plugin_name: null,
       function_name: null,
       inputs: (inputs || []).map((i) => {
@@ -257,33 +255,28 @@ function getWorkflowJson() {
       status: nodes[i].pmt_fields?.status || 'pending'
     }
     if (pmt_fields.type === 'input') {
+      pmt_fields.inputs = []
       // temp test
-      if (type === 'Input.2D') {
-        pmt_fields.outputs[0].oid = [
-          pmt_fields.args.source || '123sacza-12312aas'
-        ]
-        pmt_fields.outputs[0].path = ['./data/cache/a.dcm']
+      pmt_fields.outputs[0] = {
+        oid: [pmt_fields.args.source || '123sacza-12312aas'],
+        path: ['./data/cache/a.dcm']
       }
     } else if (pmt_fields.type === 'plugin') {
       pmt_fields.plugin_name = nodeDef.category.slice('plugins/'.length)
       pmt_fields.function_name = nodeDef.display_name
     } else if (pmt_fields.type === 'output') {
-      pmt_fields.plugin_name = 'export'
+      pmt_fields.plugin_name = nodeDef.category.slice('output/'.length)
       pmt_fields.function_name = nodeDef.display_name
-      if (pmt_fields.outputs) {
-        pmt_fields.outputs = []
-      }
+      pmt_fields.outputs = []
     } else if (pmt_fields.type === 'preview') {
-      pmt_fields.plugin_name = 'preview'
+      pmt_fields.plugin_name = nodeDef.category.slice('preview/'.length)
       pmt_fields.function_name = nodeDef.display_name
-      if (pmt_fields.outputs) {
-        pmt_fields.outputs = [
-          {
-            oid: [],
-            path: []
-          }
-        ]
-      }
+      pmt_fields.outputs = pmt_fields.inputs.map((i) => {
+        return {
+          oid: [],
+          path: []
+        }
+      })
     }
     nodes[i].pmt_fields = pmt_fields
   })
