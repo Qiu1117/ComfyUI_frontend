@@ -49,38 +49,26 @@
     "output_node": false
   },
 
-  "Output.2D_to_DICOM": {
-    "name": "Output.2D_to_DICOM",
-    "display_name": "2D_to_DICOM",
-    "description": "Export 2D data to DICOM file.",
+  "Output.data_to_image.main": {
+    "name": "Output.data_to_image.main",
+    "display_name": "main",
+    "description": "Save 2D numpy.ndarray to image file.",
     "python_module": "custom_nodes.PMT Core.Output",
-    "category": "output",
+    "category": "output/data_to_image",
     "input": {
       "required": {
-        "data": ["2D"]
+        "data": ["2D"],
+        "path": ["STRING"],
+        "normalize": [
+          "BOOLEAN",
+          {
+            "default": false
+          }
+        ]
       }
     },
     "input_order": {
-      "required": ["data"]
-    },
-    "output": [],
-    "output_name": [],
-    "output_is_list": [],
-    "output_node": true
-  },
-  "Output.2D_to_IMAGE": {
-    "name": "Output.2D_to_IMAGE",
-    "display_name": "2D_to_IMAGE",
-    "description": "Export 2D data to PNG file.",
-    "python_module": "custom_nodes.PMT Core.Output",
-    "category": "output",
-    "input": {
-      "required": {
-        "data": ["2D"]
-      }
-    },
-    "input_order": {
-      "required": ["data"]
+      "required": ["data", "path", "normalize"]
     },
     "output": [],
     "output_name": [],
@@ -88,34 +76,22 @@
     "output_node": true
   },
 
-  "Preview.DICOM_from_2D": {
-    "name": "Preview.DICOM_from_2D",
-    "display_name": "DICOM_from_2D",
-    "description": "Render DICOM file from 2D data.",
+  "Preview.data_to_image.main": {
+    "name": "Preview.data_to_image.main",
+    "display_name": "main",
+    "description": "Preview the 2D numpy.ndarray image.",
     "python_module": "custom_nodes.PMT Core.Preview",
-    "category": "preview",
+    "category": "preview/data_to_image",
     "input": {
       "required": {
-        "data": ["2D"]
-      }
-    },
-    "input_order": {
-      "required": ["data"]
-    },
-    "output": [],
-    "output_name": [],
-    "output_is_list": [],
-    "output_node": true
-  },
-  "Preview.IMAGE_from_2D": {
-    "name": "Preview.IMAGE_from_2D",
-    "display_name": "IMAGE_from_2D",
-    "description": "Render PNG file from 2D data.",
-    "python_module": "custom_nodes.PMT Core.Preview",
-    "category": "preview",
-    "input": {
-      "required": {
-        "data": ["2D"]
+        "data": ["2D"],
+        "path": ["STRING"],
+        "normalize": [
+          "BOOLEAN",
+          {
+            "default": false
+          }
+        ]
       },
       "hidden": {
         "prompt": "PROMPT",
@@ -123,7 +99,7 @@
       }
     },
     "input_order": {
-      "required": ["data"],
+      "required": ["data", "path", "normalize"],
       "hidden": ["prompt", "extra_pnginfo"]
     },
     "output": [],
