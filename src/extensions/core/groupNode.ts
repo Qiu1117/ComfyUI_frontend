@@ -1001,7 +1001,7 @@ export class GroupNodeHandler {
         },
         {
           content: 'Manage Group Node',
-          callback: manageGroupNodes
+          callback: () => manageGroupNodes(this.type)
         }
       )
     }
@@ -1102,10 +1102,9 @@ export class GroupNodeHandler {
         const innerNodeIndex = this.innerNodes?.findIndex((n) => n.id == id)
         if (innerNodeIndex > -1) {
           this.node.runningInternalNodeId = innerNodeIndex
-          api.dispatchEvent(
-            new CustomEvent(type, {
-              detail: getEvent(detail, this.node.id + '', this.node)
-            })
+          api.dispatchCustomEvent(
+            type,
+            getEvent(detail, `${this.node.id}`, this.node)
           )
         }
       }
@@ -1489,8 +1488,8 @@ function ungroupSelectedGroupNodes() {
   }
 }
 
-function manageGroupNodes() {
-  new ManageGroupDialog(app).show()
+function manageGroupNodes(type?: string) {
+  new ManageGroupDialog(app).show(type)
 }
 
 const id = 'Comfy.GroupNode'

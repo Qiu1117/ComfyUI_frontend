@@ -6,6 +6,13 @@ export default {
     'vue-tsc --noEmit',
     'tsc --noEmit',
     'tsc-strict'
+  ],
+
+  './src/locales/en.json': () => ['lobe-i18n locale'],
+
+  './src/constants/coreSettings.ts': () => [
+    'tsx scripts/update-setting-locale.ts',
+    'lobe-i18n locale'
   ]
 }
 

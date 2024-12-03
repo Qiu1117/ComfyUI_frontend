@@ -83,7 +83,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Sidebar size',
     type: 'combo',
     options: ['normal', 'small'],
-    defaultValue: window.innerWidth < 1600 ? 'small' : 'normal'
+    defaultValue: () => (window.innerWidth < 1600 ? 'small' : 'normal')
   },
   {
     id: 'Comfy.TextareaWidget.FontSize',
@@ -231,6 +231,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.TreeExplorer.ItemPadding',
+    category: ['Appearance', 'Tree Explorer', 'ItemPadding'],
     name: 'Tree explorer item padding',
     type: 'slider',
     defaultValue: 2,
@@ -259,10 +260,10 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.Locale',
-    name: 'Locale',
+    name: 'Language',
     type: 'combo',
     options: ['en', 'zh', 'ru', 'ja'],
-    defaultValue: navigator.language.split('-')[0] || 'en'
+    defaultValue: () => navigator.language.split('-')[0] || 'en'
   },
   {
     id: 'Comfy.NodeBadge.NodeSourceBadgeMode',
@@ -649,5 +650,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     },
     defaultValue: 0,
     versionAdded: '1.5.1'
+  },
+  {
+    id: 'Comfy.EnableWorkflowViewRestore',
+    category: ['Comfy', 'Workflow', 'EnableWorkflowViewRestore'],
+    name: 'Save and restore canvas position and zoom level in workflows',
+    type: 'boolean',
+    defaultValue: true,
+    versionModified: '1.5.4'
   }
 ]

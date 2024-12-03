@@ -24,13 +24,12 @@ import {
   type NodeId,
   validateComfyWorkflow
 } from '../types/comfyWorkflow'
-import { ComfyNodeDef, StatusWsMessageStatus } from '@/types/apiTypes'
+import type { ComfyNodeDef } from '@/types/apiTypes'
 import { adjustColor, ColorAdjustOptions } from '@/utils/colorUtil'
 import { ComfyAppMenu } from './ui/menu/index'
 import { getStorageValue } from './utils'
 import { ComfyWorkflow } from '@/stores/workflowStore'
 import {
-  LGraphGroup,
   LGraphCanvas,
   LGraph,
   LGraphNode,
@@ -132,15 +131,16 @@ export class ComfyApp {
   _nodeOutputs: Record<string, any>
   nodePreviewImages: Record<string, typeof Image>
   graph: LGraph
-  enableWorkflowViewRestore: any
   canvas: LGraphCanvas
   dragOverNode: LGraphNode | null
   canvasEl: HTMLCanvasElement
   // x, y, scale
   zoom_drag_start: [number, number, number] | null
   lastNodeErrors: any[] | null
-  lastExecutionError: { node_id: number } | null
-  progress: { value: number; max: number } | null
+  /** @type {ExecutionErrorWsMessage} */
+  lastExecutionError: { node_id?: NodeId } | null
+  /** @type {ProgressWsMessage} */
+  progress: { value?: number; max?: number } | null
   configuringGraph: boolean
   ctx: CanvasRenderingContext2D
   bodyTop: HTMLElement
@@ -463,7 +463,7 @@ export class ComfyApp {
       const workflow = serialize.apply(this, arguments)
 
       // Store the drag & scale info in the serialized workflow if the setting is enabled
-      if (self.enableWorkflowViewRestore.value) {
+      if (useSettingStore().get('Comfy.EnableWorkflowViewRestore')) {
         if (!workflow.extra) {
           workflow.extra = {}
         }
@@ -478,13 +478,6 @@ export class ComfyApp {
 
       return workflow
     }
-    this.enableWorkflowViewRestore = this.ui.settings.addSetting({
-      id: 'Comfy.EnableWorkflowViewRestore',
-      category: ['Comfy', 'Workflow', 'EnableWorkflowViewRestore'],
-      name: 'Save and restore canvas position and zoom level in workflows',
-      type: 'boolean',
-      defaultValue: true
-    })
   }
 
   /**
@@ -1542,12 +1535,9 @@ export class ComfyApp {
    * Handles updates from the API socket
    */
   #addApiUpdateHandlers() {
-    api.addEventListener(
-      'status',
-      ({ detail }: CustomEvent<StatusWsMessageStatus>) => {
-        this.ui.setStatus(detail)
-      }
-    )
+    api.addEventListener('status', ({ detail }) => {
+      this.ui.setStatus(detail)
+    })
 
     api.addEventListener('progress', ({ detail }) => {
       this.progress = detail
@@ -2176,7 +2166,7 @@ export class ComfyApp {
       this.graph.configure(graphData)
       if (
         restore_view &&
-        this.enableWorkflowViewRestore.value &&
+        useSettingStore().get('Comfy.EnableWorkflowViewRestore') &&
         graphData.extra?.ds
       ) {
         // @ts-expect-error
@@ -2426,16 +2416,14 @@ export class ComfyApp {
           }
         }
 
-        let node_data = {
+        const node_data = {
           inputs,
           class_type: node.comfyClass
         }
 
-        if (this.ui.settings.getSettingValue('Comfy.DevMode')) {
-          // Ignored by the backend.
-          node_data['_meta'] = {
-            title: node.title
-          }
+        // Ignored by the backend.
+        node_data['_meta'] = {
+          title: node.title
         }
 
         output[String(node.id)] = node_data
@@ -2553,9 +2541,7 @@ export class ComfyApp {
     } finally {
       this.#processingQueue = false
     }
-    api.dispatchEvent(
-      new CustomEvent('promptQueued', { detail: { number, batchCount } })
-    )
+    api.dispatchCustomEvent('promptQueued', { number, batchCount })
     return !this.lastNodeErrors
   }
 

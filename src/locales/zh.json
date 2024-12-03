@@ -1,0 +1,470 @@
+{
+  "about": "关于",
+  "add": "添加",
+  "bookmark": "书签",
+  "box": "盒子",
+  "briefcase": "公文包",
+  "color": "颜色",
+  "comingSoon": "敬请期待",
+  "confirm": "确认",
+  "copyToClipboard": "复制到剪贴板",
+  "currentUser": "当前用户",
+  "customize": "定制",
+  "customizeFolder": "定制文件夹",
+  "delete": "删除",
+  "deprecated": "弃用",
+  "devices": "设备",
+  "download": "下载",
+  "downloadGit": {
+    "gitWebsite": "下载 git",
+    "instructions": "请下载并安装适合您操作系统的最新版本。下面的下载 git 按钮将打开 git-scm.com 下载页面。",
+    "message": "无法找到 git。正常操作需要一个可用的 git 副本。",
+    "skip": "跳过",
+    "title": "下载 git",
+    "warning": "如果您确定不需要安装 git，或者这是一个错误，您可以点击跳过以绕过此检查。当前不支持在没有可用 git 副本的情况下运行 ComfyUI。"
+  },
+  "electronFileDownload": {
+    "cancel": "取消下载",
+    "cancelled": "已取消",
+    "inProgress": "进行中",
+    "pause": "暂停下载",
+    "paused": "已暂停",
+    "resume": "恢复下载"
+  },
+  "empty": "空",
+  "error": "错误",
+  "experimental": "BETA",
+  "extensionName": "扩展名称",
+  "file": "文件",
+  "findIssues": "查找 Issue",
+  "firstTimeUIMessage": "这是您第一次使用新界面。选择“Menu > Use New Menu > Disabled”以恢复旧界面。",
+  "folder": "文件夹",
+  "goToNode": "前往节点",
+  "graphCanvasMenu": {
+    "fitView": "适应视图",
+    "panMode": "平移模式",
+    "resetView": "重置视图",
+    "selectMode": "选择模式",
+    "toggleLinkVisibility": "切换链接可见性",
+    "zoomIn": "放大",
+    "zoomOut": "缩小"
+  },
+  "heart": "心",
+  "icon": "图标",
+  "imageFailedToLoad": "图像加载失败",
+  "inbox": "收件箱",
+  "insert": "插入",
+  "install": {
+    "appDataLocationTooltip": "ComfyUI 的应用数据目录。存储：\n- 日志\n- 服务器配置",
+    "appPathLocationTooltip": "ComfyUI 的应用资产目录。存储 ComfyUI 代码和资产",
+    "chooseInstallationLocation": "选择安装位置",
+    "customNodes": "自定义节点",
+    "customNodesDescription": "引用现有 ComfyUI 安装的自定义节点文件并安装其依赖项。",
+    "desktopAppSettings": "桌面应用设置",
+    "desktopAppSettingsDescription": "配置 ComfyUI 在桌面上的行为。您可以稍后更改这些设置。",
+    "desktopSettings": "桌面设置",
+    "failedToSelectDirectory": "选择目录失败",
+    "installLocation": "安装位置",
+    "installLocationDescription": "选择 ComfyUI 用户数据的目录。将安装一个 Python 环境到所选位置。请确保所选磁盘有足够的空间（约 15GB）。",
+    "installLocationTooltip": "ComfyUI 的用户数据目录。存储：\n- Python 环境\n- 模型\n- 自定义节点\n",
+    "migrateFromExistingInstallation": "从现有安装迁移",
+    "migration": "迁移",
+    "migrationOptional": "迁移是可选的。如果您没有现有安装，可以跳过此步骤。",
+    "migrationSourcePathDescription": "如果您有现有的 ComfyUI 安装，我们可以将您的现有用户文件和模型复制/链接到新安装。",
+    "pathValidationFailed": "路径验证失败",
+    "selectItemsToMigrate": "选择要迁移的项目",
+    "settings": {
+      "allowMetrics": "崩溃报告",
+      "allowMetricsDescription": "通过发送匿名崩溃报告来帮助改善 ComfyUI。不会收集任何个人信息或工作流内容。您可以随时在设置菜单中禁用此功能。",
+      "autoUpdate": "自动更新",
+      "autoUpdateDescription": "在更新可用时自动下载并安装更新。您将在安装更新之前始终收到通知。",
+      "dataCollectionDialog": {
+        "customNodeConfigurations": "自定义节点配置",
+        "errorReports": "错误信息和堆栈跟踪",
+        "fileSystemInformation": "文件系统信息",
+        "personalInformation": "个人信息",
+        "systemInfo": "硬件、操作系统类型和应用版本",
+        "title": "关于数据收集",
+        "whatWeCollect": "我们收集的内容：",
+        "whatWeDoNotCollect": "我们不收集的内容：",
+        "workflowContent": "工作流内容",
+        "workflowContents": "工作流内容"
+      },
+      "learnMoreAboutData": "了解更多关于数据收集的信息"
+    },
+    "systemLocations": "系统位置"
+  },
+  "loadAllFolders": "加载所有文件夹",
+  "loadWorkflow": "加载工作流",
+  "loading": "加载中",
+  "logs": "日志",
+  "menu": {
+    "autoQueue": "自动执行",
+    "batchCount": "批次数量",
+    "batchCountTooltip": "工作流生成次数",
+    "change": "变动",
+    "changeTooltip": "工作流将会在改变后执行",
+    "clear": "清空工作流",
+    "clipspace": "打开剪贴板",
+    "disabled": "禁用",
+    "disabledTooltip": "工作流将不会自动执行",
+    "hideMenu": "隐藏菜单",
+    "instant": "实时",
+    "instantTooltip": "工作流将会在生成完成后立即执行",
+    "interrupt": "取消当前任务",
+    "queue": "队列",
+    "queueWorkflow": "执行 (Shift 执行到队列首)",
+    "queueWorkflowFront": "执行到队列首",
+    "refresh": "刷新节点",
+    "resetView": "重置画布视图",
+    "showMenu": "显示菜单",
+    "toggleBottomPanel": "底部面板"
+  },
+  "newFolder": "新建文件夹",
+  "noResultsFound": "未找到结果",
+  "noTasksFound": "未找到任务",
+  "noTasksFoundMessage": "队列中没有任务。",
+  "noWorkflowsFound": "未找到工作流",
+  "notSupported": {
+    "learnMore": "了解更多",
+    "message": "仅支持以下设备：",
+    "reportIssue": "报告问题",
+    "supportedDevices": {
+      "macos": "MacOS (M1 或更高版本)",
+      "windows": "Windows (支持 CUDA 的 Nvidia GPU)"
+    },
+    "title": "您的设备不受支持"
+  },
+  "openNewIssue": "开启新 Issue",
+  "reconnected": "已重新连接",
+  "reconnecting": "重新连接中",
+  "refresh": "刷新",
+  "reloadToApplyChanges": "重新加载以应用更改",
+  "rename": "重命名",
+  "reportIssue": "发送报告",
+  "reportIssueTooltip": "将错误报告提交给 Comfy 组织",
+  "reportSent": "报告已提交",
+  "reset": "重置",
+  "resetKeybindingsTooltip": "重置键位",
+  "searchExtensions": "搜索插件",
+  "searchFailedMessage": "我们找不到与您的搜索匹配的任何设置。请尝试调整搜索条件。",
+  "searchKeybindings": "搜索键位",
+  "searchModels": "搜索模型",
+  "searchNodes": "搜索节点",
+  "searchSettings": "搜索设置",
+  "searchWorkflows": "搜索工作流",
+  "serverConfig": {
+    "modifiedConfigs": "您已修改以下服务器配置。重启以应用更改。",
+    "restart": "重启",
+    "revertChanges": "撤销更改"
+  },
+  "serverStart": {
+    "openLogs": "打开日志",
+    "process": {
+      "error": "无法启动 ComfyUI 桌面版",
+      "ready": "完成中..."
+    },
+    "reinstall": "重新安装",
+    "reportIssue": "报告问题"
+  },
+  "settings": "设置",
+  "settingsDialog": {
+    "Comfy_ConfirmClear": {
+      "name": "清除工作流时需要确认"
+    },
+    "Comfy_DOMClippingEnabled": {
+      "name": "启用DOM元素裁剪（启用可能会降低性能）"
+    },
+    "Comfy_DevMode": {
+      "name": "启用开发模式选项（API保存等）"
+    },
+    "Comfy_DisableFloatRounding": {
+      "name": "禁用默认浮动小部件四舍五入。",
+      "tooltip": "(需要重新加载页面) 当后端节点设置了四舍五入时，无法禁用四舍五入。"
+    },
+    "Comfy_DisableSliders": {
+      "name": "禁用节点小部件滑块"
+    },
+    "Comfy_EnableTooltips": {
+      "name": "启用工具提示"
+    },
+    "Comfy_EnableWorkflowViewRestore": {
+      "name": "在工作流中保存和恢复画布位置及缩放级别"
+    },
+    "Comfy_Extension_Disabled": {
+      "name": "禁用的扩展名称"
+    },
+    "Comfy_FloatRoundingPrecision": {
+      "name": "浮动小部件四舍五入的小数位数 [0 = 自动]。",
+      "tooltip": "(需要重新加载页面)"
+    },
+    "Comfy_Graph_CanvasInfo": {
+      "name": "在左下角显示画布信息（fps等）"
+    },
+    "Comfy_Graph_CanvasMenu": {
+      "name": "显示图形画布菜单"
+    },
+    "Comfy_Graph_CtrlShiftZoom": {
+      "name": "启用快速缩放快捷键（Ctrl + Shift + 拖动）"
+    },
+    "Comfy_Graph_LinkMarkers": {
+      "name": "链接中点标记"
+    },
+    "Comfy_Graph_ZoomSpeed": {
+      "name": "画布缩放速度"
+    },
+    "Comfy_GroupSelectedNodes_Padding": {
+      "name": "选定节点的组内边距"
+    },
+    "Comfy_Group_DoubleClickTitleToEdit": {
+      "name": "双击组标题以编辑"
+    },
+    "Comfy_Keybinding_NewBindings": {
+      "name": "用户设置的键绑定"
+    },
+    "Comfy_Keybinding_UnsetBindings": {
+      "name": "用户取消的键绑定"
+    },
+    "Comfy_LinkRelease_Action": {
+      "name": "释放链接时的操作（无修饰符）"
+    },
+    "Comfy_LinkRelease_ActionShift": {
+      "name": "释放链接时的操作（Shift）"
+    },
+    "Comfy_LinkRenderMode": {
+      "name": "链接渲染模式"
+    },
+    "Comfy_Locale": {
+      "name": "语言"
+    },
+    "Comfy_ModelLibrary_AutoLoadAll": {
+      "name": "自动加载所有模型文件夹",
+      "tooltip": "如果为真，所有文件夹将在打开模型库时立即加载（这可能会导致加载时的延迟）。如果为假，根级模型文件夹仅在您单击它们时加载。"
+    },
+    "Comfy_ModelLibrary_NameFormat": {
+      "name": "在模型库树视图中显示的名称",
+      "tooltip": "选择“文件名”以在模型列表中呈现原始文件名的简化视图（不带目录或“.safetensors”扩展名）。选择“标题”以显示可配置的模型元数据标题。"
+    },
+    "Comfy_NodeBadge_NodeIdBadgeMode": {
+      "name": "节点ID徽章模式"
+    },
+    "Comfy_NodeBadge_NodeLifeCycleBadgeMode": {
+      "name": "节点生命周期徽章模式"
+    },
+    "Comfy_NodeBadge_NodeSourceBadgeMode": {
+      "name": "节点源徽章模式"
+    },
+    "Comfy_NodeLibrary_Bookmarks": {
+      "name": "节点库书签及显示名称（已弃用）"
+    },
+    "Comfy_NodeLibrary_BookmarksCustomization": {
+      "name": "节点库书签自定义"
+    },
+    "Comfy_NodeLibrary_Bookmarks_V2": {
+      "name": "节点库书签v2及唯一名称"
+    },
+    "Comfy_NodeSearchBoxImpl": {
+      "name": "节点搜索框实现"
+    },
+    "Comfy_NodeSearchBoxImpl_NodePreview": {
+      "name": "节点预览",
+      "tooltip": "仅适用于默认实现"
+    },
+    "Comfy_NodeSearchBoxImpl_ShowCategory": {
+      "name": "在搜索结果中显示节点类别",
+      "tooltip": "仅适用于默认实现"
+    },
+    "Comfy_NodeSearchBoxImpl_ShowIdName": {
+      "name": "在搜索结果中显示节点ID名称",
+      "tooltip": "仅适用于默认实现"
+    },
+    "Comfy_NodeSearchBoxImpl_ShowNodeFrequency": {
+      "name": "在搜索结果中显示节点频率",
+      "tooltip": "仅适用于默认实现"
+    },
+    "Comfy_Node_AutoSnapLinkToSlot": {
+      "name": "自动将链接吸附到节点插槽",
+      "tooltip": "在节点上拖动链接时，链接会自动吸附到节点的可用输入插槽。"
+    },
+    "Comfy_Node_BypassAllLinksOnDelete": {
+      "name": "删除节点时保留所有链接",
+      "tooltip": "删除节点时，尝试重新连接其所有输入和输出链接（绕过已删除的节点）。"
+    },
+    "Comfy_Node_DoubleClickTitleToEdit": {
+      "name": "双击节点标题以编辑"
+    },
+    "Comfy_Node_MiddleClickRerouteNode": {
+      "name": "中键单击创建新的重定向节点"
+    },
+    "Comfy_Node_Opacity": {
+      "name": "节点不透明度"
+    },
+    "Comfy_Node_ShowDeprecated": {
+      "name": "在搜索中显示已弃用的节点",
+      "tooltip": "已弃用的节点在UI中默认隐藏，但在使用它们的现有工作流中仍然有效。"
+    },
+    "Comfy_Node_ShowExperimental": {
+      "name": "在搜索中显示实验性节点",
+      "tooltip": "实验性节点在UI中标记为实验性，可能在未来版本中发生重大变化或被移除。在生产工作流中谨慎使用。"
+    },
+    "Comfy_Node_SnapHighlightsNode": {
+      "name": "吸附高亮节点",
+      "tooltip": "在拖动链接经过具有可用输入插槽的节点时，高亮显示该节点。"
+    },
+    "Comfy_Pointer_ClickBufferTime": {
+      "name": "指针点击漂移延迟",
+      "tooltip": "按下指针按钮后，这是指针移动可以被忽略的最大时间（以毫秒为单位）。\n\n有助于防止在点击时意外推动对象。"
+    },
+    "Comfy_Pointer_ClickDrift": {
+      "name": "指针点击漂移（最大距离）",
+      "tooltip": "如果指针在按住按钮时移动超过此距离，则视为拖动（而不是点击）。\n\n有助于防止在点击时意外推动对象。"
+    },
+    "Comfy_Pointer_DoubleClickTime": {
+      "name": "双击间隔（最大）",
+      "tooltip": "双击的两次点击之间的最大时间（以毫秒为单位）。增加此值可能有助于解决双击有时未被注册的问题。"
+    },
+    "Comfy_PreviewFormat": {
+      "name": "预览图像格式",
+      "tooltip": "在图像小部件中显示预览时，将其转换为轻量级图像，例如webp、jpeg、webp;50等。"
+    },
+    "Comfy_PromptFilename": {
+      "name": "保存工作流时提示文件名"
+    },
+    "Comfy_QueueButton_BatchCountLimit": {
+      "name": "批处理计数限制",
+      "tooltip": "一次点击按钮添加到队列的最大任务数量"
+    },
+    "Comfy_Queue_ImageFit": {
+      "name": "队列图像适应"
+    },
+    "Comfy_Queue_MaxHistoryItems": {
+      "name": "队列历史大小",
+      "tooltip": "队列历史中显示的最大任务数量。"
+    },
+    "Comfy_RerouteBeta": {
+      "name": "选择加入重定向测试版",
+      "tooltip": "启用新的本地重定向。\n\n可以通过按住alt并从链接线拖动来添加重定向，或在链接菜单中添加。\n\n禁用此选项不会造成破坏 - 重定向将被隐藏。"
+    },
+    "Comfy_Server_LaunchArgs": {
+      "name": "服务器启动参数",
+      "tooltip": "这些是启动服务器时传递给服务器的实际参数。"
+    },
+    "Comfy_Server_ServerConfigValues": {
+      "name": "前端显示的服务器配置值",
+      "tooltip": "仅用于前端显示的服务器配置值"
+    },
+    "Comfy_Settings_ExtensionPanel": {
+      "name": "在设置对话框中显示扩展面板"
+    },
+    "Comfy_Sidebar_Location": {
+      "name": "侧边栏位置"
+    },
+    "Comfy_Sidebar_Size": {
+      "name": "侧边栏大小"
+    },
+    "Comfy_SnapToGrid_GridSize": {
+      "name": "吸附到网格大小",
+      "tooltip": "在按住shift拖动和调整节点大小时，它们将对齐到网格，这控制着网格的大小。"
+    },
+    "Comfy_TextareaWidget_FontSize": {
+      "name": "文本区域小部件字体大小"
+    },
+    "Comfy_TextareaWidget_Spellcheck": {
+      "name": "文本区域小部件拼写检查"
+    },
+    "Comfy_TreeExplorer_ItemPadding": {
+      "name": "树形浏览器项目内边距"
+    },
+    "Comfy_UseNewMenu": {
+      "name": "使用新菜单"
+    },
+    "Comfy_Validation_NodeDefs": {
+      "name": "验证节点定义（慢）",
+      "tooltip": "推荐给节点开发者。这将在启动时验证所有节点定义。"
+    },
+    "Comfy_Validation_Workflows": {
+      "name": "验证工作流"
+    },
+    "Comfy_Window_UnloadConfirmation": {
+      "name": "关闭窗口时显示确认"
+    },
+    "Comfy_Workflow_ShowMissingModelsWarning": {
+      "name": "显示缺失模型警告"
+    },
+    "Comfy_Workflow_ShowMissingNodesWarning": {
+      "name": "显示缺失节点警告"
+    },
+    "Comfy_Workflow_SortNodeIdOnSave": {
+      "name": "保存工作流时排序节点ID"
+    },
+    "Comfy_Workflow_WorkflowTabsPosition": {
+      "name": "已打开工作流的位置"
+    },
+    "LiteGraph_Canvas_MaximumFps": {
+      "name": "最大FPS",
+      "tooltip": "画布允许渲染的最大帧数。限制GPU使用以换取流畅度。如果为0，则使用屏幕刷新率。默认值：0"
+    },
+    "pysssss_SnapToGrid": {
+      "name": "始终吸附到网格"
+    }
+  },
+  "showReport": "显示报告",
+  "sideToolbar": {
+    "browseTemplates": "浏览示例模板",
+    "downloads": "下载",
+    "logout": "登出",
+    "modelLibrary": "模型库",
+    "newBlankWorkflow": "创建一个新空白工作流",
+    "nodeLibrary": "节点库",
+    "nodeLibraryTab": {
+      "sortOrder": "排序顺序"
+    },
+    "openWorkflow": "在本地文件系统中打开工作流",
+    "queue": "队列",
+    "queueTab": {
+      "backToAllTasks": "返回",
+      "clearPendingTasks": "清除待处理任务",
+      "containImagePreview": "填充图像预览",
+      "coverImagePreview": "适应图像预览",
+      "filter": "过滤输出",
+      "filters": {
+        "hideCached": "隐藏缓存",
+        "hideCanceled": "隐藏已取消"
+      },
+      "showFlatList": "平铺结果"
+    },
+    "themeToggle": "主题切换",
+    "workflows": "工作流"
+  },
+  "star": "星星",
+  "systemInfo": "系统信息",
+  "tabMenu": {
+    "closeOtherTabs": "关闭其他标签",
+    "closeTab": "关闭标签",
+    "closeTabsToLeft": "关闭左侧标签",
+    "closeTabsToRight": "关闭右侧标签",
+    "duplicateTab": "复制标签"
+  },
+  "templateWorkflows": {
+    "template": {
+      "default": "Image Generation",
+      "flux_schnell": "Flux Schnell",
+      "image2image": "Image to Image",
+      "upscale": "2 Pass Upscale"
+    },
+    "title": "从模板开始"
+  },
+  "terminal": "终端",
+  "userSelect": {
+    "enterUsername": "输入用户名",
+    "existingUser": "已有用户",
+    "newUser": "新用户",
+    "next": "下一步",
+    "selectUser": "选择用户"
+  },
+  "videoFailedToLoad": "视频加载失败",
+  "welcome": {
+    "getStarted": "开始使用",
+    "title": "欢迎使用 ComfyUI"
+  }
+}
