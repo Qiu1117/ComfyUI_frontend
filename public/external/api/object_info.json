@@ -59,8 +59,7 @@
     "python_module": "custom_nodes.data_to_image.main",
     "input": {
       "required": {
-        "data": ["2D"],
-        "path": ["STRING"]
+        "data": ["2D"]
       },
       "optional": {
         "normalize": [
@@ -72,7 +71,7 @@
       }
     },
     "input_order": {
-      "required": ["data", "path"],
+      "required": ["data"],
       "optional": ["normalize"]
     },
     "output": [],
