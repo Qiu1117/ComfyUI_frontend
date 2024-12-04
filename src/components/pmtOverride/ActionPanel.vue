@@ -1,7 +1,10 @@
 <template>
   <teleport :to="'.comfyui-body-bottom'">
-    <div id="pmt-action-panel">
-      <ButtonGroup>
+    <div
+      id="pmt-action-panel"
+      class="fixed bottom-0 inset-x-0 z-[1000] p-[10px] flex justify-center items-center pointer-events-none"
+    >
+      <ButtonGroup class="flex pointer-events-auto">
         <Button
           class="btn-run"
           size="small"
@@ -235,10 +238,12 @@ function getWorkflowJson() {
   workflow.nodes.forEach(({ id, inputs, outputs }, i, nodes) => {
     const node = window.graph.getNodeById(id)
     const nodeDef = nodeDefStore.nodeDefsByName[node.type]
+    const [type] = node.type.split('.')
+    const [_, plugin_name, function_name] = nodeDef.python_module.split('.')
     const pmt_fields = {
-      type: nodeDef.category.split('/')[0].replace('plugins', 'plugin'),
-      plugin_name: null,
-      function_name: null,
+      type,
+      plugin_name: plugin_name || null,
+      function_name: function_name || null,
       inputs: (inputs || []).map((i) => {
         return {}
       }),
@@ -255,50 +260,24 @@ function getWorkflowJson() {
       status: nodes[i].pmt_fields?.status || 'pending'
     }
     if (pmt_fields.type === 'input') {
-      pmt_fields.inputs = []
-      // temp test
+      // pmt_fields.inputs = []
+      // for temp test
       pmt_fields.outputs[0] = {
         oid: [pmt_fields.args.source || '123sacza-12312aas'],
         path: ['./data/cache/a.dcm']
       }
-    } else if (pmt_fields.type === 'plugin') {
-      pmt_fields.plugin_name = nodeDef.category.slice('plugins/'.length)
-      pmt_fields.function_name = nodeDef.display_name
     } else if (pmt_fields.type === 'output') {
-      pmt_fields.plugin_name = nodeDef.category.slice('output/'.length)
-      pmt_fields.function_name = nodeDef.display_name
-      pmt_fields.outputs = []
-    } else if (pmt_fields.type === 'preview') {
-      pmt_fields.plugin_name = nodeDef.category.slice('preview/'.length)
-      pmt_fields.function_name = nodeDef.display_name
-      pmt_fields.outputs = pmt_fields.inputs.map((i) => {
-        return {
-          oid: [],
-          path: []
-        }
-      })
+      // pmt_fields.outputs = []
+      // for preview
+      // pmt_fields.outputs = pmt_fields.inputs.map((i) => {
+      //   return {
+      //     oid: [],
+      //     path: []
+      //   }
+      // })
     }
     nodes[i].pmt_fields = pmt_fields
   })
   return workflow
 }
 </script>
-
-<style scoped>
-#pmt-action-panel {
-  position: fixed;
-  bottom: 0;
-  z-index: 1000;
-  width: 100%;
-  padding: 10px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-</style>
-
-<style>
-#pmt-action-panel .p-buttongroup {
-  display: flex;
-}
-</style>

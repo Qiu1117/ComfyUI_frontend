@@ -1,10 +1,10 @@
 {
-  "Input.2D": {
-    "name": "Input.2D",
-    "display_name": "2D",
-    "description": "Input 2D data.",
-    "python_module": "custom_nodes.PMT Core.Input",
+  "input.2d": {
+    "name": "input.2d",
     "category": "input",
+    "display_name": "2D",
+    "description": "2D input.",
+    "python_module": "nodes",
     "input": {
       "required": {
         "source": ["STRING"]
@@ -19,29 +19,31 @@
     "output_node": false
   },
 
-  "PluginFunction.smooth.smooth_2d": {
-    "name": "PluginFunction.smooth.smooth_2d",
-    "display_name": "smooth_2d",
-    "description": "Smooth 2D data.",
-    "python_module": "custom_nodes.PMT Core.Plugin Function",
+  "plugin.smooth.smooth_2d": {
+    "name": "plugin.smooth.smooth_2d",
     "category": "plugins/smooth",
+    "display_name": "Smooth (2D)",
+    "description": "main function",
+    "python_module": "custom_nodes.smooth.smooth_2d",
     "input": {
       "required": {
-        "data": ["2D"],
+        "data": ["2D"]
+      },
+      "optional": {
         "sigma": [
           "FLOAT",
           {
             "default": 4,
             "min": 0,
             "max": 50,
-            "step": 0.1,
-            "round": 0.01
+            "step": 0.1
           }
         ]
       }
     },
     "input_order": {
-      "required": ["data", "sigma"]
+      "required": ["data"],
+      "optional": ["sigma"]
     },
     "output": ["2D", "STRING"],
     "output_name": ["data", "test_txt"],
@@ -49,58 +51,29 @@
     "output_node": false
   },
 
-  "Output.data_to_image.main": {
-    "name": "Output.data_to_image.main",
-    "display_name": "main",
-    "description": "Save 2D numpy.ndarray to image file.",
-    "python_module": "custom_nodes.PMT Core.Output",
+  "output.data_to_image.main": {
+    "name": "output.data_to_image.main",
     "category": "output/data_to_image",
+    "display_name": "Save to Image",
+    "description": "Main function.",
+    "python_module": "custom_nodes.data_to_image.main",
     "input": {
       "required": {
         "data": ["2D"],
-        "path": ["STRING"],
-        "normalize": [
-          "BOOLEAN",
-          {
-            "default": false
-          }
-        ]
-      }
-    },
-    "input_order": {
-      "required": ["data", "path", "normalize"]
-    },
-    "output": [],
-    "output_name": [],
-    "output_is_list": [],
-    "output_node": true
-  },
-
-  "Preview.data_to_image.main": {
-    "name": "Preview.data_to_image.main",
-    "display_name": "main",
-    "description": "Preview the 2D numpy.ndarray image.",
-    "python_module": "custom_nodes.PMT Core.Preview",
-    "category": "preview/data_to_image",
-    "input": {
-      "required": {
-        "data": ["2D"],
-        "path": ["STRING"],
-        "normalize": [
-          "BOOLEAN",
-          {
-            "default": false
-          }
-        ]
+        "path": ["STRING"]
       },
-      "hidden": {
-        "prompt": "PROMPT",
-        "extra_pnginfo": "EXTRA_PNGINFO"
+      "optional": {
+        "normalize": [
+          "BOOLEAN",
+          {
+            "default": false
+          }
+        ]
       }
     },
     "input_order": {
-      "required": ["data", "path", "normalize"],
-      "hidden": ["prompt", "extra_pnginfo"]
+      "required": ["data", "path"],
+      "optional": ["normalize"]
     },
     "output": [],
     "output_name": [],
