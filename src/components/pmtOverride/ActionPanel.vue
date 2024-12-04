@@ -122,8 +122,9 @@ import Popover from 'primevue/popover'
 import InputGroup from 'primevue/inputgroup'
 import InputGroupAddon from 'primevue/inputgroupaddon'
 import InputText from 'primevue/inputtext'
-import { useConfirm } from 'primevue/useconfirm'
 import ConfirmDialog from 'primevue/confirmdialog'
+import { useConfirm } from 'primevue/useconfirm'
+import { LiteGraph } from '@comfyorg/litegraph'
 import { app as comfyApp } from '@/scripts/app'
 import { useNodeDefStore, SYSTEM_NODE_DEFS } from '@/stores/nodeDefStore'
 
@@ -151,10 +152,62 @@ const updateNameAndColor = (e) => {
   togglePipOver(e)
 }
 
+const statusColor = {
+  pending: '#ff0', // yellow
+  current: '#3b82f6', // blue
+  done: '#0f0', // green
+  error: '#f00' // red
+}
+
 onMounted(() => {
   Object.keys(SYSTEM_NODE_DEFS).forEach((type) => {
-    window.LiteGraph.unregisterNodeType(type)
+    LiteGraph.unregisterNodeType(type)
   })
+
+  comfyApp.registerExtension({
+    name: 'PMT.CustomExtension',
+    async nodeCreated(node) {
+      if (node?.comfyClass === 'input.2d') {
+        const _onMouseEnter = node.onMouseEnter
+        node.onMouseEnter = function (e) {
+          node.pmt_styles = {
+            ringColor: statusColor['current'],
+            ringWidth: 2
+          }
+          return _onMouseEnter?.apply(this, arguments)
+        }
+
+        const _onMouseLeave = node.onMouseLeave
+        node.onMouseLeave = function (e) {
+          delete node.pmt_styles
+          return _onMouseLeave?.apply(this, arguments)
+        }
+
+        const _onMouseDown = node.onMouseDown
+        node.onMouseDown = function (e, pos, canvas) {
+          console.log(node.comfyClass, node, pos)
+          return _onMouseDown?.apply(this, arguments)
+        }
+      }
+
+      if (node?.comfyClass === 'output.data_to_image.main') {
+        const _onDblClick = node.onDblClick
+        node.onDblClick = function (e, pos, canvas) {
+          console.log(node.comfyClass, node, pos)
+          return _onDblClick?.apply(this, arguments)
+        }
+
+        // const _onDrawBackground = node.onDrawBackground
+        // node.onDrawBackground = function (ctx, canvas, canvasElement, mousePosition) {
+        //   console.log(node.comfyClass, node, mousePosition)
+        //   return _onDrawBackground?.apply(this, arguments)
+        // }
+
+        // node.addDOMWidget(...
+      }
+    }
+  })
+
   comfyApp.canvasEl.addEventListener('drop', onDrop)
 
   initNameAndColor()
@@ -233,10 +286,10 @@ function exportJson() {
 }
 
 function getWorkflowJson() {
-  const workflow = window.graph.serialize()
+  const workflow = comfyApp.graph.serialize()
   workflow.nodes.sort((a, b) => a.order - b.order)
   workflow.nodes.forEach(({ id, inputs, outputs }, i, nodes) => {
-    const node = window.graph.getNodeById(id)
+    const node = comfyApp.graph.getNodeById(id)
     const nodeDef = nodeDefStore.nodeDefsByName[node.type]
     const [type] = node.type.split('.')
     const [_, plugin_name, function_name] = nodeDef.python_module.split('.')

@@ -1400,6 +1400,12 @@ export class ComfyApp {
         lineWidth = 2
       }
 
+      if ('pmt_styles' in node) {
+        const { ringColor, ringWidth } = (node.pmt_styles as any) || {}
+        color = ringColor || color
+        lineWidth = ringWidth || lineWidth
+      }
+
       if (color) {
         const shape =
           node._shape || node.constructor.shape || LiteGraph.ROUND_SHAPE
