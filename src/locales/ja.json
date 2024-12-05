@@ -4,6 +4,7 @@
   "bookmark": "ブックマーク",
   "box": "ボックス",
   "briefcase": "ブリーフケース",
+  "cancel": "キャンセル",
   "color": "色",
   "comingSoon": "近日公開",
   "confirm": "確認",
@@ -13,6 +14,10 @@
   "customizeFolder": "フォルダーをカスタマイズ",
   "delete": "削除",
   "deprecated": "非推奨",
+  "desktopMenu": {
+    "confirmReinstall": "これにより、extra_models_config.yamlファイルがクリアされ、再インストールが開始されます。本当によろしいですか？",
+    "reinstall": "再インストール"
+  },
   "devices": "デバイス",
   "download": "ダウンロード",
   "downloadGit": {
@@ -102,17 +107,18 @@
     "autoQueue": "自動キュー",
     "batchCount": "バッチ数",
     "batchCountTooltip": "ワークフロー生成回数",
-    "change": "変更時",
-    "changeTooltip": "変更があるとキューに追加",
     "clear": "ワークフローをクリア",
     "clipspace": "クリップスペースを開く",
     "disabled": "無効",
     "disabledTooltip": "ワークフローは自動的にキューに追加されません",
+    "execute": "実行",
     "hideMenu": "メニューを隠す",
     "instant": "即時",
     "instantTooltip": "生成完了後すぐにキューに追加",
     "interrupt": "現在の実行を中止",
-    "queue": "キュー",
+    "onChange": "変更時",
+    "onChangeTooltip": "変更が行われるとワークフローがキューに追加されます",
+    "queue": "実行",
     "queueWorkflow": "キューに追加 (Shiftで先頭に)",
     "queueWorkflowFront": "先頭に追加",
     "refresh": "ノードを更新",
@@ -120,7 +126,71 @@
     "showMenu": "メニューを表示",
     "toggleBottomPanel": "下部パネルを切り替え"
   },
+  "menuLabels": {
+    "Browse Templates": "テンプレートを参照",
+    "Bypass/Unbypass Selected Nodes": "選択したノードのバイパス/バイパス解除",
+    "Clear Pending Tasks": "保留中のタスクをクリア",
+    "Clear Workflow": "ワークフローをクリア",
+    "Clipspace": "クリップスペース",
+    "Collapse/Expand Selected Nodes": "選択したノードの折りたたみ/展開",
+    "Comfy-Org Discord": "Comfy-Org Discord",
+    "ComfyUI Docs": "ComfyUIのドキュメント",
+    "ComfyUI Issues": "ComfyUIの問題",
+    "Convert selected nodes to group node": "選択したノードをグループノードに変換",
+    "Edit": "編集",
+    "Export": "エクスポート",
+    "Export (API)": "エクスポート (API)",
+    "Feedback": "フィードバック",
+    "Fit Group To Contents": "グループを内容に合わせる",
+    "Fit view to selected nodes": "選択したノードにビューを合わせる",
+    "Group Selected Nodes": "選択したノードをグループ化",
+    "Help": "ヘルプ",
+    "Interrupt": "中断",
+    "Load Default Workflow": "デフォルトワークフローを読み込む",
+    "Logs": "ログ",
+    "Manage group nodes": "グループノードを管理",
+    "Model Library": "モデルライブラリ",
+    "Mute/Unmute Selected Nodes": "選択したノードのミュート/ミュート解除",
+    "New": "新規",
+    "Next Opened Workflow": "次に開いたワークフロー",
+    "Node Library": "ノードライブラリ",
+    "Open": "開く",
+    "Open Custom Nodes Folder": "カスタムノードフォルダを開く",
+    "Open DevTools": "DevToolsを開く",
+    "Open Inputs Folder": "入力フォルダを開く",
+    "Open Logs Folder": "ログフォルダを開く",
+    "Open Models Folder": "モデルフォルダを開く",
+    "Open Outputs Folder": "出力フォルダを開く",
+    "Open extra_model_paths_yaml": "extra_model_paths.yamlを開く",
+    "Pin/Unpin Selected Items": "選択したアイテムのピン留め/ピン留め解除",
+    "Pin/Unpin Selected Nodes": "選択したノードのピン留め/ピン留め解除",
+    "Previous Opened Workflow": "前に開いたワークフロー",
+    "Queue": "キュー",
+    "Queue Prompt": "キューのプロンプト",
+    "Queue Prompt (Front)": "キューのプロンプト (前面)",
+    "Redo": "やり直す",
+    "Refresh Node Definitions": "ノード定義を更新",
+    "Reinstall": "再インストール",
+    "Reset View": "ビューをリセット",
+    "Restart": "再起動",
+    "Save": "保存",
+    "Save As": "名前を付けて保存",
+    "Settings": "設定",
+    "Terminal": "ターミナル",
+    "Toggle Bottom Panel": "下部パネルの切り替え",
+    "Toggle Focus Mode": "フォーカスモードの切り替え",
+    "Toggle Link Visibility": "リンクの表示/非表示を切り替え",
+    "Toggle Lock": "ロックの切り替え",
+    "Toggle Theme": "テーマの切り替え",
+    "Undo": "元に戻す",
+    "Ungroup selected group nodes": "選択したグループノードのグループ解除",
+    "Workflow": "ワークフロー",
+    "Workflows": "ワークフロー",
+    "Zoom In": "ズームイン",
+    "Zoom Out": "ズームアウト"
+  },
   "newFolder": "新しいフォルダー",
+  "no": "いいえ",
   "noResultsFound": "結果が見つかりませんでした",
   "noTasksFound": "タスクが見つかりませんでした",
   "noTasksFoundMessage": "キューにタスクがありません。",
@@ -136,6 +206,7 @@
     "title": "お使いのデバイスはサポートされていません"
   },
   "openNewIssue": "新しいIssueを開く",
+  "overwrite": "上書き",
   "reconnected": "再接続しました",
   "reconnecting": "再接続中",
   "refresh": "更新",
@@ -146,6 +217,7 @@
   "reportSent": "レポートを送信しました",
   "reset": "リセット",
   "resetKeybindingsTooltip": "キーバインドをデフォルトに戻す",
+  "save": "保存",
   "searchExtensions": "拡張機能を検索",
   "searchFailedMessage": "検索条件に一致する設定が見つかりませんでした。条件を変更して再試行してください。",
   "searchKeybindings": "キーバインドを検索",
@@ -168,7 +240,57 @@
     "reportIssue": "問題を報告"
   },
   "settings": "設定",
+  "settingsCategories": {
+    "About": "について",
+    "Appearance": "外観",
+    "BrushAdjustment": "ブラシ調整",
+    "Canvas": "キャンバス",
+    "ColorPalette": "カラーパレット",
+    "Comfy": "Comfy",
+    "Comfy-Desktop": "Comfyデスクトップ",
+    "DevMode": "開発モード",
+    "EditAttention": "編集Attention",
+    "Extension": "拡張",
+    "General": "一般",
+    "Graph": "グラフ",
+    "Group": "グループ",
+    "Keybinding": "キー割り当て",
+    "Link": "リンク",
+    "LinkRelease": "リンク解除",
+    "LiteGraph": "Lite Graph",
+    "Locale": "ロケール",
+    "Mask Editor": "マスクエディタ",
+    "Menu": "メニュー",
+    "ModelLibrary": "モデルライブラリ",
+    "NewEditor": "新しいエディタ",
+    "Node": "ノード",
+    "Node Search Box": "ノード検索ボックス",
+    "Node Widget": "ノードウィジェット",
+    "NodeInputConversionSubmenus": "ノード入力変換サブメニュー",
+    "NodeLibrary": "ノードライブラリ",
+    "Pointer": "ポインタ",
+    "Queue": "キュー",
+    "QueueButton": "キューボタン",
+    "RerouteBeta": "ルート変更ベータ",
+    "Server": "サーバー",
+    "Server-Config": "サーバー設定",
+    "Settings": "設定",
+    "Sidebar": "サイドバー",
+    "Tree Explorer": "ツリーエクスプローラー",
+    "Validation": "検証",
+    "Window": "ウィンドウ",
+    "Workflow": "ワークフロー"
+  },
   "settingsDialog": {
+    "Comfy-Desktop_AutoUpdate": {
+      "name": "自動的に更新を確認する"
+    },
+    "Comfy-Desktop_SendStatistics": {
+      "name": "匿名のクラッシュレポートを送信する"
+    },
+    "Comfy_ColorPalette": {
+      "name": "カラーパレット"
+    },
     "Comfy_ConfirmClear": {
       "name": "ワークフローをクリアする際に確認を要求する"
     },
@@ -222,6 +344,9 @@
     "Comfy_Group_DoubleClickTitleToEdit": {
       "name": "グループタイトルをダブルクリックして編集"
     },
+    "Comfy_InvertMenuScrolling": {
+      "name": "コンテキストメニューのスクロールを反転する"
+    },
     "Comfy_Keybinding_NewBindings": {
       "name": "ユーザーによって設定されたキー割り当て"
     },
@@ -240,8 +365,17 @@
     "Comfy_Locale": {
       "name": "言語"
     },
-    "Comfy_Logging_Enabled": {
-      "name": "ログを有効にする"
+    "Comfy_MaskEditor_BrushAdjustmentSpeed": {
+      "name": "ブラシ調整速度の倍率",
+      "tooltip": "調整時にブラシのサイズと硬さがどれだけ速く変化するかを制御します。値が高いほど、変化が速くなります。"
+    },
+    "Comfy_MaskEditor_UseDominantAxis": {
+      "name": "ブラシ調整を優先軸に固定する",
+      "tooltip": "有効にすると、ブラシの調整は、どの方向に多く動かすかに基づいて、サイズまたは硬さのいずれかにのみ影響します。"
+    },
+    "Comfy_MaskEditor_UseNewEditor": {
+      "name": "新しいマスクエディタを使用する",
+      "tooltip": "新しいマスクエディタインターフェースに切り替えます。"
     },
     "Comfy_MenuPosition": {
       "name": "レガシーメニューの位置を保存"
@@ -408,6 +542,9 @@
     "Comfy_Window_UnloadConfirmation": {
       "name": "ウィンドウを閉じるときに確認を表示"
     },
+    "Comfy_Workflow_ConfirmDelete": {
+      "name": "ワークフローを削除する際に確認を表示"
+    },
     "Comfy_Workflow_ShowMissingModelsWarning": {
       "name": "欠落しているモデルの警告を表示"
     },
@@ -454,6 +591,17 @@
       "showFlatList": "フラットリストを表示"
     },
     "themeToggle": "テーマの切り替え",
+    "workflowTab": {
+      "confirmDelete": "このワークフローを削除してもよろしいですか？",
+      "confirmDeleteTitle": "ワークフローを削除しますか？",
+      "confirmOverwrite": "以下のファイルはすでに存在します。上書きしますか？",
+      "confirmOverwriteTitle": "既存のファイルを上書きしますか？",
+      "deleteFailed": "ワークフローの削除を試みましたが、失敗しました。",
+      "deleteFailedTitle": "削除に失敗しました",
+      "deleted": "ワークフローが削除されました",
+      "dirtyClose": "以下のファイルが変更されました。閉じる前に保存しますか？",
+      "dirtyCloseTitle": "変更を保存しますか？"
+    },
     "workflows": "ワークフロー"
   },
   "star": "スター",

@@ -4,6 +4,7 @@
   "bookmark": "Закладка",
   "box": "Ящик",
   "briefcase": "Чемодан",
+  "cancel": "Отмена",
   "color": "Цвет",
   "comingSoon": "Скоро",
   "confirm": "Подтвердить",
@@ -13,6 +14,10 @@
   "customizeFolder": "Настроить папку",
   "delete": "Удалить",
   "deprecated": "УСТАР",
+  "desktopMenu": {
+    "confirmReinstall": "Это очистит ваш файл extra_models_config.yaml и начнет установку заново. Вы уверены?",
+    "reinstall": "Переустановить"
+  },
   "devices": "Устройства",
   "download": "Скачать",
   "downloadGit": {
@@ -102,17 +107,18 @@
     "autoQueue": "Автоочередь",
     "batchCount": "Количество пакетов",
     "batchCountTooltip": "Количество раз, когда генерация рабочего процесса должна быть помещена в очередь",
-    "change": "При изменении",
-    "changeTooltip": "Рабочий процесс будет поставлен в очередь после внесения изменений",
     "clear": "Очистить рабочий процесс",
     "clipspace": "Открыть Clipspace",
     "disabled": "Отключено",
     "disabledTooltip": "Рабочий процесс не будет автоматически помещён в очередь",
+    "execute": "Выполнить",
     "hideMenu": "Скрыть меню",
     "instant": "Мгновенно",
     "instantTooltip": "Рабочий процесс будет помещён в очередь сразу же после завершения генерации",
     "interrupt": "Отменить текущее выполнение",
-    "queue": "Очередь",
+    "onChange": "При изменении",
+    "onChangeTooltip": "Рабочий процесс будет поставлен в очередь после внесения изменений",
+    "queue": "Выполнить",
     "queueWorkflow": "Очередь рабочего процесса (Shift для вставки спереди)",
     "queueWorkflowFront": "Очередь рабочего процесса (Вставка спереди)",
     "refresh": "Обновить определения узлов",
@@ -120,7 +126,71 @@
     "showMenu": "Показать меню",
     "toggleBottomPanel": "Переключить нижнюю панель"
   },
+  "menuLabels": {
+    "Browse Templates": "Просмотреть шаблоны",
+    "Bypass/Unbypass Selected Nodes": "Обойти/восстановить выбранные узлы",
+    "Clear Pending Tasks": "Очистить ожидающие задачи",
+    "Clear Workflow": "Очистить рабочий процесс",
+    "Clipspace": "Клиппространство",
+    "Collapse/Expand Selected Nodes": "Свернуть/развернуть выбранные узлы",
+    "Comfy-Org Discord": "Discord Comfy-Org",
+    "ComfyUI Docs": "Документация ComfyUI",
+    "ComfyUI Issues": "Проблемы ComfyUI",
+    "Convert selected nodes to group node": "Преобразовать выбранные узлы в групповой узел",
+    "Edit": "Редактировать",
+    "Export": "Экспортировать",
+    "Export (API)": "Экспорт (API)",
+    "Feedback": "Обратная связь",
+    "Fit Group To Contents": "Подогнать группу под содержимое",
+    "Fit view to selected nodes": "Подогнать вид под выбранные узлы",
+    "Group Selected Nodes": "Сгруппировать выбранные узлы",
+    "Help": "Помощь",
+    "Interrupt": "Прервать",
+    "Load Default Workflow": "Загрузить стандартный рабочий процесс",
+    "Logs": "Журналы",
+    "Manage group nodes": "Управление групповыми узлами",
+    "Model Library": "Библиотека моделей",
+    "Mute/Unmute Selected Nodes": "Отключить/включить звук для выбранных узлов",
+    "New": "Новый",
+    "Next Opened Workflow": "Следующий открытый рабочий процесс",
+    "Node Library": "Библиотека узлов",
+    "Open": "Открыть",
+    "Open Custom Nodes Folder": "Открыть папку пользовательских узлов",
+    "Open DevTools": "Открыть инструменты разработчика",
+    "Open Inputs Folder": "Открыть папку входных данных",
+    "Open Logs Folder": "Открыть папку журналов",
+    "Open Models Folder": "Открыть папку моделей",
+    "Open Outputs Folder": "Открыть папку выходных данных",
+    "Open extra_model_paths_yaml": "Открыть extra_model_paths.yaml",
+    "Pin/Unpin Selected Items": "Закрепить/открепить выбранные элементы",
+    "Pin/Unpin Selected Nodes": "Закрепить/открепить выбранные узлы",
+    "Previous Opened Workflow": "Предыдущий открытый рабочий процесс",
+    "Queue": "Очередь",
+    "Queue Prompt": "Запрос в очереди",
+    "Queue Prompt (Front)": "Запрос в очереди (спереди)",
+    "Redo": "Повторить",
+    "Refresh Node Definitions": "Обновить определения узлов",
+    "Reinstall": "Переустановить",
+    "Reset View": "Сбросить вид",
+    "Restart": "Перезапустить",
+    "Save": "Сохранить",
+    "Save As": "Сохранить как",
+    "Settings": "Настройки",
+    "Terminal": "Терминал",
+    "Toggle Bottom Panel": "Переключить нижнюю панель",
+    "Toggle Focus Mode": "Переключить режим фокуса",
+    "Toggle Link Visibility": "Переключить видимость ссылок",
+    "Toggle Lock": "Переключить блокировку",
+    "Toggle Theme": "Переключить тему",
+    "Undo": "Отменить",
+    "Ungroup selected group nodes": "Разгруппировать выбранные групповые узлы",
+    "Workflow": "Рабочий процесс",
+    "Workflows": "Рабочие процессы",
+    "Zoom In": "Увеличить",
+    "Zoom Out": "Уменьшить"
+  },
   "newFolder": "Новая папка",
+  "no": "Нет",
   "noResultsFound": "Ничего не найдено",
   "noTasksFound": "Задачи не найдены",
   "noTasksFoundMessage": "В очереди нет задач.",
@@ -136,6 +206,7 @@
     "title": "Ваше устройство не поддерживается"
   },
   "openNewIssue": "Открыть новый Issue",
+  "overwrite": "Перезаписать",
   "reconnected": "Переподключено",
   "reconnecting": "Переподключение",
   "refresh": "Обновить",
@@ -146,6 +217,7 @@
   "reportSent": "Отчет отправлен",
   "reset": "Сбросить",
   "resetKeybindingsTooltip": "Сбросить сочетания клавиш по умолчанию",
+  "save": "Сохранить",
   "searchExtensions": "Поиск расширений",
   "searchFailedMessage": "Не удалось найти ни одной настройки, соответствующей вашему запросу. Попробуйте скорректировать поисковый запрос.",
   "searchKeybindings": "Поиск сочетаний клавиш",
@@ -168,7 +240,57 @@
     "reportIssue": "Сообщить о проблеме"
   },
   "settings": "Настройки",
+  "settingsCategories": {
+    "About": "О программе",
+    "Appearance": "Внешний вид",
+    "BrushAdjustment": "Настройка кисти",
+    "Canvas": "Холст",
+    "ColorPalette": "Цветовая палитра",
+    "Comfy": "Comfy",
+    "Comfy-Desktop": "Comfy рабочий стол",
+    "DevMode": "Режим разработчика",
+    "EditAttention": "Редактировать внимание",
+    "Extension": "Расширение",
+    "General": "Общие",
+    "Graph": "Граф",
+    "Group": "Группа",
+    "Keybinding": "Сочетание клавиш",
+    "Link": "Ссылка",
+    "LinkRelease": "Освобождение ссылки",
+    "LiteGraph": "Lite Graph",
+    "Locale": "Локализация",
+    "Mask Editor": "Редактор масок",
+    "Menu": "Меню",
+    "ModelLibrary": "Библиотека моделей",
+    "NewEditor": "Новый редактор",
+    "Node": "Узел",
+    "Node Search Box": "Поисковая строка узлов",
+    "Node Widget": "Виджет узла",
+    "NodeInputConversionSubmenus": "Подменю преобразования ввода узла",
+    "NodeLibrary": "Библиотека узлов",
+    "Pointer": "Указатель",
+    "Queue": "Очередь",
+    "QueueButton": "Кнопка очереди",
+    "RerouteBeta": "Бета-версия перенаправления",
+    "Server": "Сервер",
+    "Server-Config": "Настройки сервера",
+    "Settings": "Настройки",
+    "Sidebar": "Боковая панель",
+    "Tree Explorer": "Дерево проводника",
+    "Validation": "Валидация",
+    "Window": "Окно",
+    "Workflow": "Рабочий процесс"
+  },
   "settingsDialog": {
+    "Comfy-Desktop_AutoUpdate": {
+      "name": "Автоматически проверять обновления"
+    },
+    "Comfy-Desktop_SendStatistics": {
+      "name": "Отправлять анонимные отчеты о сбоях"
+    },
+    "Comfy_ColorPalette": {
+      "name": "Цветовая палитра"
+    },
     "Comfy_ConfirmClear": {
       "name": "Требовать подтверждение при очистке рабочего процесса"
     },
@@ -222,6 +344,9 @@
     "Comfy_Group_DoubleClickTitleToEdit": {
       "name": "Дважды щелкните по заголовку группы, чтобы редактировать"
     },
+    "Comfy_InvertMenuScrolling": {
+      "name": "Инвертировать прокрутку контекстного меню"
+    },
     "Comfy_Keybinding_NewBindings": {
       "name": "Сочетания клавиш, установленные пользователем"
     },
@@ -240,8 +365,17 @@
     "Comfy_Locale": {
       "name": "Язык"
     },
-    "Comfy_Logging_Enabled": {
-      "name": "Включить ведение журнала"
+    "Comfy_MaskEditor_BrushAdjustmentSpeed": {
+      "name": "Множитель скорости регулировки кисти",
+      "tooltip": "Управляет тем, как быстро изменяются размер и жесткость кисти при регулировке. Более высокие значения означают более быстрые изменения."
+    },
+    "Comfy_MaskEditor_UseDominantAxis": {
+      "name": "Закрепить регулировку кисти по доминирующей оси",
+      "tooltip": "При включении регулировки кисти будет влиять только на размер ИЛИ жесткость в зависимости от того, в каком направлении вы двигаетесь больше"
+    },
+    "Comfy_MaskEditor_UseNewEditor": {
+      "name": "Использовать новый редактор масок",
+      "tooltip": "Переключиться на новый интерфейс редактора масок"
     },
     "Comfy_MenuPosition": {
       "name": "Сохранить положение старого меню"
@@ -408,6 +542,9 @@
     "Comfy_Window_UnloadConfirmation": {
       "name": "Показать подтверждение при закрытии окна"
     },
+    "Comfy_Workflow_ConfirmDelete": {
+      "name": "Показать подтверждение при удалении рабочих процессов"
+    },
     "Comfy_Workflow_ShowMissingModelsWarning": {
       "name": "Показать предупреждение об отсутствующих моделях"
     },
@@ -454,6 +591,17 @@
       "showFlatList": "Показать плоский список"
     },
     "themeToggle": "Переключить тему",
+    "workflowTab": {
+      "confirmDelete": "Вы уверены, что хотите удалить этот рабочий процесс?",
+      "confirmDeleteTitle": "Удалить рабочий процесс?",
+      "confirmOverwrite": "Файл ниже уже существует. Вы хотите его перезаписать?",
+      "confirmOverwriteTitle": "Перезаписать существующий файл?",
+      "deleteFailed": "Попытка удалить рабочий процесс не удалась.",
+      "deleteFailedTitle": "Не удалось удалить",
+      "deleted": "Рабочий процесс удален",
+      "dirtyClose": "Файлы ниже были изменены. Вы хотите сохранить их перед закрытием?",
+      "dirtyCloseTitle": "Сохранить изменения?"
+    },
     "workflows": "Рабочие процессы"
   },
   "star": "Звёздочка",

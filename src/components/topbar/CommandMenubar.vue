@@ -1,6 +1,6 @@
 <template>
   <Menubar
-    :model="items"
+    :model="translatedItems"
     class="top-menubar border-none p-0 bg-transparent"
     :pt="{
       rootList: 'gap-0 flex-nowrap w-auto',
@@ -31,8 +31,11 @@
 <script setup lang="ts">
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useSettingStore } from '@/stores/settingStore'
+import { normalizeI18nKey } from '@/utils/formatUtil'
 import Menubar from 'primevue/menubar'
+import type { MenuItem } from 'primevue/menuitem'
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const settingStore = useSettingStore()
 const dropdownDirection = computed(() =>
@@ -40,7 +43,23 @@ const dropdownDirection = computed(() =>
 )
 
 const menuItemsStore = useMenuItemStore()
-const items = menuItemsStore.menuItems
+const { t } = useI18n()
+const translateMenuItem = (item: MenuItem): MenuItem => {
+  const label = typeof item.label === 'function' ? item.label() : item.label
+  const translatedLabel = label
+    ? t(`menuLabels.${normalizeI18nKey(label)}`, label)
+    : undefined
+
+  return {
+    ...item,
+    label: translatedLabel,
+    items: item.items?.map(translateMenuItem)
+  }
+}
+
+const translatedItems = computed(() =>
+  menuItemsStore.menuItems.map(translateMenuItem)
+)
 </script>
 
 <style scoped>

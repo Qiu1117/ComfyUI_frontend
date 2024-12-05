@@ -128,6 +128,10 @@
   "reconnected": "Reconnected",
   "delete": "Delete",
   "rename": "Rename",
+  "save": "Save",
+  "no": "No",
+  "cancel": "Cancel",
+  "overwrite": "Overwrite",
   "customize": "Customize",
   "experimental": "BETA",
   "deprecated": "DEPR",
@@ -135,6 +139,15 @@
   "goToNode": "Go to Node",
   "settings": "Settings",
   "settingsDialog": {
+    "Comfy-Desktop_AutoUpdate": {
+      "name": "Automatically check for updates"
+    },
+    "Comfy-Desktop_SendStatistics": {
+      "name": "Send anonymous crash reports"
+    },
+    "Comfy_ColorPalette": {
+      "name": "Color Palette"
+    },
     "Comfy_ConfirmClear": {
       "name": "Require confirmation when clearing workflow"
     },
@@ -188,21 +201,14 @@
     "Comfy_GroupSelectedNodes_Padding": {
       "name": "Group selected nodes padding"
     },
+    "Comfy_InvertMenuScrolling": {
+      "name": "Invert Context Menu Scrolling"
+    },
     "Comfy_Keybinding_NewBindings": {
       "name": "Keybindings set by the user"
     },
     "Comfy_Keybinding_UnsetBindings": {
       "name": "Keybindings unset by the user"
-    },
-    "Comfy_Logging_Enabled": {
-      "name": "Enable logging"
-    },
-    "Comfy_MenuPosition": {
-      "name": "Save legacy menu's position"
-    },
-    "Comfy_NodeSuggestions_number": {
-      "name": "Number of nodes suggestions",
-      "tooltip": "Only for litegraph searchbox/context menu"
     },
     "Comfy_LinkRelease_Action": {
       "name": "Action on link release (No modifier)"
@@ -215,6 +221,21 @@
     },
     "Comfy_Locale": {
       "name": "Language"
+    },
+    "Comfy_MaskEditor_BrushAdjustmentSpeed": {
+      "name": "Brush adjustment speed multiplier",
+      "tooltip": "Controls how quickly the brush size and hardness change when adjusting. Higher values mean faster changes."
+    },
+    "Comfy_MaskEditor_UseDominantAxis": {
+      "name": "Lock brush adjustment to dominant axis",
+      "tooltip": "When enabled, brush adjustments will only affect size OR hardness based on which direction you move more"
+    },
+    "Comfy_MaskEditor_UseNewEditor": {
+      "name": "Use new mask editor",
+      "tooltip": "Switch to the new mask editor interface"
+    },
+    "Comfy_MenuPosition": {
+      "name": "Save legacy menu's position"
     },
     "Comfy_ModelLibrary_AutoLoadAll": {
       "name": "Automatically load all model folders",
@@ -234,9 +255,6 @@
     },
     "Comfy_Node_DoubleClickTitleToEdit": {
       "name": "Double click node title to edit"
-    },
-    "Comfy_NodeInputConversionSubmenus": {
-      "name": "In the node context menu, place the entries that convert between input/widget in sub-menus."
     },
     "Comfy_Node_MiddleClickRerouteNode": {
       "name": "Middle-click creates a new Reroute node"
@@ -265,6 +283,9 @@
     "Comfy_NodeBadge_NodeSourceBadgeMode": {
       "name": "Node source badge mode"
     },
+    "Comfy_NodeInputConversionSubmenus": {
+      "name": "In the node context menu, place the entries that convert between input/widget in sub-menus."
+    },
     "Comfy_NodeLibrary_Bookmarks": {
       "name": "Node library bookmarks with display name (deprecated)"
     },
@@ -292,6 +313,10 @@
     "Comfy_NodeSearchBoxImpl_ShowNodeFrequency": {
       "name": "Show node frequency in search results",
       "tooltip": "Only applies to the default implementation"
+    },
+    "Comfy_NodeSuggestions_number": {
+      "name": "Number of nodes suggestions",
+      "tooltip": "Only for litegraph searchbox/context menu"
     },
     "Comfy_Pointer_ClickBufferTime": {
       "name": "Pointer click drift delay",
@@ -364,15 +389,18 @@
       "name": "Validate node definitions (slow)",
       "tooltip": "Recommended for node developers. This will validate all node definitions on startup."
     },
+    "Comfy_Validation_Workflows": {
+      "name": "Validate workflows"
+    },
     "Comfy_WidgetControlMode": {
       "name": "Widget control mode",
       "tooltip": "Controls when widget values are updated (randomize/increment/decrement), either before the prompt is queued or after."
     },
-    "Comfy_Validation_Workflows": {
-      "name": "Validate workflows"
-    },
     "Comfy_Window_UnloadConfirmation": {
       "name": "Show confirmation when closing window"
+    },
+    "Comfy_Workflow_ConfirmDelete": {
+      "name": "Show confirmation when deleting workflows"
     },
     "Comfy_Workflow_ShowMissingModelsWarning": {
       "name": "Show missing models warning"
@@ -430,6 +458,17 @@
         "hideCached": "Hide Cached",
         "hideCanceled": "Hide Canceled"
       }
+    },
+    "workflowTab": {
+      "confirmDeleteTitle": "Delete workflow?",
+      "confirmDelete": "Are you sure you want to delete this workflow?",
+      "deleted": "Workflow deleted",
+      "deleteFailedTitle": "Delete failed",
+      "deleteFailed": "Attempt to delete the workflow failed.",
+      "dirtyCloseTitle": "Save Changes?",
+      "dirtyClose": "The files below have been changed.  Would you like to save them before closing?",
+      "confirmOverwriteTitle": "Overwrite existing file?",
+      "confirmOverwrite": "The file below already exists. Would you like to overwrite it?"
     }
   },
   "menu": {
@@ -442,11 +481,12 @@
     "disabledTooltip": "The workflow will not be automatically queued",
     "instant": "Instant",
     "instantTooltip": "The workflow will be queued instantly after a generation finishes",
-    "change": "On Change",
-    "changeTooltip": "The workflow will be queued once a change is made",
+    "onChange": "On Change",
+    "onChangeTooltip": "The workflow will be queued once a change is made",
     "queueWorkflow": "Queue workflow (Shift to queue at front)",
     "queueWorkflowFront": "Queue workflow at front",
     "queue": "Queue",
+    "execute": "Execute",
     "interrupt": "Cancel current run",
     "refresh": "Refresh node definitions",
     "clipspace": "Open Clipspace",
@@ -486,5 +526,113 @@
     "resume": "Resume Download",
     "cancel": "Cancel Download",
     "cancelled": "Cancelled"
+  },
+  "menuLabels": {
+    "Workflow": "Workflow",
+    "Edit": "Edit",
+    "Help": "Help",
+    "New": "New",
+    "Open": "Open",
+    "Load Default Workflow": "Load Default Workflow",
+    "Save": "Save",
+    "Save As": "Save As",
+    "Export": "Export",
+    "Export (API)": "Export (API)",
+    "Undo": "Undo",
+    "Redo": "Redo",
+    "Clear Workflow": "Clear Workflow",
+    "Reset View": "Reset View",
+    "Clipspace": "Clipspace",
+    "Refresh Node Definitions": "Refresh Node Definitions",
+    "Interrupt": "Interrupt",
+    "Clear Pending Tasks": "Clear Pending Tasks",
+    "Browse Templates": "Browse Templates",
+    "Zoom In": "Zoom In",
+    "Zoom Out": "Zoom Out",
+    "Fit view to selected nodes": "Fit view to selected nodes",
+    "Toggle Lock": "Toggle Lock",
+    "Toggle Link Visibility": "Toggle Link Visibility",
+    "Queue Prompt": "Queue Prompt",
+    "Queue Prompt (Front)": "Queue Prompt (Front)",
+    "Settings": "Settings",
+    "Group Selected Nodes": "Group Selected Nodes",
+    "Next Opened Workflow": "Next Opened Workflow",
+    "Previous Opened Workflow": "Previous Opened Workflow",
+    "Mute/Unmute Selected Nodes": "Mute/Unmute Selected Nodes",
+    "Bypass/Unbypass Selected Nodes": "Bypass/Unbypass Selected Nodes",
+    "Pin/Unpin Selected Nodes": "Pin/Unpin Selected Nodes",
+    "Pin/Unpin Selected Items": "Pin/Unpin Selected Items",
+    "Collapse/Expand Selected Nodes": "Collapse/Expand Selected Nodes",
+    "Toggle Theme": "Toggle Theme",
+    "Toggle Bottom Panel": "Toggle Bottom Panel",
+    "Toggle Focus Mode": "Toggle Focus Mode",
+    "Fit Group To Contents": "Fit Group To Contents",
+    "ComfyUI Issues": "ComfyUI Issues",
+    "ComfyUI Docs": "ComfyUI Docs",
+    "Comfy-Org Discord": "Comfy-Org Discord",
+    "Queue": "Queue",
+    "Node Library": "Node Library",
+    "Model Library": "Model Library",
+    "Workflows": "Workflows",
+    "Logs": "Logs",
+    "Terminal": "Terminal",
+    "Convert selected nodes to group node": "Convert selected nodes to group node",
+    "Ungroup selected group nodes": "Ungroup selected group nodes",
+    "Manage group nodes": "Manage group nodes",
+    "Open Logs Folder": "Open Logs Folder",
+    "Open Models Folder": "Open Models Folder",
+    "Open Outputs Folder": "Open Outputs Folder",
+    "Open Inputs Folder": "Open Inputs Folder",
+    "Open Custom Nodes Folder": "Open Custom Nodes Folder",
+    "Open extra_model_paths_yaml": "Open extra_model_paths.yaml",
+    "Open DevTools": "Open DevTools",
+    "Feedback": "Feedback",
+    "Reinstall": "Reinstall",
+    "Restart": "Restart"
+  },
+  "desktopMenu": {
+    "reinstall": "Reinstall",
+    "confirmReinstall": "This will clear your extra_models_config.yaml file, and begin installation again.  Are you sure?"
+  },
+  "settingsCategories": {
+    "Comfy-Desktop": "Comfy-Desktop",
+    "General": "General",
+    "Appearance": "Appearance",
+    "ColorPalette": "Color Palette",
+    "Comfy": "Comfy",
+    "Workflow": "Workflow",
+    "DevMode": "Dev Mode",
+    "LiteGraph": "Lite Graph",
+    "Node Widget": "Node Widget",
+    "Node": "Node",
+    "EditAttention": "Edit Attention",
+    "Extension": "Extension",
+    "Canvas": "Canvas",
+    "Link": "Link",
+    "Group": "Group",
+    "Menu": "Menu",
+    "Keybinding": "Keybinding",
+    "LinkRelease": "Link Release",
+    "Graph": "Graph",
+    "Locale": "Locale",
+    "Mask Editor": "Mask Editor",
+    "BrushAdjustment": "Brush Adjustment",
+    "NewEditor": "New Editor",
+    "ModelLibrary": "Model Library",
+    "NodeInputConversionSubmenus": "Node Input Conversion Submenus",
+    "NodeLibrary": "Node Library",
+    "Node Search Box": "Node Search Box",
+    "Pointer": "Pointer",
+    "Queue": "Queue",
+    "QueueButton": "Queue Button",
+    "RerouteBeta": "Reroute Beta",
+    "Server": "Server",
+    "Settings": "Settings",
+    "Sidebar": "Sidebar",
+    "Tree Explorer": "Tree Explorer",
+    "Validation": "Validation",
+    "Window": "Window",
+    "Server-Config": "Server-Config",
+    "About": "About"
   }
 }
