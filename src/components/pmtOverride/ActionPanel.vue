@@ -14,7 +14,7 @@
           :loading="running"
           :disabled="saving"
           @click="run"
-          @contextmenu="!saving && !running && runMenu.toggle($event)"
+          @contextmenu="!saving && !running && runMenu.show($event)"
         />
         <Button
           v-else
@@ -365,7 +365,10 @@ const confirmSave = (e) => {
 
 let runningTimer = null
 const running = ref(false)
-async function run() {
+async function run(e) {
+  if (runMenu.value) {
+    runMenu.value.hide(e)
+  }
   if (running.value) {
     return
   }
