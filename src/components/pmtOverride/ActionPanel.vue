@@ -14,7 +14,7 @@
           :loading="running"
           :disabled="saving"
           @click="run"
-          @contextmenu="!saving && !running && runMenu.show($event)"
+          @contextmenu.prevent="!saving && !running && runMenu.show($event)"
         />
         <Button
           v-else
