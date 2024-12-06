@@ -13,9 +13,13 @@ import { useToastStore } from '@/stores/toastStore'
 import { type ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { LGraphGroup } from '@comfyorg/litegraph'
-import { LiteGraph } from '@comfyorg/litegraph'
-import { LGraphNode } from '@comfyorg/litegraph'
+import {
+  LiteGraph,
+  LGraphEventMode,
+  LGraphNode,
+  LGraphGroup
+} from '@comfyorg/litegraph'
+import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 
 export function useCoreCommands(): ComfyCommand[] {
   const getTracker = () => useWorkflowStore()?.activeWorkflow?.changeTracker
@@ -32,10 +36,10 @@ export function useCoreCommands(): ComfyCommand[] {
     return result
   }
 
-  const toggleSelectedNodesMode = (mode: number) => {
+  const toggleSelectedNodesMode = (mode: LGraphEventMode) => {
     getSelectedNodes().forEach((node) => {
       if (node.mode === mode) {
-        node.mode = 0 // always
+        node.mode = LGraphEventMode.ALWAYS
       } else {
         node.mode = mode
       }
@@ -340,7 +344,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Mute/Unmute Selected Nodes',
       versionAdded: '1.3.11',
       function: () => {
-        toggleSelectedNodesMode(2) // muted
+        toggleSelectedNodesMode(LGraphEventMode.NEVER)
       }
     },
     {
@@ -349,7 +353,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Bypass/Unbypass Selected Nodes',
       versionAdded: '1.3.11',
       function: () => {
-        toggleSelectedNodesMode(4) // bypassed
+        toggleSelectedNodesMode(LGraphEventMode.BYPASS)
       }
     },
     {
@@ -473,6 +477,15 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.5.5',
       function: () => {
         window.open('https://www.comfy.org/discord', '_blank')
+      }
+    },
+    {
+      id: 'Workspace.SearchBox.Toggle',
+      icon: 'pi pi-search',
+      label: 'Toggle Search Box',
+      versionAdded: '1.5.7',
+      function: () => {
+        useSearchBoxStore().toggleVisible()
       }
     }
   ]
