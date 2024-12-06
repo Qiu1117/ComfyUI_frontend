@@ -195,9 +195,10 @@ const volViewUrl = computed(() => {
     pathname = pathname.replace('comfyui/', 'volview/')
   } else {
     if (port) {
-      origin = origin.replace(port, `${+port - 3}`)
+      origin = origin.replace(port, `${+port - 1}`)
+      // origin = origin.replace(port, `${+port - 3}`)
     }
-    pathname = pathname.replace('comfyui/', '') + 'volview/'
+    // pathname = pathname.replace('comfyui/', '') + 'volview/'
   }
   return origin + pathname + search
 })
@@ -315,6 +316,7 @@ onMounted(() => {
         //   return _onDrawBackground?.apply(this, arguments)
         // }
 
+        console.log(volViewUrl.value)
         // const div = document.createElement('div')
         // div.classList.add('relative', 'overflow-hidden')
         // div.innerHTML = `
@@ -324,7 +326,6 @@ onMounted(() => {
         // `
         // const widget = node.addDOMWidget('pmt_volview_embed', 'volview-embed', div, {})
         // console.log(widget)
-        console.log(volViewUrl.value)
       }
     }
   })
