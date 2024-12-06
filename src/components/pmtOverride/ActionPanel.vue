@@ -91,7 +91,7 @@
               />
               <Button
                 class="ml-2"
-                :label="'Update'"
+                :label="'Change'"
                 severity="contrast"
                 size="small"
                 :loading="false"
@@ -135,6 +135,7 @@
 
 <script setup>
 import { shallowRef, ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useBrowserLocation, useElementHover } from '@vueuse/core'
 import Panel from 'primevue/panel'
 import Menu from 'primevue/menu'
@@ -149,11 +150,13 @@ import ConfirmPopup from 'primevue/confirmpopup'
 import Toast from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
-import { LiteGraph } from '@comfyorg/litegraph'
+import { LiteGraph, LGraphCanvas } from '@comfyorg/litegraph'
 import { app as comfyApp } from '@/scripts/app'
 import { useNodeDefStore, SYSTEM_NODE_DEFS } from '@/stores/nodeDefStore'
 
 const nodeDefStore = useNodeDefStore()
+
+const router = useRouter()
 
 const pipeline = shallowRef({
   name: 'New Pipeline',
@@ -203,6 +206,75 @@ onMounted(() => {
   Object.keys(SYSTEM_NODE_DEFS).forEach((type) => {
     LiteGraph.unregisterNodeType(type)
   })
+
+  const getCanvasMenuOptions = LGraphCanvas.prototype.getCanvasMenuOptions
+  LGraphCanvas.prototype.getCanvasMenuOptions = function () {
+    const options = getCanvasMenuOptions.apply(this, arguments)
+    if (options) {
+      const [add_node, ...rest] = options
+      const new_options = [add_node]
+      // new_options.push(null); // inserts a divider
+      new_options.push({
+        content: 'Reset All Nodes',
+        callback: async () => {
+          // reset all nodes status...
+        }
+      })
+      new_options.push({
+        content: 'Reload Plugins',
+        callback: async () => {
+          router.go(0)
+        }
+      })
+
+      return new_options
+    }
+    return options
+  }
+
+  const getNodeMenuOptions = LGraphCanvas.prototype.getNodeMenuOptions
+  LGraphCanvas.prototype.getNodeMenuOptions = function (node) {
+    const options = getNodeMenuOptions.apply(this, arguments)
+    if (options) {
+      let resetOptionIndex = options.findIndex((o) => o?.content === 'Remove')
+      if (resetOptionIndex === -1) resetOptionIndex = options.length
+      options.splice(resetOptionIndex, 0, {
+        content: 'Reset',
+        callback: async () => {
+          // reset node status...
+          console.log('reset node status...')
+        }
+      })
+      return options
+        .filter((o) => {
+          if (
+            [
+              'Convert to Group Node',
+              'Bypass'
+              // ...
+            ].includes(o?.content)
+          ) {
+            return false
+          }
+          return true
+        })
+        .map((o) => {
+          if (
+            [
+              'Copy (Clipspace)'
+              // ...
+            ].includes(o?.content)
+          ) {
+            return {
+              ...o,
+              disabled: true
+            }
+          }
+          return o
+        })
+    }
+    return options
+  }
 
   comfyApp.registerExtension({
     name: 'PMT.CustomExtension',
