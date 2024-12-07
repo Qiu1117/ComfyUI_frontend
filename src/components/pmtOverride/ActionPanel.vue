@@ -515,7 +515,7 @@ function getWorkflowJson() {
           path: []
         }
       }),
-      status: nodes[i].pmt_fields?.status || 'pending'
+      status: nodes[i].pmt_fields?.status || (type === 'input' ? '' : 'pending')
     }
     if (pmt_fields.type === 'input') {
       // pmt_fields.inputs = []
