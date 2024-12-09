@@ -1,4 +1,191 @@
 {
+  "rag_llm.load_dicom": {
+    "name": "rag_llm.load_dicom",
+    "category": "RAG",
+    "display_name": "Load DICOM",
+    "description": "",
+    "python_module": "custom_nodes.rag_llm.load_dicom",
+    "input": {
+      "required": {
+        "dicom": [
+          [
+            ""
+          ]
+        ],
+        "upload": ["DICOMUPLOAD"]
+      }
+    },
+    "input_order": {
+      "required": ["dicom"]
+    },
+    "output": ["DICOM"],
+    "output_name": ["DICOM"],
+    "output_is_list": [false],
+    "output_node": false
+  },
+  "rag_llm.image_to_description": {
+    "name": "rag_llm.image_to_description",
+    "category": "RAG",
+    "display_name": "Image to Description",
+    "description": "Describe the DICOM image.",
+    "python_module": "custom_nodes.rag_llm.image_to_description",
+    "input": {
+      "required": {
+        "dicom": ["DICOM"]
+      }
+    },
+    "input_order": {
+      "required": ["dicom"]
+    },
+    "output": ["STRING"],
+    "output_name": ["description"],
+    "output_is_list": [false],
+    "output_node": false
+  },
+  "rag_llm.kb": {
+    "name": "rag_llm.kb",
+    "category": "RAG",
+    "display_name": "Knowledge Base",
+    "description": "Knowledge Base",
+    "python_module": "custom_nodes.rag_llm.kb",
+    "input": {
+      "required": {
+        "text": [
+          "STRING",
+          {
+            "forceInput": true
+          }
+        ],
+        "local_db": [
+          [
+            "db:1",
+            "db:2",
+            "db:3"
+          ]
+        ]
+      },
+      "optional": {
+        "remote_db": [
+          "STRING",
+          {
+            "default": "db:url"
+          }
+        ]
+      }
+    },
+    "input_order": {
+      "required": ["text", "local_db"],
+      "optional": ["remote_db"]
+    },
+    "output": ["STRING", "STRING"],
+    "output_name": ["kownledge", "log"],
+    "output_is_list": [false, false],
+    "output_node": false
+  },
+  "rag_llm.prompt": {
+    "name": "rag_llm.prompt",
+    "category": "RAG",
+    "display_name": "Prompt",
+    "description": "Prompt query.",
+    "python_module": "custom_nodes.rag_llm.prompt",
+    "input": {
+      "required": {
+        "prompt": [
+          "STRING",
+          {
+            "multiline": true
+          }
+        ]
+      },
+      "optional": {
+        "history": [
+          "STRING",
+          {
+            "forceInput": true
+          }
+        ]
+      }
+    },
+    "input_order": {
+      "required": ["prompt"],
+      "optional": ["history"]
+    },
+    "output": ["STRING"],
+    "output_name": ["text"],
+    "output_is_list": [false],
+    "output_node": false
+  },
+  "rag_llm.context": {
+    "name": "rag_llm.context",
+    "category": "RAG",
+    "display_name": "Context",
+    "description": "Context",
+    "python_module": "custom_nodes.rag_llm.context",
+    "input": {
+      "required": {
+        "text": [
+          "STRING",
+          {
+            "forceInput": true
+          }
+        ],
+        "context": [
+          "STRING",
+          {
+            "multiline": true
+          }
+        ]
+      }
+    },
+    "input_order": {
+      "required": ["text", "context"]
+    },
+    "output": ["STRING"],
+    "output_name": ["text"],
+    "output_is_list": [false],
+    "output_node": false
+  },
+  "rag_llm.llm": {
+    "name": "rag_llm.llm",
+    "category": "RAG",
+    "display_name": "LLM",
+    "description": "",
+    "python_module": "custom_nodes.rag_llm.llm",
+    "input": {
+      "required": {
+        "text1": ["STRING", { "forceInput": true }],
+        "text2": ["STRING", { "forceInput": true }],
+        "text3": ["STRING", { "forceInput": true }]
+      }
+    },
+    "input_order": {
+      "required": ["text1", "text2", "text3"]
+    },
+    "output": ["STRING"],
+    "output_name": ["report"],
+    "output_is_list": [false],
+    "output_node": false
+  },
+  "rag_llm.history": {
+    "name": "rag_llm.history",
+    "category": "RAG",
+    "display_name": "Report History",
+    "description": "Report history.",
+    "python_module": "custom_nodes.rag_llm.history",
+    "input": {
+      "required": {
+        "report": ["STRING", { "forceInput": true }]
+      }
+    },
+    "input_order": {
+      "required": ["report"]
+    },
+    "output": ["STRING"],
+    "output_name": ["history"],
+    "output_is_list": [false],
+    "output_node": false
+  },
+
   "input.2d": {
     "name": "input.2d",
     "category": "input",
