@@ -1054,6 +1054,7 @@ export class ComfyApp {
       // Dragging from Chrome->Firefox there is a file but its a bmp, so ignore that
       if (
         event.dataTransfer.files.length &&
+        event.dataTransfer.files[0].type &&
         event.dataTransfer.files[0].type !== 'image/bmp'
       ) {
         await this.handleFile(event.dataTransfer.files[0])
