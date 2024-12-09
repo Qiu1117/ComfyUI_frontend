@@ -281,6 +281,17 @@ onMounted(() => {
     name: 'PMT.CustomExtension',
 
     async nodeCreated(node) {
+      if (
+        node?.widgets?.findIndex((w) => {
+          return w.type === 'customtext' && w.inputEl?.type === 'textarea'
+        }) !== -1
+      ) {
+        requestAnimationFrame(() => {
+          node.setSize([...node.size])
+          node.setDirtyCanvas(true)
+        })
+      }
+
       if (node?.comfyClass === 'input.2d') {
         const _onMouseEnter = node.onMouseEnter
         node.onMouseEnter = function (e) {
