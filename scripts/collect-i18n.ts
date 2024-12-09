@@ -5,6 +5,8 @@ import { SERVER_CONFIG_ITEMS } from '../src/constants/serverConfig'
 import { formatCamelCase, normalizeI18nKey } from '../src/utils/formatUtil'
 import type { ComfyCommandImpl } from '../src/stores/commandStore'
 import type { FormItem, SettingParams } from '../src/types/settingTypes'
+import type { ComfyApi } from '../src/scripts/api'
+import type { ComfyNodeDef } from '../src/types/apiTypes'
 
 const localePath = './src/locales/en.json'
 const extractMenuCommandLocaleStrings = (): Set<string> => {
@@ -27,6 +29,8 @@ test('collect-i18n', async ({ comfyPage }) => {
   })
 
   const locale = JSON.parse(fs.readFileSync(localePath, 'utf-8'))
+
+  // Commands
   const menuLabels = extractMenuCommandLocaleStrings()
   const commandMenuLabels = new Set(
     commands.map((command) => command.menubarLabel ?? command.label ?? '')
@@ -38,6 +42,7 @@ test('collect-i18n', async ({ comfyPage }) => {
     Array.from(allLabels).map((label) => [normalizeI18nKey(label), label])
   )
 
+  // Settings
   const settings = await comfyPage.page.evaluate(() => {
     const workspace = window['app'].extensionManager
     const settings = workspace.setting.settings as Record<string, SettingParams>
@@ -72,6 +77,7 @@ test('collect-i18n', async ({ comfyPage }) => {
       ])
   )
 
+  // Server Configs
   const allServerConfigsLocale = Object.fromEntries(
     SERVER_CONFIG_ITEMS.map((config) => [
       normalizeI18nKey(config.id),
@@ -91,6 +97,32 @@ test('collect-i18n', async ({ comfyPage }) => {
     ])
   )
 
+  // Node Definitions
+  const nodeDefs = (await comfyPage.page.evaluate(async () => {
+    const api = window['app'].api as ComfyApi
+    return await api.getNodeDefs()
+  })) as Record<string, ComfyNodeDef>
+
+  const allNodeDefsLocale = Object.fromEntries(
+    Object.values(nodeDefs)
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((nodeDef) => [
+        normalizeI18nKey(nodeDef.name),
+        {
+          display_name: nodeDef.display_name ?? nodeDef.name,
+          description: nodeDef.description || undefined
+        }
+      ])
+  )
+
+  const allNodeCategoriesLocale = Object.fromEntries(
+    Object.values(nodeDefs).flatMap((nodeDef) =>
+      nodeDef.category
+        .split('/')
+        .map((category) => [normalizeI18nKey(category), category])
+    )
+  )
+
   fs.writeFileSync(
     localePath,
     JSON.stringify(
@@ -105,7 +137,9 @@ test('collect-i18n', async ({ comfyPage }) => {
           ...allSettingCategoriesLocale
         },
         serverConfigItems: allServerConfigsLocale,
-        serverConfigCategories: allServerConfigCategoriesLocale
+        serverConfigCategories: allServerConfigCategoriesLocale,
+        nodeDefs: allNodeDefsLocale,
+        nodeCategories: allNodeCategoriesLocale
       },
       null,
       2

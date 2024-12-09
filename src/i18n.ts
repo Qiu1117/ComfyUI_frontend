@@ -3,6 +3,7 @@ import en from './locales/en.json'
 import zh from './locales/zh.json'
 import ru from './locales/ru.json'
 import ja from './locales/ja.json'
+import ko from './locales/ko.json'
 
 export const i18n = createI18n({
   // Must set `false`, as Vue I18n Legacy API is for Vue 2
@@ -13,9 +14,20 @@ export const i18n = createI18n({
     en,
     zh,
     ru,
-    ja
+    ja,
+    ko
   }
 })
 
-/** Convenience shorthand: i18n.global should be . */
-export const { t } = i18n.global
+/** Convenience shorthand: i18n.global */
+export const { t, te } = i18n.global
+
+/**
+ * Safe translation function that returns the fallback message if the key is not found.
+ *
+ * @param key - The key to translate.
+ * @param fallbackMessage - The fallback message to use if the key is not found.
+ */
+export function st(key: string, fallbackMessage: string) {
+  return te(key) ? t(key) : fallbackMessage
+}
