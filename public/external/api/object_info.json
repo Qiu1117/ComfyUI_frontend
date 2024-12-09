@@ -1,4 +1,37 @@
 {
+  "rag_llm.llm": {
+    "name": "rag_llm.llm",
+    "category": "RAG",
+    "display_name": "LLM",
+    "description": "",
+    "python_module": "custom_nodes.rag_llm.llm",
+    "input": {
+      "required": {
+        "model": [
+          [
+            "mod1",
+            "mod2"
+          ],
+          {
+            "default": "mod1"
+          }
+        ]
+      },
+      "optional": {
+        "text1": ["STRING", { "forceInput": true }],
+        "text2": ["STRING", { "forceInput": true }],
+        "text3": ["STRING", { "forceInput": true }]
+      }
+    },
+    "input_order": {
+      "required": ["model"],
+      "optional": ["text1", "text2", "text3"]
+    },
+    "output": ["STRING"],
+    "output_name": ["messages"],
+    "output_is_list": [false],
+    "output_node": false
+  },
   "rag_llm.load_dicom": {
     "name": "rag_llm.load_dicom",
     "category": "RAG",
@@ -90,7 +123,7 @@
     "python_module": "custom_nodes.rag_llm.prompt",
     "input": {
       "required": {
-        "prompt": [
+        "query": [
           "STRING",
           {
             "multiline": true
@@ -107,20 +140,20 @@
       }
     },
     "input_order": {
-      "required": ["prompt"],
+      "required": ["query"],
       "optional": ["history"]
     },
     "output": ["STRING"],
-    "output_name": ["text"],
+    "output_name": ["prompt"],
     "output_is_list": [false],
     "output_node": false
   },
-  "rag_llm.context": {
-    "name": "rag_llm.context",
+  "rag_llm.add_info": {
+    "name": "rag_llm.add_info",
     "category": "RAG",
-    "display_name": "Context",
-    "description": "Context",
-    "python_module": "custom_nodes.rag_llm.context",
+    "display_name": "Add Info",
+    "description": "Add additional context info to the input text.",
+    "python_module": "custom_nodes.rag_llm.add_info",
     "input": {
       "required": {
         "text": [
@@ -129,7 +162,7 @@
             "forceInput": true
           }
         ],
-        "context": [
+        "info": [
           "STRING",
           {
             "multiline": true
@@ -138,50 +171,10 @@
       }
     },
     "input_order": {
-      "required": ["text", "context"]
+      "required": ["text", "info"]
     },
     "output": ["STRING"],
     "output_name": ["text"],
-    "output_is_list": [false],
-    "output_node": false
-  },
-  "rag_llm.llm": {
-    "name": "rag_llm.llm",
-    "category": "RAG",
-    "display_name": "LLM",
-    "description": "",
-    "python_module": "custom_nodes.rag_llm.llm",
-    "input": {
-      "required": {
-        "text1": ["STRING", { "forceInput": true }],
-        "text2": ["STRING", { "forceInput": true }],
-        "text3": ["STRING", { "forceInput": true }]
-      }
-    },
-    "input_order": {
-      "required": ["text1", "text2", "text3"]
-    },
-    "output": ["STRING"],
-    "output_name": ["report"],
-    "output_is_list": [false],
-    "output_node": false
-  },
-  "rag_llm.history": {
-    "name": "rag_llm.history",
-    "category": "RAG",
-    "display_name": "Report History",
-    "description": "Report history.",
-    "python_module": "custom_nodes.rag_llm.history",
-    "input": {
-      "required": {
-        "report": ["STRING", { "forceInput": true }]
-      }
-    },
-    "input_order": {
-      "required": ["report"]
-    },
-    "output": ["STRING"],
-    "output_name": ["history"],
     "output_is_list": [false],
     "output_node": false
   },

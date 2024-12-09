@@ -203,7 +203,12 @@ const volViewUrl = computed(() => {
   return origin + pathname + search
 })
 
+const wf = `
+{"last_node_id":3,"last_link_id":2,"nodes":[{"id":1,"type":"rag_llm.prompt","pos":[94.00003051757812,253.33334350585938],"size":[400,200],"flags":{},"order":0,"mode":0,"inputs":[{"name":"history","type":"STRING","link":null,"widget":{"name":"history"},"shape":7}],"outputs":[{"name":"prompt","type":"STRING","links":[1],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.prompt"},"widgets_values":["give some keywords",""],"pmt_fields":{"type":"rag_llm","plugin_name":"rag_llm","function_name":"prompt","inputs":[{}],"args":{"query":"give some keywords","history":""},"outputs":[{"oid":[],"path":[]}],"status":"pending"}},{"id":2,"type":"rag_llm.add_info","pos":[605.3333129882812,191.33335876464844],"size":[400,200],"flags":{},"order":1,"mode":0,"inputs":[{"name":"text","type":"STRING","link":1,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[2],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.add_info"},"widgets_values":["","provide additional context info"],"pmt_fields":{"type":"rag_llm","plugin_name":"rag_llm","function_name":"add_info","inputs":[{}],"args":{"text":"","info":"provide additional context info"},"outputs":[{"oid":[],"path":[]}],"status":"pending"}},{"id":3,"type":"rag_llm.llm","pos":[1142.666748046875,226.66671752929688],"size":[315,230],"flags":{},"order":2,"mode":0,"inputs":[{"name":"text1","type":"STRING","link":2,"widget":{"name":"text1"},"shape":7},{"name":"text2","type":"STRING","link":null,"widget":{"name":"text2"},"shape":7},{"name":"text3","type":"STRING","link":null,"widget":{"name":"text3"},"shape":7}],"outputs":[{"name":"messages","type":"STRING","links":null}],"properties":{"Node name for S&R":"rag_llm.llm"},"widgets_values":["mod1","","","",null],"pmt_fields":{"type":"rag_llm","plugin_name":"rag_llm","function_name":"llm","inputs":[{},{},{}],"args":{"model":"mod1","text1":"","text2":"","text3":""},"outputs":[{"oid":[],"path":[]}],"status":"pending"}}],"links":[[1,1,0,2,0,"STRING"],[2,2,0,3,0,"STRING"]],"groups":[],"config":{},"extra":{"ds":{"scale":0.9211033147315799,"offset":[146.61108907063795,201.98136767266044]}},"version":0.4}
+`
 onMounted(() => {
+  initNameAndColor()
+
   Object.keys(SYSTEM_NODE_DEFS).forEach((type) => {
     LiteGraph.unregisterNodeType(type)
   })
@@ -339,6 +344,21 @@ onMounted(() => {
         // const widget = node.addDOMWidget('pmt_volview_embed', 'volview-embed', div, {})
         // console.log(widget)
       }
+
+      if (node?.comfyClass === 'rag_llm.llm') {
+        requestAnimationFrame(() => {
+          node.setSize([node.size[0], node.size[1] + 100])
+          node.setDirtyCanvas(true)
+        })
+        const div = document.createElement('div')
+        div.classList.add('relative', 'overflow-hidden')
+        div.innerHTML = `
+          <div class="absolute inset-0 overflow-auto text-xs bg-neutral-800 p-3 border border-solid border-black" style="--tw-border-opacity: 0.3">
+            <div></div>
+          </div>
+        `
+        const widget = node.addDOMWidget('llm_output', 'llm-output', div, {})
+      }
     },
 
     getCustomWidgets(app) {
@@ -468,7 +488,7 @@ onMounted(() => {
 
   comfyApp.canvasEl.addEventListener('drop', onDrop)
 
-  initNameAndColor()
+  comfyApp.graph.configure(JSON.parse(wf))
 })
 
 onUnmounted(() => {
