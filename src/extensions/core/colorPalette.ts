@@ -7,12 +7,37 @@ import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
 
 // Manage color palettes
 
+export const datatypeColor = {
+  BOOLEAN: '#F77', // red
+  INT: '#7F7', // green
+  FLOAT: '#7F7', // green
+  STRING: '#77F', // purple
+
+  '1D': '#facc15', // yellow
+  DICT: '#fb923c', // orange
+  TABLE: '#60a5fa', // blue
+
+  '2D': '#2dd4bf', // teal
+  DICOM: '#0d9488', // teal
+  '3D': '#f472b6', // pink
+  NIFTI: '#db2777' // pink
+}
+
+export const nodeStatusColor = {
+  pending: '#ff0', // yellow
+  current: '#3b82f6', // blue
+  done: '#0f0', // green
+  error: '#f00' // red
+}
+
 const colorPalettes: ColorPalettes = {
   dark: {
     id: 'dark',
     name: 'Dark (Default)',
     colors: {
       node_slot: {
+        ...datatypeColor,
+
         CLIP: '#FFD500', // bright yellow
         CLIP_VISION: '#A8DADC', // light blue-gray
         CLIP_VISION_OUTPUT: '#ad7452', // rusty brown-orange
