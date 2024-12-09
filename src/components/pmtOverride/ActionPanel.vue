@@ -442,7 +442,7 @@ onMounted(() => {
             style: 'display: none',
             onchange: async () => {
               if (fileInput.files.length) {
-                const ext = fileInput.files[0].name.split('.').pop()
+                const ext = fileInput.files[0].name.split('.').slice(1).pop()
                 if (!ext || ext === 'dcm') {
                   await uploadFile(fileInput.files[0], true)
                 }
@@ -471,7 +471,7 @@ onMounted(() => {
             console.log('onDragDrop called')
             let handled = false
             for (const file of e.dataTransfer.files) {
-              const ext = file.name.split('.').pop()
+              const ext = file.name.split('.').slice(1).pop()
               if (file.type === 'application/dicom' || !ext || ext === 'dcm') {
                 uploadFile(file, !handled)
                 handled = true
