@@ -20,7 +20,9 @@ export const datatypeColor = {
   '2D': '#2dd4bf', // teal
   DICOM: '#0d9488', // teal
   '3D': '#f472b6', // pink
-  NIFTI: '#db2777' // pink
+  NIFTI: '#db2777', // pink
+
+  LOOP: '#be123c' // rose
 }
 
 export const nodeStatusColor = {
