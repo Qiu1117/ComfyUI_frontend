@@ -378,8 +378,9 @@ onMounted(() => {
         const div = document.createElement('div')
         div.classList.add('relative', 'overflow-hidden')
         div.innerHTML = `
-          <div class="absolute inset-0 overflow-hidden">
-            <textarea class="w-full h-full resize-none border-none bg-neutral-800 text-xs" placeholder="output messages" readonly></textarea>
+          <div class="absolute inset-0 overflow-hidden flex flex-col" x-data="{ open: true }">
+            <button class="uppercase mb-2" @click="open = !open" x-text="open ? ${"'Hide Output'"} : ${"'Show Output'"}"></button>
+            <textarea x-show="open" class="w-full h-full resize-none border-none bg-neutral-800 text-xs" placeholder="output messages" readonly></textarea>
           </div>
         `
         const widget = node.addDOMWidget('llm_output', 'llm-output', div, {})
