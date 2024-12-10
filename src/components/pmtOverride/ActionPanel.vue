@@ -197,6 +197,35 @@ const volViewUrl = computed(() => {
   return origin + pathname + search
 })
 
+const driverObjs = []
+function highlight(element, popover = {}, config, step) {
+  const driver = window.driver?.js?.driver
+  if (!driver) return
+
+  const driverObj = driver(config)
+
+  if (typeof element === 'string') {
+    element = document.querySelector(element)
+  }
+  if (!element || !element.offsetParent) {
+    element = undefined
+  }
+  if (step !== undefined) {
+    driverObj.drive(step)
+  } else {
+    driverObj.highlight({
+      element,
+      popover: {
+        title: popover.title,
+        description: popover.description,
+        side: popover.side
+      }
+    })
+  }
+
+  return driverObj
+}
+
 const wf = `
 {"last_node_id":3,"last_link_id":3,"nodes":[{"id":1,"type":"rag_llm.prompt","pos":[104.00006103515625,302.6666564941406],"size":[400,200],"flags":{},"order":0,"mode":0,"inputs":[{"name":"history","type":"STRING","link":null,"widget":{"name":"history"},"shape":7}],"outputs":[{"name":"prompt","type":"STRING","links":[1],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.prompt"},"widgets_values":["some keywords...",""],"pmt_fields":{"type":"rag_llm","plugin_name":"rag_llm","function_name":"prompt","inputs":[{}],"args":{"query":"some keywords...","history":""},"outputs":[{"oid":[],"path":[]}],"status":"pending"}},{"id":2,"type":"rag_llm.add_info","pos":[596.666748046875,121.33334350585938],"size":[400,200],"flags":{},"order":1,"mode":0,"inputs":[{"name":"text","type":"STRING","link":1,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[2],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.add_info"},"widgets_values":["","additional context info..."],"pmt_fields":{"type":"rag_llm","plugin_name":"rag_llm","function_name":"add_info","inputs":[{}],"args":{"text":"","info":"additional context info..."},"outputs":[{"oid":[],"path":[]}],"status":"pending"}},{"id":3,"type":"rag_llm.llm","pos":[1098.666748046875,406],"size":[315,200],"flags":{},"order":2,"mode":0,"inputs":[{"name":"text1","type":"STRING","link":2,"widget":{"name":"text1"},"shape":7},{"name":"text2","type":"STRING","link":null,"widget":{"name":"text2"},"shape":7},{"name":"text3","type":"STRING","link":null,"widget":{"name":"text3"},"shape":7}],"outputs":[{"name":"messages","type":"STRING","links":[],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.llm"},"widgets_values":["mod1","","","",null],"pmt_fields":{"type":"rag_llm","plugin_name":"rag_llm","function_name":"llm","inputs":[{},{},{}],"args":{"model":"mod1","text1":"","text2":"","text3":""},"outputs":[{"oid":[],"path":[]}],"status":"pending"}}],"links":[[1,1,0,2,0,"STRING"],[2,2,0,3,0,"STRING"]],"groups":[],"config":{},"extra":{"ds":{"scale":0.9585108903226719,"offset":[127.61105346679676,16.483065755192342]}},"version":0.4}
 `
@@ -489,10 +518,23 @@ onMounted(() => {
   comfyApp.canvasEl.addEventListener('drop', onDrop)
 
   comfyApp.graph.configure(JSON.parse(wf))
+
+  window['driverObjs'] = []
+  window['driverHighlight'] = (...args) => {
+    window.driverObjs.push(highlight(...args))
+    return window.driverObjs
+  }
 })
 
 onUnmounted(() => {
   comfyApp.canvasEl.removeEventListener('drop', onDrop)
+
+  if (window.driverObjs?.length) {
+    window.driverObjs.forEach((driverObj, i, arr) => {
+      driverObj.destroy()
+      arr.splice(i, 1)
+    })
+  }
 })
 
 function onDrop(e) {
