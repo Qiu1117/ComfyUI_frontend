@@ -64,7 +64,7 @@
         ]
       },
       "optional": {
-        "separator": [
+        "separators": [
           "STRING",
           {
             "multiline": false
@@ -74,7 +74,7 @@
     },
     "input_order": {
       "required": ["text", "type", "chunk_size", "chunk_overlap"],
-      "optional": ["separator"]
+      "optional": ["separators"]
     },
     "output": ["STRING"],
     "output_name": ["text"],
@@ -207,14 +207,14 @@
         "system": [
           "STRING",
           {
-            "default": "You are a helpful assistant. Answer all questions to the best of your ability in {language}.",
+            "default": "You are a document retrieval evaluator that's responsible for checking the relevancy of a retrieved document to the user's question.\n\nIf the document contains keyword(s) or semantic meaning related to the question, grade it as relevant.\n\nOutput a binary score 'yes' or 'no' to indicate whether the document is relevant to the question.",
             "multiline": true
           }
         ],
         "human": [
           "STRING",
           {
-            "default": "{messages}",
+            "default": "Retrieved document:\n\n{document}\n\nUser question: {question}",
             "multiline": true
           }
         ]
@@ -262,14 +262,14 @@
         "system": [
           "STRING",
           {
-            "default": "You are a helpful assistant. Answer all questions to the best of your ability in {language}.",
+            "default": "You are a question re-writer that converts an input question to a better version that is optimized for web search.\n\nLook at the input and try to reason about the underlying semantic intent / meaning.",
             "multiline": true
           }
         ],
         "human": [
           "STRING",
           {
-            "default": "{messages}",
+            "default": "Here is the initial question:\n\n{question}\n\nFormulate an improved question.",
             "multiline": true
           }
         ]

@@ -3,7 +3,7 @@
     <Panel id="pmt-action-panel">
       <ButtonGroup>
         <Button
-          v-if="!running"
+          v-if="stoppable ? !running : true"
           class="btn-run"
           size="small"
           :aria-label="'Run'"
@@ -14,7 +14,9 @@
           :loading="running"
           :disabled="saving"
           @click="run"
-          @contextmenu.prevent="!saving && !running && runMenu.show($event)"
+          @contextmenu.prevent="
+            !!pipelineId && !saving && !running && runMenu.show($event)
+          "
         />
         <Button
           v-else
@@ -29,6 +31,7 @@
         />
         <Menu ref="runMenu" id="btn-run-menu" :model="runMenuItems" popup />
         <Button
+          v-if="!!pipelineId"
           class="btn-pip"
           size="small"
           :label="pipeline.name"
@@ -135,7 +138,7 @@
 
 <script setup>
 import { shallowRef, ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useBrowserLocation, useElementHover } from '@vueuse/core'
 import Panel from 'primevue/panel'
 import Menu from 'primevue/menu'
@@ -157,8 +160,10 @@ import { nodeStatusColor } from '@/extensions/core/colorPalette'
 
 const nodeDefStore = useNodeDefStore()
 
+const route = useRoute()
 const router = useRouter()
 
+const { pipelineId, preset } = route.query
 const pipeline = shallowRef({
   name: 'New Pipeline',
   color: '#FFFFFF'
@@ -226,12 +231,9 @@ function highlight(element, popover = {}, config, step) {
   return driverObj
 }
 
-const wf0 = `
-{"last_node_id":4,"last_link_id":4,"nodes":[{"id":1,"type":"rag_llm.prompt","pos":[78.63365173339844,309.98504638671875],"size":[400,218],"flags":{},"order":0,"mode":0,"inputs":[{"name":"history","type":"LOOP","link":4,"shape":7},{"name":"text","type":"STRING","link":null,"widget":{"name":"text"}}],"outputs":[{"name":"prompt","type":"STRING","links":[1],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.prompt"},"widgets_values":["","rlm/rag-prompt","hub","","You are a helpful assistant. Answer all questions to the best of your ability in {language}.","{messages}"],"pmt_fields":{"args":{}}},{"id":2,"type":"rag_llm.model","pos":[518.658935546875,333.29071044921875],"size":[315,106],"flags":{},"order":1,"mode":0,"inputs":[{"name":"text","type":"STRING","link":1,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[2],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.model"},"widgets_values":["","gpt-4o-mini",0.5],"pmt_fields":{"args":{}}},{"id":3,"type":"rag_llm.response","pos":[887.1976318359375,139.90625],"size":[315,126],"flags":{},"order":2,"mode":0,"inputs":[{"name":"text","type":"STRING","link":2,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[3],"slot_index":0},{"name":"history","type":"LOOP","links":[4],"slot_index":1}],"properties":{"Node name for S&R":"rag_llm.response"},"widgets_values":["",true,10000],"pmt_fields":{"args":{}}},{"id":4,"type":"rag_llm.preview_text","pos":[1241.750732421875,244.24945068359375],"size":[315,200],"flags":{},"order":3,"mode":0,"inputs":[{"name":"text","type":"STRING","link":3,"widget":{"name":"text"}}],"outputs":[],"properties":{"Node name for S&R":"rag_llm.preview_text"},"widgets_values":["",null],"pmt_fields":{"args":{}}}],"links":[[1,1,0,2,0,"STRING"],[2,2,0,3,0,"STRING"],[3,3,0,4,0,"STRING"],[4,3,1,1,0,"LOOP"]],"groups":[],"config":{},"extra":{"ds":{"scale":1,"offset":[0,0]}},"version":0.4}
-`
-const wf1 = `
-{"last_node_id":12,"last_link_id":13,"nodes":[{"id":1,"type":"rag_llm.knowledge","pos":[38.30461883544922,243.16714477539062],"size":[400,200],"flags":{},"order":0,"mode":0,"inputs":[],"outputs":[{"name":"kownledge","type":"STRING","links":[1],"slot_index":0},{"name":"log","type":"STRING","links":null}],"properties":{"Node name for S&R":"rag_llm.knowledge"},"widgets_values":["web",""],"pmt_fields":{"args":{}}},{"id":2,"type":"rag_llm.text_splitter","pos":[496.15240478515625,204.68692016601562],"size":[315,154],"flags":{},"order":1,"mode":0,"inputs":[{"name":"text","type":"STRING","link":1,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[2],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.text_splitter"},"widgets_values":["","token",350,0,""],"pmt_fields":{"args":{}}},{"id":3,"type":"rag_llm.vector_db","pos":[856.2261962890625,233.85108947753906],"size":[315,130],"flags":{},"order":2,"mode":0,"inputs":[{"name":"text","type":"STRING","link":2,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[3],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.vector_db"},"widgets_values":["","chroma","openai",3],"pmt_fields":{"args":{}}},{"id":4,"type":"rag_llm.prompt.grade_docs","pos":[94.70704650878906,548.3720703125],"size":[400,238],"flags":{},"order":3,"mode":0,"inputs":[{"name":"history","type":"LOOP","link":null,"shape":7},{"name":"text","type":"STRING","link":3,"widget":{"name":"text"}},{"name":"optional_text","type":"STRING","link":null,"widget":{"name":"optional_text"},"shape":7}],"outputs":[{"name":"prompt","type":"STRING","links":[4],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.prompt.grade_docs"},"widgets_values":["","rlm/rag-prompt","hub","","You are a helpful assistant. Answer all questions to the best of your ability in {language}.","{messages}",""],"pmt_fields":{"args":{}}},{"id":5,"type":"rag_llm.model.grade_docs","pos":[533.1812744140625,534.9373779296875],"size":[315,106],"flags":{},"order":4,"mode":0,"inputs":[{"name":"text","type":"STRING","link":4,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[5,9],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.model.grade_docs"},"widgets_values":["","gpt-4o-mini",0.5],"pmt_fields":{"args":{}}},{"id":6,"type":"rag_llm.prompt.transform_query","pos":[943.4075927734375,563.49560546875],"size":[400,238],"flags":{},"order":5,"mode":0,"inputs":[{"name":"history","type":"LOOP","link":null,"shape":7},{"name":"text","type":"STRING","link":5,"widget":{"name":"text"}},{"name":"optional_text","type":"STRING","link":null,"widget":{"name":"optional_text"},"shape":7}],"outputs":[{"name":"prompt","type":"STRING","links":[6],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.prompt.transform_query"},"widgets_values":["","rlm/rag-prompt","hub","","You are a helpful assistant. Answer all questions to the best of your ability in {language}.","{messages}",""],"pmt_fields":{"args":{}}},{"id":7,"type":"rag_llm.model.transform_query","pos":[1398.422607421875,668.321044921875],"size":[315,106],"flags":{},"order":6,"mode":0,"inputs":[{"name":"text","type":"STRING","link":6,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[7],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.model.transform_query"},"widgets_values":["","gpt-4o-mini",0.5],"pmt_fields":{"args":{}}},{"id":8,"type":"rag_llm.web_search","pos":[1771.3504638671875,616.9405517578125],"size":[315,82],"flags":{},"order":7,"mode":0,"inputs":[{"name":"text","type":"STRING","link":7,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[8],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.web_search"},"widgets_values":["",3],"pmt_fields":{"args":{}}},{"id":9,"type":"rag_llm.prompt","pos":[1361.1785888671875,266.9404296875],"size":[400,238],"flags":{},"order":8,"mode":0,"inputs":[{"name":"history","type":"LOOP","link":13,"shape":7},{"name":"text","type":"STRING","link":9,"widget":{"name":"text"}},{"name":"optional_text","type":"STRING","link":8,"widget":{"name":"optional_text"},"shape":7}],"outputs":[{"name":"prompt","type":"STRING","links":[10],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.prompt"},"widgets_values":["","rlm/rag-prompt","hub","","You are a helpful assistant. Answer all questions to the best of your ability in {language}.","{messages}",""],"pmt_fields":{"args":{}}},{"id":10,"type":"rag_llm.model","pos":[1829.223388671875,350.2162170410156],"size":[315,106],"flags":{},"order":9,"mode":0,"inputs":[{"name":"text","type":"STRING","link":10,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[11],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.model"},"widgets_values":["","gpt-4o-mini",0.5],"pmt_fields":{"args":{}}},{"id":11,"type":"rag_llm.response","pos":[2224.99951171875,88.20669555664062],"size":[315,126],"flags":{},"order":10,"mode":0,"inputs":[{"name":"text","type":"STRING","link":11,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[12],"slot_index":0},{"name":"history","type":"LOOP","links":[13],"slot_index":1}],"properties":{"Node name for S&R":"rag_llm.response"},"widgets_values":["",true,10000],"pmt_fields":{"args":{}}},{"id":12,"type":"rag_llm.preview_text","pos":[2604.900146484375,284.6029357910156],"size":[315,300],"flags":{},"order":11,"mode":0,"inputs":[{"name":"text","type":"STRING","link":12,"widget":{"name":"text"}}],"outputs":[],"properties":{"Node name for S&R":"rag_llm.preview_text"},"widgets_values":["",null],"pmt_fields":{"args":{}}}],"links":[[1,1,0,2,0,"STRING"],[2,2,0,3,0,"STRING"],[3,3,0,4,1,"STRING"],[4,4,0,5,0,"STRING"],[5,5,0,6,1,"STRING"],[6,6,0,7,0,"STRING"],[7,7,0,8,0,"STRING"],[8,8,0,9,2,"STRING"],[9,5,0,9,1,"STRING"],[10,9,0,10,0,"STRING"],[11,10,0,11,0,"STRING"],[12,11,0,12,0,"STRING"],[13,11,1,9,0,"LOOP"]],"groups":[],"config":{},"extra":{"ds":{"scale":1,"offset":[0,0]}},"version":0.4}
-`
+const wf0 =
+  '{"last_node_id":4,"last_link_id":4,"nodes":[{"id":1,"type":"rag_llm.prompt","pos":[83.33331298828125,302.6666564941406],"size":[400,388],"flags":{},"order":0,"mode":0,"inputs":[{"name":"history","type":"LOOP","link":4,"shape":7},{"name":"text","type":"STRING","link":null,"widget":{"name":"text"}},{"name":"optional_text","type":"STRING","link":null,"widget":{"name":"optional_text"},"shape":7}],"outputs":[{"name":"prompt","type":"STRING","links":[1],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.prompt"},"widgets_values":["","rlm/rag-prompt","hub","","You are a helpful assistant. Answer all questions to the best of your ability in {language}.","{messages}","",null],"pmt_fields":{"args":{"source":"rlm/rag-prompt","type":"hub","hub_link":"","system":"You are a helpful assistant. Answer all questions to the best of your ability in {language}.","human":"{messages}","prompt_template_vars":{"language":"","messages":""}},"status":""}},{"id":2,"type":"rag_llm.model","pos":[539.3333740234375,351.33331298828125],"size":[315,106],"flags":{},"order":1,"mode":0,"inputs":[{"name":"text","type":"STRING","link":1,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[2],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.model"},"widgets_values":["","gpt-4o-mini",0.5],"pmt_fields":{"args":{"model_name":"gpt-4o-mini","temperature":0.5},"status":""}},{"id":3,"type":"rag_llm.response","pos":[925.333251953125,118.00001525878906],"size":[315,126],"flags":{},"order":2,"mode":0,"inputs":[{"name":"text","type":"STRING","link":2,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[3],"slot_index":0},{"name":"history","type":"LOOP","links":[4],"slot_index":1}],"properties":{"Node name for S&R":"rag_llm.response"},"widgets_values":["",true,10000],"pmt_fields":{"args":{"enable_history":true,"max_tokens":10000},"status":""}},{"id":4,"type":"rag_llm.preview_text","pos":[1283.333251953125,310.00006103515625],"size":[315,200],"flags":{},"order":3,"mode":0,"inputs":[{"name":"text","type":"STRING","link":3,"widget":{"name":"text"}}],"outputs":[],"properties":{"Node name for S&R":"rag_llm.preview_text"},"widgets_values":["",null],"pmt_fields":{"args":{},"status":""}}],"links":[[1,1,0,2,0,"STRING"],[2,2,0,3,0,"STRING"],[3,3,0,4,0,"STRING"],[4,3,1,1,0,"LOOP"]],"groups":[],"config":{},"extra":{"ds":{"scale":1,"offset":[0,0]}},"version":0.4}'
+const wf1 = `{"last_node_id":12,"last_link_id":13,"nodes":[{"id":1,"type":"rag_llm.knowledge","pos":[39.63794708251953,155.1671142578125],"size":[400,200],"flags":{},"order":0,"mode":0,"inputs":[],"outputs":[{"name":"kownledge","type":"STRING","links":[1],"slot_index":0},{"name":"log","type":"STRING","links":null}],"properties":{"Node name for S&R":"rag_llm.knowledge"},"widgets_values":["web",""],"pmt_fields":{"args":{"type":"web","sources":""},"status":""}},{"id":2,"type":"rag_llm.text_splitter","pos":[497.4857177734375,116.6868896484375],"size":[315,154],"flags":{},"order":1,"mode":0,"inputs":[{"name":"text","type":"STRING","link":1,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[2],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.text_splitter"},"widgets_values":["","token",350,0,""],"pmt_fields":{"args":{"type":"token","chunk_size":350,"chunk_overlap":0,"separators":""},"status":""}},{"id":3,"type":"rag_llm.vector_db","pos":[857.5595703125,145.85105895996094],"size":[315,130],"flags":{},"order":2,"mode":0,"inputs":[{"name":"text","type":"STRING","link":2,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[3],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.vector_db"},"widgets_values":["","chroma","openai",3],"pmt_fields":{"args":{"type":"chroma","embedding_type":"openai","retrieve_num":3},"status":""}},{"id":4,"type":"rag_llm.prompt.grade_docs","pos":[96.04037475585938,460.3721008300781],"size":[402,522.6666259765625],"flags":{},"order":3,"mode":0,"inputs":[{"name":"history","type":"LOOP","link":null,"shape":7},{"name":"text","type":"STRING","link":3,"widget":{"name":"text"}},{"name":"optional_text","type":"STRING","link":null,"widget":{"name":"optional_text"},"shape":7}],"outputs":[{"name":"prompt","type":"STRING","links":[4],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.prompt.grade_docs"},"widgets_values":["","rlm/rag-prompt","hub","","You are a document retrieval evaluator that's responsible for checking the relevancy of a retrieved document to the user's question.\\n\\nIf the document contains keyword(s) or semantic meaning related to the question, grade it as relevant.\\n\\nOutput a binary score 'yes' or 'no' to indicate whether the document is relevant to the question.","Retrieved document:\\n\\n{document}\\n\\nUser question: {question}","",null],"pmt_fields":{"args":{"source":"rlm/rag-prompt","type":"hub","hub_link":"","system":"You are a document retrieval evaluator that's responsible for checking the relevancy of a retrieved document to the user's question.\\n\\nIf the document contains keyword(s) or semantic meaning related to the question, grade it as relevant.\\n\\nOutput a binary score 'yes' or 'no' to indicate whether the document is relevant to the question.","human":"Retrieved document:\\n\\n{document}\\n\\nUser question: {question}","prompt_template_vars":{"document":"","question":""}},"status":""}},{"id":5,"type":"rag_llm.model.grade_docs","pos":[534.5146484375,446.9374084472656],"size":[315,106],"flags":{},"order":4,"mode":0,"inputs":[{"name":"text","type":"STRING","link":4,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[5,9],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.model.grade_docs"},"widgets_values":["","gpt-4o-mini",0.5],"pmt_fields":{"args":{"model_name":"gpt-4o-mini","temperature":0.5},"status":""}},{"id":6,"type":"rag_llm.prompt.transform_query","pos":[937.4075927734375,506.8289489746094],"size":[365.3333740234375,420.66668701171875],"flags":{},"order":5,"mode":0,"inputs":[{"name":"history","type":"LOOP","link":null,"shape":7},{"name":"text","type":"STRING","link":5,"widget":{"name":"text"}},{"name":"optional_text","type":"STRING","link":null,"widget":{"name":"optional_text"},"shape":7}],"outputs":[{"name":"prompt","type":"STRING","links":[6],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.prompt.transform_query"},"widgets_values":["","rlm/rag-prompt","hub","","You are a question re-writer that converts an input question to a better version that is optimized for web search.\\n\\nLook at the input and try to reason about the underlying semantic intent / meaning.","Here is the initial question:\\n\\n{question}\\n\\nFormulate an improved question.","",null],"pmt_fields":{"args":{"source":"rlm/rag-prompt","type":"hub","hub_link":"","system":"You are a question re-writer that converts an input question to a better version that is optimized for web search.\\n\\nLook at the input and try to reason about the underlying semantic intent / meaning.","human":"Here is the initial question:\\n\\n{question}\\n\\nFormulate an improved question.","prompt_template_vars":{"question":""}},"status":""}},{"id":7,"type":"rag_llm.model.transform_query","pos":[1380,770],"size":[315,106],"flags":{},"order":6,"mode":0,"inputs":[{"name":"text","type":"STRING","link":6,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[7],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.model.transform_query"},"widgets_values":["","gpt-4o-mini",0.5],"pmt_fields":{"args":{"model_name":"gpt-4o-mini","temperature":0.5},"status":""}},{"id":8,"type":"rag_llm.web_search","pos":[1800,680],"size":[315,82],"flags":{},"order":7,"mode":0,"inputs":[{"name":"text","type":"STRING","link":7,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[8],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.web_search"},"widgets_values":["",3],"pmt_fields":{"args":{"k":3},"status":""}},{"id":9,"type":"rag_llm.prompt","pos":[1371.178466796875,186.27374267578125],"size":[398,398.6666259765625],"flags":{},"order":8,"mode":0,"inputs":[{"name":"history","type":"LOOP","link":13,"shape":7},{"name":"text","type":"STRING","link":9,"widget":{"name":"text"}},{"name":"optional_text","type":"STRING","link":8,"widget":{"name":"optional_text"},"shape":7}],"outputs":[{"name":"prompt","type":"STRING","links":[10],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.prompt"},"widgets_values":["","rlm/rag-prompt","hub","","You are a helpful assistant. Answer all questions to the best of your ability in {language}.","{messages}","",null],"pmt_fields":{"args":{"source":"rlm/rag-prompt","type":"hub","hub_link":"","system":"You are a helpful assistant. Answer all questions to the best of your ability in {language}.","human":"{messages}","prompt_template_vars":{"language":"","messages":""}},"status":""}},{"id":10,"type":"rag_llm.model","pos":[1830.5565185546875,262.2161560058594],"size":[315,106],"flags":{},"order":9,"mode":0,"inputs":[{"name":"text","type":"STRING","link":10,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[11],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.model"},"widgets_values":["","gpt-4o-mini",0.5],"pmt_fields":{"args":{"model_name":"gpt-4o-mini","temperature":0.5},"status":""}},{"id":11,"type":"rag_llm.response","pos":[2226.333251953125,0.2066650390625],"size":[315,126],"flags":{},"order":10,"mode":0,"inputs":[{"name":"text","type":"STRING","link":11,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[12],"slot_index":0},{"name":"history","type":"LOOP","links":[13],"slot_index":1}],"properties":{"Node name for S&R":"rag_llm.response"},"widgets_values":["",true,10000],"pmt_fields":{"args":{"enable_history":true,"max_tokens":10000},"status":""}},{"id":12,"type":"rag_llm.preview_text","pos":[2606.23388671875,196.6029052734375],"size":[350,350],"flags":{},"order":11,"mode":0,"inputs":[{"name":"text","type":"STRING","link":12,"widget":{"name":"text"}}],"outputs":[],"properties":{"Node name for S&R":"rag_llm.preview_text"},"widgets_values":["",null],"pmt_fields":{"args":{},"status":""}}],"links":[[1,1,0,2,0,"STRING"],[2,2,0,3,0,"STRING"],[3,3,0,4,1,"STRING"],[4,4,0,5,0,"STRING"],[5,5,0,6,1,"STRING"],[6,6,0,7,0,"STRING"],[7,7,0,8,0,"STRING"],[8,8,0,9,2,"STRING"],[9,5,0,9,1,"STRING"],[10,9,0,10,0,"STRING"],[11,10,0,11,0,"STRING"],[12,11,0,12,0,"STRING"],[13,11,1,9,0,"LOOP"]],"groups":[],"config":{},"extra":{"ds":{"scale":0.6189824509891663,"offset":[-1660.587636338849,37.30812477331476]}},"version":0.4}`
 
 onMounted(() => {
   initNameAndColor()
@@ -372,6 +374,68 @@ onMounted(() => {
         // console.log(widget)
       }
 
+      if (node?.comfyClass.startsWith('rag_llm.prompt')) {
+        const prompt_template_vars = {}
+        const findVars = (text) => {
+          const regex = /\{([^}]+)\}/g
+          const matches = []
+          let match
+          while ((match = regex.exec(text)) !== null) {
+            if (!matches.includes(match[1])) {
+              matches.push(match[1])
+            }
+          }
+          return matches
+        }
+        const ul = document.createElement('ul')
+        ul.classList.add(
+          'relative',
+          'overflow-auto',
+          'flex',
+          'flex-col',
+          'p-0',
+          'm-0',
+          'text-xs'
+        )
+        const updateVarList = () => {
+          ul.innerHTML = ''
+          Object.values(prompt_template_vars).forEach((vars) => {
+            vars.forEach((v) => {
+              const li = document.createElement('li')
+              li.classList.add('mb-2')
+              li.innerHTML = `
+                <label class="flex items-center">
+                  ${v}: <input name="${v}" class="ml-1" />
+                </label>
+              `
+              ul.appendChild(li)
+            })
+          })
+        }
+        node.widgets.forEach((w) => {
+          if (w.type === 'customtext' && w.inputEl?.type === 'textarea') {
+            w.inputEl.oninput = (e) => {
+              prompt_template_vars[w.name] = findVars(e.target.value)
+              updateVarList()
+            }
+            prompt_template_vars[w.name] = findVars(w.inputEl.value)
+            updateVarList()
+          }
+        })
+        const widget = node.addDOMWidget(
+          'prompt_template_vars',
+          'prompt-template-vars',
+          ul,
+          {}
+        )
+
+        if (Object.keys(prompt_template_vars).length > 1) {
+          requestAnimationFrame(() => {
+            node.setSize([node.size[0], node.size[1] + 100])
+            node.setDirtyCanvas(true)
+          })
+        }
+      }
       if (node?.comfyClass === 'rag_llm.preview_text') {
         if (node.size[1] < 200) {
           requestAnimationFrame(() => {
@@ -527,7 +591,7 @@ onMounted(() => {
 
   comfyApp.canvasEl.addEventListener('drop', onDrop)
 
-  comfyApp.graph.configure(JSON.parse(wf1))
+  comfyApp.graph.configure(JSON.parse(preset == 1 ? wf1 : wf0))
 
   window['driverObjs'] = []
   window['driverHighlight'] = (...args) => {
@@ -569,7 +633,7 @@ const runMenuItems = ref([
     label: 'Run (step-by-step)',
     icon: 'pi pi-step-forward',
     class: 'text-sm',
-    disabled: false,
+    disabled: true,
     command: () => {
       run()
     }
@@ -661,6 +725,7 @@ async function run(e) {
   running.value = false
 }
 
+const stoppable = ref(!!pipelineId)
 const pausing = ref(false)
 async function stop() {
   if (pausing.value || !running.value) {
@@ -694,7 +759,27 @@ async function save() {
 }
 
 function exportJson() {
-  console.log(getWorkflowJson())
+  const json = getWorkflowJson()
+  console.log(json)
+  const langchain_json_nodes = json.nodes.map(
+    ({ id, type, pmt_fields: { args } }) => ({
+      id,
+      type,
+      pmt_fields: {
+        args
+      }
+    })
+  )
+  const prompt_node = langchain_json_nodes.find(
+    ({ type }) => type === 'rag_llm.prompt'
+  )
+  console.log({
+    langchain_json: {
+      nodes: langchain_json_nodes
+    },
+    inputs: prompt_node?.pmt_fields?.args?.prompt_template_vars || {},
+    session_id: null
+  })
   // ...
 }
 
@@ -707,9 +792,22 @@ function getWorkflowJson() {
     const [type] = node.type.split('.')
     if (type === 'rag_llm') {
       const pmt_fields = {
-        args: {
-          // ...
-        }
+        args: (node.widgets || []).reduce(
+          (args, { type, name, value, element }) => {
+            if (type !== 'converted-widget') {
+              args[name] = value
+            }
+            if (type === 'prompt-template-vars') {
+              args[name] = {}
+              element?.querySelectorAll('li input').forEach((input) => {
+                args[name][input.name] = input.value
+              })
+            }
+            return args
+          },
+          {}
+        ),
+        status: ''
       }
       nodes[i].pmt_fields = pmt_fields
       return nodes[i]
@@ -722,8 +820,10 @@ function getWorkflowJson() {
       inputs: (inputs || []).map((i) => {
         return {}
       }),
-      args: (node.widgets || []).reduce((args, { name, value }) => {
-        args[name] = value
+      args: (node.widgets || []).reduce((args, { type, name, value }) => {
+        if (type !== 'converted-widget') {
+          args[name] = value
+        }
         return args
       }, {}),
       outputs: (outputs || []).map((o) => {
@@ -754,7 +854,7 @@ function getWorkflowJson() {
     nodes[i].pmt_fields = pmt_fields
     return nodes[i]
   })
-  return workflow
+  return JSON.parse(JSON.stringify(workflow))
 }
 </script>
 
