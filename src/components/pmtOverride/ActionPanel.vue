@@ -757,7 +757,7 @@ async function save() {
   saving.value = true
   console.log('saving...')
   if (!pipelineId) {
-    const { json, langchain_json } = exportJson()
+    const { json, langchain_json } = exportJson(false)
     let langchain = localStorage.getItem('langchain')
     if (langchain) {
       langchain = JSON.parse(langchain)
@@ -779,7 +779,7 @@ async function save() {
   })
 }
 
-function exportJson() {
+function exportJson(download = true) {
   const json = getWorkflowJson()
   console.log(json)
 
@@ -797,23 +797,23 @@ function exportJson() {
   )
   const langchain_json = {
     workflow_name: workflow_name || 'default',
-    langchain_json: {
-      nodes: langchain_json_nodes
-    },
+    langchain_json: langchain_json_nodes,
     inputs: prompt_node?.pmt_fields?.args?.prompt_template_vars || {},
     session_id: null
   }
   console.log(langchain_json)
 
-  const blob = new Blob([JSON.stringify(json, 2, null)], {
-    type: 'application/json'
-  })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.target = '_blank'
-  a.download = 'workflow.json'
-  a.click()
+  if (download) {
+    const blob = new Blob([JSON.stringify(json, 2, null)], {
+      type: 'application/json'
+    })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.target = '_blank'
+    a.download = 'workflow.json'
+    a.click()
+  }
 
   return {
     json,
