@@ -1,43 +1,534 @@
 {
-  "rag_llm.llm": {
-    "name": "rag_llm.llm",
-    "category": "RAG",
-    "display_name": "LLM",
-    "description": "",
-    "python_module": "custom_nodes.rag_llm.llm",
+  "rag_llm.knowledge": {
+    "name": "rag_llm.knowledge",
+    "category": "LLM",
+    "display_name": "Knowledge Base",
+    "description": "KB",
+    "python_module": "custom_nodes.rag_llm.knowledge",
     "input": {
       "required": {
-        "model": [
+        "type": [
           [
-            "mod1",
-            "mod2"
-          ],
+            "web",
+            "pdf"
+          ]
+        ],
+        "sources": [
+          "STRING",
           {
-            "default": "mod1"
+            "multiline": true
+          }
+        ]
+      }
+    },
+    "input_order": {
+      "required": ["type", "sources"]
+    },
+    "output": ["STRING", "STRING"],
+    "output_name": ["kownledge", "log"],
+    "output_is_list": [false, false],
+    "output_node": false
+  },
+  "rag_llm.text_splitter": {
+    "name": "rag_llm.text_splitter",
+    "category": "LLM",
+    "display_name": "Text Splitter",
+    "description": "Split text.",
+    "python_module": "custom_nodes.rag_llm.text_splitter",
+    "input": {
+      "required": {
+        "text": [
+          "STRING",
+          {
+            "forceInput": true
+          }
+        ],
+        "type": [
+          [
+            "token"
+          ]
+        ],
+        "chunk_size": [
+          "INT",
+          {
+            "default": 350,
+            "min": 1
+          }
+        ],
+        "chunk_overlap": [
+          "INT",
+          {
+            "default": 0,
+            "min": 0
           }
         ]
       },
       "optional": {
-        "text1": ["STRING", { "forceInput": true }],
-        "text2": ["STRING", { "forceInput": true }],
-        "text3": ["STRING", { "forceInput": true }]
+        "separator": [
+          "STRING",
+          {
+            "multiline": false
+          }
+        ]
       }
     },
     "input_order": {
-      "required": ["model"],
-      "optional": ["text1", "text2", "text3"]
+      "required": ["text", "type", "chunk_size", "chunk_overlap"],
+      "optional": ["separator"]
     },
     "output": ["STRING"],
-    "output_name": ["messages"],
+    "output_name": ["text"],
     "output_is_list": [false],
     "output_node": false
   },
-  "rag_llm.load_dicom": {
-    "name": "rag_llm.load_dicom",
-    "category": "RAG",
+  "rag_llm.vector_db": {
+    "name": "rag_llm.vector_db",
+    "category": "LLM",
+    "display_name": "Vector DB",
+    "description": "DB",
+    "python_module": "custom_nodes.rag_llm.vector_db",
+    "input": {
+      "required": {
+        "text": [
+          "STRING",
+          {
+            "forceInput": true
+          }
+        ],
+        "type": [
+          [
+            "chroma",
+            "faiss"
+          ]
+        ],
+        "embedding_type": [
+          [
+            "openai"
+          ]
+        ],
+        "retrieve_num": [
+          "INT",
+          {
+            "default": 3,
+            "min": 1
+          }
+        ]
+      }
+    },
+    "input_order": {
+      "required": ["text", "type", "embedding_type", "retrieve_num"]
+    },
+    "output": ["STRING"],
+    "output_name": ["text"],
+    "output_is_list": [false],
+    "output_node": false
+  },
+  "rag_llm.prompt": {
+    "name": "rag_llm.prompt",
+    "category": "LLM",
+    "display_name": "Prompt",
+    "description": "Prompt template.",
+    "python_module": "custom_nodes.rag_llm.prompt",
+    "input": {
+      "required": {
+        "text": [
+          "STRING",
+          {
+            "forceInput": true
+          }
+        ],
+        "source": [
+          [
+            "rlm/rag-prompt"
+          ]
+        ],
+        "type": [
+          [
+            "hub",
+            "customize"
+          ]
+        ],
+        "hub_link": ["STRING"],
+        "system": [
+          "STRING",
+          {
+            "default": "You are a helpful assistant. Answer all questions to the best of your ability in {language}.",
+            "multiline": true
+          }
+        ],
+        "human": [
+          "STRING",
+          {
+            "default": "{messages}",
+            "multiline": true
+          }
+        ]
+      },
+      "optional": {
+        "history": ["LOOP"],
+        "optional_text": ["STRING", { "forceInput": true }]
+      }
+    },
+    "input_order": {
+      "required": ["text", "type", "source", "system", "human"],
+      "optional": ["history"]
+    },
+    "output": ["STRING"],
+    "output_name": ["prompt"],
+    "output_is_list": [false],
+    "output_node": false
+  },
+  "rag_llm.prompt.grade_docs": {
+    "name": "rag_llm.prompt.grade_docs",
+    "category": "LLM",
+    "display_name": "Prompt (Grade Docs)",
+    "description": "Prompt template.",
+    "python_module": "custom_nodes.rag_llm.prompt.grade_docs",
+    "input": {
+      "required": {
+        "text": [
+          "STRING",
+          {
+            "forceInput": true
+          }
+        ],
+        "source": [
+          [
+            "rlm/rag-prompt"
+          ]
+        ],
+        "type": [
+          [
+            "hub",
+            "customize"
+          ]
+        ],
+        "hub_link": ["STRING"],
+        "system": [
+          "STRING",
+          {
+            "default": "You are a helpful assistant. Answer all questions to the best of your ability in {language}.",
+            "multiline": true
+          }
+        ],
+        "human": [
+          "STRING",
+          {
+            "default": "{messages}",
+            "multiline": true
+          }
+        ]
+      },
+      "optional": {
+        "history": ["LOOP"],
+        "optional_text": ["STRING", { "forceInput": true }]
+      }
+    },
+    "input_order": {
+      "required": ["text", "type", "source", "system", "human"],
+      "optional": ["history"]
+    },
+    "output": ["STRING"],
+    "output_name": ["prompt"],
+    "output_is_list": [false],
+    "output_node": false
+  },
+  "rag_llm.prompt.transform_query": {
+    "name": "rag_llm.prompt.transform_query",
+    "category": "LLM",
+    "display_name": "Prompt (Transform Query)",
+    "description": "Prompt template.",
+    "python_module": "custom_nodes.rag_llm.prompt.transform_query",
+    "input": {
+      "required": {
+        "text": [
+          "STRING",
+          {
+            "forceInput": true
+          }
+        ],
+        "source": [
+          [
+            "rlm/rag-prompt"
+          ]
+        ],
+        "type": [
+          [
+            "hub",
+            "customize"
+          ]
+        ],
+        "hub_link": ["STRING"],
+        "system": [
+          "STRING",
+          {
+            "default": "You are a helpful assistant. Answer all questions to the best of your ability in {language}.",
+            "multiline": true
+          }
+        ],
+        "human": [
+          "STRING",
+          {
+            "default": "{messages}",
+            "multiline": true
+          }
+        ]
+      },
+      "optional": {
+        "history": ["LOOP"],
+        "optional_text": ["STRING", { "forceInput": true }]
+      }
+    },
+    "input_order": {
+      "required": ["text", "type", "source", "system", "human"],
+      "optional": ["history"]
+    },
+    "output": ["STRING"],
+    "output_name": ["prompt"],
+    "output_is_list": [false],
+    "output_node": false
+  },
+  "rag_llm.model": {
+    "name": "rag_llm.model",
+    "category": "LLM",
+    "display_name": "Model",
+    "description": "Large Language Model (LLM).",
+    "python_module": "custom_nodes.rag_llm.model",
+    "input": {
+      "required": {
+        "text": [
+          "STRING",
+          {
+            "forceInput": true
+          }
+        ],
+        "model_name": [
+          [
+            "gpt-4o-mini",
+            "gpt-4o"
+          ],
+          {
+            "default": "gpt-4o-mini"
+          }
+        ]
+      },
+      "optional": {
+        "temperature": [
+          "FLOAT",
+          {
+            "default": 0.5,
+            "min": 0,
+            "max": 1,
+            "step": 0.1,
+            "round": 0.01
+          }
+        ]
+      }
+    },
+    "input_order": {
+      "required": ["text", "model_name"],
+      "optional": ["temperature"]
+    },
+    "output": ["STRING"],
+    "output_name": ["text"],
+    "output_is_list": [false],
+    "output_node": false
+  },
+  "rag_llm.model.grade_docs": {
+    "name": "rag_llm.model.grade_docs",
+    "category": "LLM",
+    "display_name": "Model (Grade Docs)",
+    "description": "Large Language Model (LLM).",
+    "python_module": "custom_nodes.rag_llm.model.grade_docs",
+    "input": {
+      "required": {
+        "text": [
+          "STRING",
+          {
+            "forceInput": true
+          }
+        ],
+        "model_name": [
+          [
+            "gpt-4o-mini",
+            "gpt-4o"
+          ],
+          {
+            "default": "gpt-4o-mini"
+          }
+        ]
+      },
+      "optional": {
+        "temperature": [
+          "FLOAT",
+          {
+            "default": 0.5,
+            "min": 0,
+            "max": 1,
+            "step": 0.1,
+            "round": 0.01
+          }
+        ]
+      }
+    },
+    "input_order": {
+      "required": ["text", "model_name"],
+      "optional": ["temperature"]
+    },
+    "output": ["STRING"],
+    "output_name": ["text"],
+    "output_is_list": [false],
+    "output_node": false
+  },
+  "rag_llm.model.transform_query": {
+    "name": "rag_llm.model.transform_query",
+    "category": "LLM",
+    "display_name": "Model (Transform Query)",
+    "description": "Large Language Model (LLM).",
+    "python_module": "custom_nodes.rag_llm.model.transform_query",
+    "input": {
+      "required": {
+        "text": [
+          "STRING",
+          {
+            "forceInput": true
+          }
+        ],
+        "model_name": [
+          [
+            "gpt-4o-mini",
+            "gpt-4o"
+          ],
+          {
+            "default": "gpt-4o-mini"
+          }
+        ]
+      },
+      "optional": {
+        "temperature": [
+          "FLOAT",
+          {
+            "default": 0.5,
+            "min": 0,
+            "max": 1,
+            "step": 0.1,
+            "round": 0.01
+          }
+        ]
+      }
+    },
+    "input_order": {
+      "required": ["text", "model_name"],
+      "optional": ["temperature"]
+    },
+    "output": ["STRING"],
+    "output_name": ["text"],
+    "output_is_list": [false],
+    "output_node": false
+  },
+  "rag_llm.web_search": {
+    "name": "rag_llm.web_search",
+    "category": "LLM",
+    "display_name": "Web Search",
+    "description": "Search.",
+    "python_module": "custom_nodes.rag_llm.web_search",
+    "input": {
+      "required": {
+        "text": [
+          "STRING",
+          {
+            "forceInput": true
+          }
+        ],
+        "k": [
+          "INT",
+          {
+            "default": 3,
+            "min": 1
+          }
+        ]
+      }
+    },
+    "input_order": {
+      "required": ["text", "k"]
+    },
+    "output": ["STRING"],
+    "output_name": ["text"],
+    "output_is_list": [false],
+    "output_node": false
+  },
+  "rag_llm.response": {
+    "name": "rag_llm.response",
+    "category": "LLM",
+    "display_name": "Response",
+    "description": "Stream response messages.",
+    "python_module": "custom_nodes.rag_llm.response",
+    "input": {
+      "required": {
+        "text": [
+          "STRING",
+          {
+            "forceInput": true
+          }
+        ]
+      },
+      "optional": {
+        "enable_history": [
+          "BOOLEAN",
+          {
+            "default": true
+          }
+        ],
+        "max_tokens": [
+          "INT",
+          {
+            "default": 10000,
+            "min": 0,
+            "max": 100000
+          }
+        ]
+      }
+    },
+    "input_order": {
+      "required": ["text"],
+      "optional": ["enable_history", "max_tokens"]
+    },
+    "output": ["STRING", "LOOP"],
+    "output_name": ["text", "history"],
+    "output_is_list": [false, false],
+    "output_node": false
+  },
+  "rag_llm.preview_text": {
+    "name": "rag_llm.preview_text",
+    "category": "LLM",
+    "display_name": "Preview Text",
+    "description": "Preview text.",
+    "python_module": "custom_nodes.rag_llm.preview_text",
+    "input": {
+      "required": {
+        "text": [
+          "STRING",
+          {
+            "forceInput": true
+          }
+        ]
+      }
+    },
+    "input_order": {
+      "required": ["text"]
+    },
+    "output": [],
+    "output_name": [],
+    "output_is_list": [],
+    "output_node": true
+  },
+
+  "input.load_dicom": {
+    "name": "input.load_dicom",
+    "category": "input",
     "display_name": "Load DICOM",
     "description": "",
-    "python_module": "custom_nodes.rag_llm.load_dicom",
+    "python_module": "nodes",
     "input": {
       "required": {
         "dicom": [
@@ -56,129 +547,6 @@
     "output_is_list": [false],
     "output_node": false
   },
-  "rag_llm.image_to_description": {
-    "name": "rag_llm.image_to_description",
-    "category": "RAG",
-    "display_name": "Image to Description",
-    "description": "Describe the DICOM image.",
-    "python_module": "custom_nodes.rag_llm.image_to_description",
-    "input": {
-      "required": {
-        "dicom": ["DICOM"]
-      }
-    },
-    "input_order": {
-      "required": ["dicom"]
-    },
-    "output": ["STRING"],
-    "output_name": ["description"],
-    "output_is_list": [false],
-    "output_node": false
-  },
-  "rag_llm.kb": {
-    "name": "rag_llm.kb",
-    "category": "RAG",
-    "display_name": "Knowledge Base",
-    "description": "Knowledge Base",
-    "python_module": "custom_nodes.rag_llm.kb",
-    "input": {
-      "required": {
-        "text": [
-          "STRING",
-          {
-            "forceInput": true
-          }
-        ],
-        "local_db": [
-          [
-            "db:1",
-            "db:2",
-            "db:3"
-          ]
-        ]
-      },
-      "optional": {
-        "remote_db": [
-          "STRING",
-          {
-            "default": "db:url"
-          }
-        ]
-      }
-    },
-    "input_order": {
-      "required": ["text", "local_db"],
-      "optional": ["remote_db"]
-    },
-    "output": ["STRING", "STRING"],
-    "output_name": ["kownledge", "log"],
-    "output_is_list": [false, false],
-    "output_node": false
-  },
-  "rag_llm.prompt": {
-    "name": "rag_llm.prompt",
-    "category": "RAG",
-    "display_name": "Prompt",
-    "description": "Prompt query.",
-    "python_module": "custom_nodes.rag_llm.prompt",
-    "input": {
-      "required": {
-        "query": [
-          "STRING",
-          {
-            "multiline": true
-          }
-        ]
-      },
-      "optional": {
-        "history": [
-          "STRING",
-          {
-            "forceInput": true
-          }
-        ]
-      }
-    },
-    "input_order": {
-      "required": ["query"],
-      "optional": ["history"]
-    },
-    "output": ["STRING"],
-    "output_name": ["prompt"],
-    "output_is_list": [false],
-    "output_node": false
-  },
-  "rag_llm.add_info": {
-    "name": "rag_llm.add_info",
-    "category": "RAG",
-    "display_name": "Add Info",
-    "description": "Add additional context info to the input text.",
-    "python_module": "custom_nodes.rag_llm.add_info",
-    "input": {
-      "required": {
-        "text": [
-          "STRING",
-          {
-            "forceInput": true
-          }
-        ],
-        "info": [
-          "STRING",
-          {
-            "multiline": true
-          }
-        ]
-      }
-    },
-    "input_order": {
-      "required": ["text", "info"]
-    },
-    "output": ["STRING"],
-    "output_name": ["text"],
-    "output_is_list": [false],
-    "output_node": false
-  },
-
   "input.2d": {
     "name": "input.2d",
     "category": "input",
