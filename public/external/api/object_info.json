@@ -152,14 +152,14 @@
         "system": [
           "STRING",
           {
-            "default": "You are a helpful assistant. Answer all questions to the best of your ability in {language}.",
+            "default": "",
             "multiline": true
           }
         ],
         "human": [
           "STRING",
           {
-            "default": "{messages}",
+            "default": "You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise.\nQuestion: {question} \nContext: {context} \nAnswer:",
             "multiline": true
           }
         ]
@@ -196,13 +196,13 @@
           [
             "hub",
             "customize"
-          ]
+          ],
+          {
+            "default": "customize"
+          }
         ],
         "hub_link": [
-          "STRING",
-          {
-            "default": "rlm/rag-prompt"
-          }
+          "STRING"
         ],
         "system": [
           "STRING",
@@ -251,13 +251,13 @@
           [
             "hub",
             "customize"
-          ]
+          ],
+          {
+            "default": "customize"
+          }
         ],
         "hub_link": [
-          "STRING",
-          {
-            "default": "rlm/rag-prompt"
-          }
+          "STRING"
         ],
         "system": [
           "STRING",
