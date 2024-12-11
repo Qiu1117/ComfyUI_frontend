@@ -928,6 +928,7 @@ async function langchainChat(langchain_json) {
     return
   } else {
     previewTextEl.value = ''
+    previewTextEl.scrollTop = 0
   }
 
   const token =
@@ -962,8 +963,9 @@ async function langchainChat(langchain_json) {
                 data = JSON.parse(data)
               }
               if (data?.text) {
-                previewTextEl.value += data.text
                 answers += data.text
+                previewTextEl.value += data.text
+                previewTextEl.scrollTop = previewTextEl.scrollHeight
               }
             }
           })
