@@ -231,6 +231,9 @@ function highlight(element, popover = {}, config, step) {
   return driverObj
 }
 
+const token =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2NvdW50X2lkIjoxLCJjb2RlIjoiMjQ2NzgiLCJhZG1pbiI6MSwiZXhwaXJlX3RpbWUiOjB9.G-YaphxirG6zJ9EGeHdb-70qpBQEY-199E-nvtua06k'
+
 const presets = {
   no: '{"last_node_id":0,"last_link_id":0,"nodes":[],"links":[],"groups":[],"config":{},"extra":{"ds":{"scale":1,"offset":[0,0]}},"version":0.4}',
   default: `{"last_node_id":4,"last_link_id":4,"nodes":[{"id":1,"type":"rag_llm.prompt","pos":[105.33335876464844,322.6666564941406],"size":[400,400],"flags":{},"order":0,"mode":0,"inputs":[{"name":"history","type":"LOOP","link":4,"shape":7},{"name":"text","type":"STRING","link":null,"widget":{"name":"text"}},{"name":"optional_text","type":"STRING","link":null,"widget":{"name":"optional_text"},"shape":7}],"outputs":[{"name":"prompt","type":"STRING","links":[1],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.prompt"},"widgets_values":["","hub","rlm/rag-prompt","You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise.\\nQuestion: {question} \\nContext: {context} \\nAnswer:","{messages}","",null],"pmt_fields":{"args":{"type":"hub","hub_link":"rlm/rag-prompt","system":"You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise.\\nQuestion: {question} \\nContext: {context} \\nAnswer:","human":"{messages}","prompt_template_vars":{"question":"","context":"","messages":""}},"status":""}},{"id":2,"type":"rag_llm.model","pos":[559.333251953125,333.3333435058594],"size":[315,106],"flags":{},"order":1,"mode":0,"inputs":[{"name":"text","type":"STRING","link":1,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[2],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.model"},"widgets_values":["","gpt-4o-mini",0.5],"pmt_fields":{"args":{"model_name":"gpt-4o-mini","temperature":0.5},"status":""}},{"id":3,"type":"rag_llm.response","pos":[922,137.3333282470703],"size":[315,126],"flags":{},"order":2,"mode":0,"inputs":[{"name":"text","type":"STRING","link":2,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[3],"slot_index":0},{"name":"history","type":"LOOP","links":[4],"slot_index":1}],"properties":{"Node name for S&R":"rag_llm.response"},"widgets_values":["",true,10000],"pmt_fields":{"args":{"enable_history":true,"max_tokens":10000},"status":""}},{"id":4,"type":"rag_llm.preview_text","pos":[1282.6666259765625,272.0000305175781],"size":[300,200],"flags":{},"order":3,"mode":0,"inputs":[{"name":"text","type":"STRING","link":3,"widget":{"name":"text"}}],"outputs":[],"properties":{"Node name for S&R":"rag_llm.preview_text"},"widgets_values":["",null],"pmt_fields":{"args":{},"status":""}}],"links":[[1,1,0,2,0,"STRING"],[2,2,0,3,0,"STRING"],[3,3,0,4,0,"STRING"],[4,3,1,1,0,"LOOP"]],"groups":[],"config":{},"extra":{"ds":{"scale":1,"offset":[0,0]}},"version":0.4}`,
@@ -429,6 +432,50 @@ onMounted(() => {
             }
             prompt_template_vars[w.name] = findVars(w.inputEl.value)
             updateVarList()
+          }
+          if (w.name === 'hub_link') {
+            const cb = w.callback
+            w.callback = function (value, canvas, node, pos, e) {
+              const typeWidget = node.widgets.find((w) => {
+                return w.name === 'type'
+              })
+              const systemPromptWidget = node.widgets.find((w) => {
+                return w.name === 'system'
+              })
+              const hub_link = value
+              if (
+                hub_link &&
+                typeWidget.value === 'hub' &&
+                systemPromptWidget?.inputEl
+              ) {
+                console.log('getting hub prompt...', { hub_link })
+                fetch('https://www.chather.top/api/get_hub_prompt', {
+                  method: 'POST',
+                  headers: {
+                    Authorization: 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({ hub_link })
+                })
+                  .then((res) => res.json())
+                  .then((data) => {
+                    if (data?.status === 'ok') {
+                      systemPromptWidget.value = data.data || ''
+                      console.log(data.data)
+                    } else if (data?.status === 'error' && data.message) {
+                      alert(data.message)
+                    } else {
+                      console.error(data)
+                    }
+                  })
+                  .catch((err) => {
+                    console.error(err)
+                  })
+              }
+              if (cb) {
+                return cb.apply(this, arguments)
+              }
+            }
           }
         })
         const widget = node.addDOMWidget(
@@ -931,8 +978,6 @@ async function langchainChat(langchain_json) {
     previewTextEl.scrollTop = 0
   }
 
-  const token =
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2NvdW50X2lkIjoxLCJjb2RlIjoiMjQ2NzgiLCJhZG1pbiI6MSwiZXhwaXJlX3RpbWUiOjB9.G-YaphxirG6zJ9EGeHdb-70qpBQEY-199E-nvtua06k'
   let answers = ''
   try {
     const res = await fetch('https://www.chather.top/api/langchain_chat', {
