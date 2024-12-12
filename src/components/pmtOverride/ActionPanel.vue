@@ -433,6 +433,22 @@ onMounted(() => {
             prompt_template_vars[w.name] = findVars(w.inputEl.value)
             updateVarList()
           }
+          if (w.name === 'type') {
+            const cb = w.callback
+            w.callback = function (value, canvas, node, pos, e) {
+              if (value !== 'hub') {
+                const hubLinkWidget = node.widgets.find((w) => {
+                  return w.name === 'hub_link'
+                })
+                if (hubLinkWidget) {
+                  hubLinkWidget.value = ''
+                }
+              }
+              if (cb) {
+                return cb.apply(this, arguments)
+              }
+            }
+          }
           if (w.name === 'hub_link') {
             const cb = w.callback
             w.callback = function (value, canvas, node, pos, e) {
@@ -461,6 +477,10 @@ onMounted(() => {
                   .then((data) => {
                     if (data?.status === 'ok') {
                       systemPromptWidget.value = data.data || ''
+                      prompt_template_vars[systemPromptWidget.name] = findVars(
+                        systemPromptWidget.value
+                      )
+                      updateVarList()
                       console.log(data.data)
                     } else if (data?.status === 'error' && data.message) {
                       alert(data.message)
