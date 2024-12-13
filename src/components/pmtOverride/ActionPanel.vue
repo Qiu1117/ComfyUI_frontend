@@ -253,20 +253,28 @@ onMounted(() => {
     if (options) {
       const [add_node, ...rest] = options
       const new_options = [add_node]
-      // new_options.push(null); // inserts a divider
-      new_options.push({
-        content: 'Reset All Nodes',
-        callback: async () => {
-          // reset all nodes status...
+      new_options.push(
+        null, // inserts a divider
+        {
+          content: 'Reset All Nodes',
+          callback: async () => {
+            // reset all nodes status...
+          }
+        },
+        {
+          content: 'Refresh Without Cache',
+          callback: async () => {
+            // clear cache ...
+            router.go(0)
+          }
+        },
+        {
+          content: 'Clear Workflow',
+          callback: async () => {
+            // remove all nodes...
+          }
         }
-      })
-      new_options.push({
-        content: 'Reload Plugins',
-        callback: async () => {
-          router.go(0)
-        }
-      })
-
+      )
       return new_options
     }
     return options
