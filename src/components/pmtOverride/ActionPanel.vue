@@ -818,11 +818,15 @@ async function run(e) {
   }
   running.value = true
   if (!pipelineId) {
-    const { json, langchain_json } = exportJson(false)
+    const { langchain_json } = exportJson(false)
     const answers = await langchainChat(langchain_json)
     console.log(answers)
-  } else if (pipelineWorkflow.value) {
-    console.log(pipeline.value.id, pipelineWorkflow.value)
+  } else {
+    const { json } = exportJson(false)
+    console.log({
+      id: pipeline.value.id,
+      workflow: JSON.stringify(json)
+    })
     // ...
     return
   }
