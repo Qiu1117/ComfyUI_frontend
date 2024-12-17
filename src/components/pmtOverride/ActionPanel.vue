@@ -849,17 +849,19 @@ async function save() {
   }
   saving.value = true
   if (pipelineId) {
-    const payload = {
-      ...pipeline.value,
-      name: pipelineName.value,
-      description: pipelineDescription.value,
-      color: pipelineColor.value,
-      workflow: getWorkflowJson(true)
-    }
     if (isNewPipeline.value) {
-      createPipeline(payload)
+      createPipeline({
+        ...pipeline.value,
+        name: pipelineName.value,
+        description: pipelineDescription.value,
+        color: pipelineColor.value,
+        workflow: getWorkflowJson(true)
+      })
     } else {
-      updatePipeline(payload)
+      updatePipeline({
+        ...pipeline.value,
+        workflow: getWorkflowJson(true)
+      })
     }
     return
   } else {
