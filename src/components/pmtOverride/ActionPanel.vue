@@ -86,7 +86,7 @@
                 text
                 :severity="delBtnHovered ? 'danger' : 'secondary'"
                 :loading="deleting"
-                :disabled="loading || running || saving"
+                :disabled="loading || isNewPipeline || running || saving"
                 @click="confirmDelete"
               />
             </div>
@@ -918,8 +918,8 @@ const delBtnHovered = useElementHover(delBtn)
 const confirmDelete = (e) => {
   confirm.require({
     group: 'confirm_deletion',
-    header: 'Delete Pipeline',
-    message: 'Do you want to delete this pipeline?',
+    header: 'Delete Confirmation',
+    message: 'Do you want to delete this pipeline workflow?',
     icon: 'pi pi-exclamation-circle',
     rejectLabel: 'Cancel',
     rejectProps: {
