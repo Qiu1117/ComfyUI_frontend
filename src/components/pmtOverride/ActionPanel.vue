@@ -947,6 +947,23 @@ function exportJson(download = true) {
   const json = getWorkflowJson()
   console.log(json)
 
+  if (download) {
+    const blob = new Blob([JSON.stringify(json, 2, null)], {
+      type: 'application/json'
+    })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.target = '_blank'
+    a.download = 'workflow.json'
+    a.click()
+    return URL.revokeObjectURL(url)
+  }
+
+  if (pipelineId) {
+    return { json }
+  }
+
   const langchain_json_nodes = json.nodes.map(
     ({ id, type, pmt_fields: { args } }) => ({
       id,
@@ -967,23 +984,7 @@ function exportJson(download = true) {
   }
   console.log(langchain_json)
 
-  if (download) {
-    const blob = new Blob([JSON.stringify(json, 2, null)], {
-      type: 'application/json'
-    })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.target = '_blank'
-    a.download = 'workflow.json'
-    a.click()
-  }
-
-  return {
-    json,
-    langchain_json
-  }
-  // ...
+  return { json, langchain_json }
 }
 
 function getWorkflowJson(stringify = false) {
