@@ -16,7 +16,8 @@
         class="border-none w-full"
       />
     </ScrollPanel>
-    <Divider layout="vertical" class="mx-1 2xl:mx-4" />
+    <Divider layout="vertical" class="mx-1 2xl:mx-4 hidden md:flex" />
+    <Divider layout="horizontal" class="flex md:hidden" />
     <Tabs :value="tabValue" :lazy="true" class="settings-content h-full w-full">
       <TabPanels class="settings-tab-panels h-full w-full pr-0">
         <PanelTemplate value="Search Results">
@@ -183,12 +184,21 @@ const handleSearch = (query: string) => {
     return
   }
 
+  const queryLower = query.toLocaleLowerCase()
   const allSettings = flattenTree<SettingParams>(settingRoot.value)
-  const filteredSettings = allSettings.filter(
-    (setting) =>
-      setting.id.toLowerCase().includes(query.toLowerCase()) ||
-      setting.name.toLowerCase().includes(query.toLowerCase())
-  )
+  const filteredSettings = allSettings.filter((setting) => {
+    const idLower = setting.id.toLowerCase()
+    const nameLower = setting.name.toLowerCase()
+    const translatedName = t(
+      `settingsDialog.${normalizeI18nKey(setting.id)}.name`
+    ).toLocaleLowerCase()
+
+    return (
+      idLower.includes(queryLower) ||
+      nameLower.includes(queryLower) ||
+      translatedName.includes(queryLower)
+    )
+  })
 
   const groupedSettings: { [key: string]: SettingParams[] } = {}
   filteredSettings.forEach((setting) => {
@@ -239,6 +249,10 @@ const tabValue = computed(() =>
 
   .settings-sidebar {
     width: 100%;
+  }
+
+  .settings-content {
+    height: 350px;
   }
 }
 
