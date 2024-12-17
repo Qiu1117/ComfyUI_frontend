@@ -3,7 +3,7 @@
     <Panel id="pmt-action-panel">
       <ButtonGroup>
         <Button
-          v-if="stoppable ? !running : true"
+          v-if="stoppable ? !loading && !running : true"
           class="btn-run"
           size="small"
           :aria-label="'Run'"
@@ -12,14 +12,19 @@
           icon="pi pi-play-circle"
           severity="secondary"
           :loading="running"
-          :disabled="saving"
+          :disabled="loading || saving || deleting"
           @click="run"
           @contextmenu.prevent="
-            !!pipelineId && !saving && !running && runMenu.show($event)
+            !!pipelineId &&
+              !loading &&
+              !saving &&
+              !running &&
+              !deleting &&
+              runMenu.show($event)
           "
         />
         <Button
-          v-else
+          v-else-if="!loading"
           class="btn-run-stop"
           size="small"
           :aria-label="'Stop'"
@@ -28,19 +33,22 @@
           :loading="false"
           :disabled="pausing"
           @click="stop"
+          @contextmenu.prevent.stop
         />
         <Menu ref="runMenu" id="btn-run-menu" :model="runMenuItems" popup />
         <Button
           v-if="!!pipelineId"
           class="btn-pip"
           size="small"
-          :label="pipeline.name"
+          :title="pipeline.description"
+          :label="loading ? '' : (isNewPipeline ? '*' : '') + pipeline.name"
           icon="pi pi-circle-fill"
           severity="secondary"
           :style="{ color: pipeline.color }"
-          :loading="running"
-          :disabled="running || saving"
+          :loading="loading || running"
+          :disabled="loading || running || saving || deleting"
           @click="togglePipOver"
+          @contextmenu.prevent.stop
         />
         <Popover ref="pipOver">
           <div class="flex flex-col">
@@ -77,9 +85,19 @@
                 icon="pi pi-trash"
                 text
                 :severity="delBtnHovered ? 'danger' : 'secondary'"
-                :loading="false"
-                :disabled="false"
+                :loading="deleting"
+                :disabled="loading || running || saving"
                 @click="confirmDelete"
+              />
+            </div>
+            <div class="flex items-start mt-2">
+              <Textarea
+                v-model="pipelineDescription"
+                placeholder="Description..."
+                class="w-full resize-none"
+                :auto-resize="false"
+                :rows="2"
+                :readonly="false"
               />
             </div>
             <div class="flex items-center justify-end mt-3">
@@ -90,6 +108,7 @@
                 severity="secondary"
                 size="small"
                 :loading="false"
+                :disabled="false"
                 @click="togglePipOver"
               />
               <Button
@@ -98,31 +117,35 @@
                 severity="contrast"
                 size="small"
                 :loading="false"
-                :disabled="!pipelineName"
-                @click="updateNameAndColor"
+                :disabled="!pipelineName || saving || deleting"
+                @click="commitPipEdit"
               />
             </div>
           </div>
         </Popover>
         <Button
+          v-if="!loading"
           class="btn-sav"
           size="small"
           :aria-label="'Save'"
           icon="pi pi-save"
           severity="secondary"
           :loading="saving"
-          :disabled="running"
+          :disabled="loading || running || deleting"
           @click="confirmSave"
+          @contextmenu.prevent.stop
         />
         <Button
+          v-if="!loading"
           class="btn-exp"
           size="small"
           :aria-label="'Export'"
           icon="pi pi-download"
           severity="secondary"
           :loading="false"
-          :disabled="false"
+          :disabled="loading || deleting"
           @click="exportJson"
+          @contextmenu.prevent="exportJson(false)"
         />
       </ButtonGroup>
       <ConfirmDialog
@@ -137,9 +160,13 @@
 </template>
 
 <script setup>
-import { shallowRef, ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useBrowserLocation, useElementHover } from '@vueuse/core'
+import {
+  useBrowserLocation,
+  useLocalStorage,
+  useElementHover
+} from '@vueuse/core'
 import Panel from 'primevue/panel'
 import Menu from 'primevue/menu'
 import ButtonGroup from 'primevue/buttongroup'
@@ -148,6 +175,7 @@ import Popover from 'primevue/popover'
 import InputGroup from 'primevue/inputgroup'
 import InputGroupAddon from 'primevue/inputgroupaddon'
 import InputText from 'primevue/inputtext'
+import Textarea from 'primevue/textarea'
 import ConfirmDialog from 'primevue/confirmdialog'
 import ConfirmPopup from 'primevue/confirmpopup'
 import Toast from 'primevue/toast'
@@ -164,26 +192,47 @@ const route = useRoute()
 const router = useRouter()
 
 const { pipelineId, workflow_name } = route.query
-const pipeline = shallowRef({
-  name: 'New Pipeline',
-  color: '#FFFFFF'
+const pipelineName = ref('New Workflow')
+const pipelineDescription = ref('')
+const pipelineColor = ref('#FFFFFF')
+
+const pipelines = useLocalStorage('pipelines', pipelineId ? [] : null)
+const pipeline = ref({
+  id: pipelineId,
+  name: pipelineName.value,
+  description: pipelineDescription.value,
+  color: pipelineColor.value
 })
+const pipelineWorkflow = computed(() =>
+  pipeline.value.workflow ? JSON.parse(pipeline.value.workflow) : null
+)
+const isNewPipeline = computed(() => !pipeline.value.workflow)
 
-const pipelineColor = ref('New Pipeline')
-const pipelineName = ref('#FFFFFF')
-
-const initNameAndColor = () => {
-  pipelineName.value = pipeline.value.name
-  pipelineColor.value = pipeline.value.color
+const commitPipEdit = (e) => {
+  pipeline.value.name = pipelineName.value
+  pipeline.value.description = pipelineDescription.value
+  pipeline.value.color = pipelineColor.value
+  togglePipOver(e)
 }
 
-const updateNameAndColor = (e) => {
-  pipeline.value = {
-    ...pipeline.value,
-    name: pipelineName.value,
-    color: pipelineColor.value
+const loading = ref(!!pipeline.value?.id)
+
+function addPipelineEventListeners() {
+  if (window.$electron) {
+    window.$electron.ipcRendererOn('got-pipeline', handleGetPipeline)
+    window.$electron.ipcRendererOn('created-pipeline', handleCreatePipeline)
+    window.$electron.ipcRendererOn('updated-pipeline', handleUpdatePipeline)
+    window.$electron.ipcRendererOn('deleted-pipeline', handleDeletePipeline)
   }
-  togglePipOver(e)
+}
+
+function removePipelineEventListeners() {
+  if (window.$electron) {
+    window.$electron.ipcRendererOff('got-pipeline')
+    window.$electron.ipcRendererOff('created-pipeline')
+    window.$electron.ipcRendererOff('updated-pipeline')
+    window.$electron.ipcRendererOff('deleted-pipeline')
+  }
 }
 
 const location = useBrowserLocation()
@@ -240,8 +289,12 @@ const presets = {
   rag: `{"last_node_id":7,"last_link_id":7,"nodes":[{"id":5,"type":"rag_llm.knowledge","pos":[-1120.1199951171875,387.8730773925781],"size":[400,200],"flags":{},"order":0,"mode":0,"inputs":[],"outputs":[{"name":"kownledge","type":"STRING","links":[5],"slot_index":0},{"name":"log","type":"STRING","links":null}],"properties":{"Node name for S&R":"rag_llm.knowledge"},"widgets_values":["web",""],"pmt_fields":{"args":{"type":"web","sources":""},"status":""}},{"id":6,"type":"rag_llm.text_splitter","pos":[-661.6609497070312,327.746826171875],"size":[315,154],"flags":{},"order":1,"mode":0,"inputs":[{"name":"text","type":"STRING","link":5,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[6],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.text_splitter"},"widgets_values":["","token",350,0,""],"pmt_fields":{"args":{"type":"token","chunk_size":350,"chunk_overlap":0,"separators":""},"status":""}},{"id":7,"type":"rag_llm.vector_db","pos":[-292.3180236816406,386.7991638183594],"size":[315,130],"flags":{},"order":2,"mode":0,"inputs":[{"name":"text","type":"STRING","link":6,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[7],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.vector_db"},"widgets_values":["","chroma","openai",3],"pmt_fields":{"args":{"type":"chroma","embedding_type":"openai","retrieve_num":3},"status":""}},{"id":1,"type":"rag_llm.prompt","pos":[105.33335876464844,322.6666564941406],"size":[400,400],"flags":{},"order":3,"mode":0,"inputs":[{"name":"history","type":"LOOP","link":4,"shape":7},{"name":"text","type":"STRING","link":7,"widget":{"name":"text"}},{"name":"optional_text","type":"STRING","link":null,"widget":{"name":"optional_text"},"shape":7}],"outputs":[{"name":"prompt","type":"STRING","links":[1],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.prompt"},"widgets_values":["","hub","rlm/rag-prompt","You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise.\\nQuestion: {question} \\nContext: {context} \\nAnswer:","{messages}","",null],"pmt_fields":{"args":{"type":"hub","hub_link":"rlm/rag-prompt","system":"You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise.\\nQuestion: {question} \\nContext: {context} \\nAnswer:","human":"{messages}","prompt_template_vars":{"question":"","context":"","messages":""}},"status":""}},{"id":2,"type":"rag_llm.model","pos":[559.333251953125,333.3333435058594],"size":[315,106],"flags":{},"order":4,"mode":0,"inputs":[{"name":"text","type":"STRING","link":1,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[2],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.model"},"widgets_values":["","gpt-4o-mini",0.5],"pmt_fields":{"args":{"model_name":"gpt-4o-mini","temperature":0.5},"status":""}},{"id":3,"type":"rag_llm.response","pos":[922,137.3333282470703],"size":[315,126],"flags":{},"order":5,"mode":0,"inputs":[{"name":"text","type":"STRING","link":2,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[3],"slot_index":0},{"name":"history","type":"LOOP","links":[4],"slot_index":1}],"properties":{"Node name for S&R":"rag_llm.response"},"widgets_values":["",true,10000],"pmt_fields":{"args":{"enable_history":true,"max_tokens":10000},"status":""}},{"id":4,"type":"rag_llm.preview_text","pos":[1282.6666259765625,272.0000305175781],"size":[300,200],"flags":{},"order":6,"mode":0,"inputs":[{"name":"text","type":"STRING","link":3,"widget":{"name":"text"}}],"outputs":[],"properties":{"Node name for S&R":"rag_llm.preview_text"},"widgets_values":["",null],"pmt_fields":{"args":{},"status":""}}],"links":[[1,1,0,2,0,"STRING"],[2,2,0,3,0,"STRING"],[3,3,0,4,0,"STRING"],[4,3,1,1,0,"LOOP"],[5,5,0,6,0,"STRING"],[6,6,0,7,0,"STRING"],[7,7,0,1,1,"STRING"]],"groups":[],"config":{},"extra":{"ds":{"scale":1,"offset":[0,0]}},"version":0.4}`,
   crag: `{"last_node_id":12,"last_link_id":14,"nodes":[{"id":5,"type":"rag_llm.knowledge","pos":[-1795.305419921875,219.73934936523438],"size":[400,200],"flags":{},"order":0,"mode":0,"inputs":[],"outputs":[{"name":"kownledge","type":"STRING","links":[5],"slot_index":0},{"name":"log","type":"STRING","links":null}],"properties":{"Node name for S&R":"rag_llm.knowledge"},"widgets_values":["web",""],"pmt_fields":{"args":{"type":"web","sources":""},"status":""}},{"id":6,"type":"rag_llm.text_splitter","pos":[-1314.37060546875,248.50851440429688],"size":[315,154],"flags":{},"order":1,"mode":0,"inputs":[{"name":"text","type":"STRING","link":5,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[6],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.text_splitter"},"widgets_values":["","token",350,0,""],"pmt_fields":{"args":{"type":"token","chunk_size":350,"chunk_overlap":0,"separators":""},"status":""}},{"id":7,"type":"rag_llm.vector_db","pos":[-879.9946899414062,331.4211730957031],"size":[315,130],"flags":{},"order":2,"mode":0,"inputs":[{"name":"text","type":"STRING","link":6,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[8],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.vector_db"},"widgets_values":["","chroma","openai",3],"pmt_fields":{"args":{"type":"chroma","embedding_type":"openai","retrieve_num":3},"status":""}},{"id":8,"type":"rag_llm.prompt.grade_docs","pos":[-1945.737548828125,588.7113647460938],"size":[400,400],"flags":{},"order":3,"mode":0,"inputs":[{"name":"history","type":"LOOP","link":null,"shape":7},{"name":"text","type":"STRING","link":8,"widget":{"name":"text"}},{"name":"optional_text","type":"STRING","link":null,"widget":{"name":"optional_text"},"shape":7}],"outputs":[{"name":"prompt","type":"STRING","links":[9],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.prompt.grade_docs"},"widgets_values":["","customize","","You are a document retrieval evaluator that's responsible for checking the relevancy of a retrieved document to the user's question.\\n\\nIf the document contains keyword(s) or semantic meaning related to the question, grade it as relevant.\\n\\nOutput a binary score 'yes' or 'no' to indicate whether the document is relevant to the question.","Retrieved document:\\n\\n{document}\\n\\nUser question: {question}","",null],"pmt_fields":{"args":{"type":"customize","hub_link":"","system":"You are a document retrieval evaluator that's responsible for checking the relevancy of a retrieved document to the user's question.\\n\\nIf the document contains keyword(s) or semantic meaning related to the question, grade it as relevant.\\n\\nOutput a binary score 'yes' or 'no' to indicate whether the document is relevant to the question.","human":"Retrieved document:\\n\\n{document}\\n\\nUser question: {question}","prompt_template_vars":{"document":"","question":""}},"status":""}},{"id":9,"type":"rag_llm.model.grade_docs","pos":[-1483.99658203125,621.377685546875],"size":[315,106],"flags":{},"order":4,"mode":0,"inputs":[{"name":"text","type":"STRING","link":9,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[10,11],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.model.grade_docs"},"widgets_values":["","gpt-4o-mini",0.5],"pmt_fields":{"args":{"model_name":"gpt-4o-mini","temperature":0.5},"status":""}},{"id":10,"type":"rag_llm.prompt.transform_query","pos":[-1117.678466796875,694.4251098632812],"size":[400,400],"flags":{},"order":5,"mode":0,"inputs":[{"name":"history","type":"LOOP","link":null,"shape":7},{"name":"text","type":"STRING","link":11,"widget":{"name":"text"}},{"name":"optional_text","type":"STRING","link":null,"widget":{"name":"optional_text"},"shape":7}],"outputs":[{"name":"prompt","type":"STRING","links":[12],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.prompt.transform_query"},"widgets_values":["","customize","","You are a question re-writer that converts an input question to a better version that is optimized for web search.\\n\\nLook at the input and try to reason about the underlying semantic intent / meaning.","Here is the initial question:\\n\\n{question}\\n\\nFormulate an improved question.","",null],"pmt_fields":{"args":{"type":"customize","hub_link":"","system":"You are a question re-writer that converts an input question to a better version that is optimized for web search.\\n\\nLook at the input and try to reason about the underlying semantic intent / meaning.","human":"Here is the initial question:\\n\\n{question}\\n\\nFormulate an improved question.","prompt_template_vars":{"question":""}},"status":""}},{"id":11,"type":"rag_llm.model.transform_query","pos":[-655.8319091796875,621.2080688476562],"size":[315,106],"flags":{},"order":6,"mode":0,"inputs":[{"name":"text","type":"STRING","link":12,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[13],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.model.transform_query"},"widgets_values":["","gpt-4o-mini",0.5],"pmt_fields":{"args":{"model_name":"gpt-4o-mini","temperature":0.5},"status":""}},{"id":12,"type":"rag_llm.web_search","pos":[-282.0015563964844,544.7903442382812],"size":[315,82],"flags":{},"order":7,"mode":0,"inputs":[{"name":"text","type":"STRING","link":13,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[14],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.web_search"},"widgets_values":["",57],"pmt_fields":{"args":{"k":57},"status":""}},{"id":1,"type":"rag_llm.prompt","pos":[105.33335876464844,322.6666564941406],"size":[400,400],"flags":{},"order":8,"mode":0,"inputs":[{"name":"history","type":"LOOP","link":4,"shape":7},{"name":"text","type":"STRING","link":10,"widget":{"name":"text"}},{"name":"optional_text","type":"STRING","link":14,"widget":{"name":"optional_text"},"shape":7}],"outputs":[{"name":"prompt","type":"STRING","links":[1],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.prompt"},"widgets_values":["","hub","rlm/rag-prompt","You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise.\\nQuestion: {question} \\nContext: {context} \\nAnswer:","{messages}","",null],"pmt_fields":{"args":{"type":"hub","hub_link":"rlm/rag-prompt","system":"You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise.\\nQuestion: {question} \\nContext: {context} \\nAnswer:","human":"{messages}","prompt_template_vars":{"question":"","context":"","messages":""}},"status":""}},{"id":2,"type":"rag_llm.model","pos":[559.333251953125,333.3333435058594],"size":[315,106],"flags":{},"order":9,"mode":0,"inputs":[{"name":"text","type":"STRING","link":1,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[2],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.model"},"widgets_values":["","gpt-4o-mini",0.5],"pmt_fields":{"args":{"model_name":"gpt-4o-mini","temperature":0.5},"status":""}},{"id":3,"type":"rag_llm.response","pos":[922,137.3333282470703],"size":[315,126],"flags":{},"order":10,"mode":0,"inputs":[{"name":"text","type":"STRING","link":2,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[3],"slot_index":0},{"name":"history","type":"LOOP","links":[4],"slot_index":1}],"properties":{"Node name for S&R":"rag_llm.response"},"widgets_values":["",true,10000],"pmt_fields":{"args":{"enable_history":true,"max_tokens":10000},"status":""}},{"id":4,"type":"rag_llm.preview_text","pos":[1282.6666259765625,272.0000305175781],"size":[300,200],"flags":{},"order":11,"mode":0,"inputs":[{"name":"text","type":"STRING","link":3,"widget":{"name":"text"}}],"outputs":[],"properties":{"Node name for S&R":"rag_llm.preview_text"},"widgets_values":["",null],"pmt_fields":{"args":{},"status":""}}],"links":[[1,1,0,2,0,"STRING"],[2,2,0,3,0,"STRING"],[3,3,0,4,0,"STRING"],[4,3,1,1,0,"LOOP"],[5,5,0,6,0,"STRING"],[6,6,0,7,0,"STRING"],[8,7,0,8,1,"STRING"],[9,8,0,9,0,"STRING"],[10,9,0,1,1,"STRING"],[11,9,0,10,1,"STRING"],[12,10,0,11,0,"STRING"],[13,11,0,12,0,"STRING"],[14,12,0,1,2,"STRING"]],"groups":[],"config":{},"extra":{"ds":{"scale":1,"offset":[0,0]}},"version":0.4}`
 }
+
 onMounted(() => {
-  initNameAndColor()
+  addPipelineEventListeners()
+  if (loading.value) {
+    getPipeline({ ...pipeline.value })
+  }
 
   Object.keys(SYSTEM_NODE_DEFS).forEach((type) => {
     LiteGraph.unregisterNodeType(type)
@@ -675,7 +728,9 @@ onMounted(() => {
 
   comfyApp.canvasEl.addEventListener('drop', onDrop)
 
-  if (workflow_name && workflow_name in presets) {
+  if (pipelineId) {
+    // console.log('saved pipelines:', pipelines.value)
+  } else if (workflow_name && workflow_name in presets) {
     comfyApp.graph.configure(JSON.parse(presets[workflow_name]))
   } else {
     comfyApp.graph.configure(
@@ -692,6 +747,8 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  removePipelineEventListeners()
+
   comfyApp.canvasEl.removeEventListener('drop', onDrop)
 
   if (window.driverObjs?.length) {
@@ -708,6 +765,9 @@ function onDrop(e) {
 
   e.preventDefault()
 }
+
+const toast = useToast()
+const confirm = useConfirm()
 
 const runMenu = ref()
 const runMenuItems = ref([
@@ -742,38 +802,85 @@ const runMenuItems = ref([
 
 const pipOver = ref()
 function togglePipOver(e) {
-  initNameAndColor()
+  pipelineName.value = pipeline.value.name
+  pipelineDescription.value = pipeline.value.description
+  pipelineColor.value = pipeline.value.color
   pipOver.value.toggle(e)
 }
 
-const delBtn = ref()
-const delBtnHovered = useElementHover(delBtn)
+const running = ref(false)
+async function run(e) {
+  if (runMenu.value) {
+    runMenu.value.hide(e)
+  }
+  if (running.value) {
+    return
+  }
+  running.value = true
+  if (!pipelineId) {
+    const { json, langchain_json } = exportJson(false)
+    const answers = await langchainChat(langchain_json)
+    console.log(answers)
+  } else if (pipelineWorkflow.value) {
+    console.log(pipeline.value.id, pipelineWorkflow.value)
+    // ...
+    return
+  }
+  running.value = false
+}
 
-const toast = useToast()
-const confirm = useConfirm()
-const confirmDelete = (e) => {
-  confirm.require({
-    group: 'confirm_deletion',
-    header: 'Delete Pipeline',
-    message: 'Do you want to delete this pipeline?',
-    icon: 'pi pi-exclamation-circle',
-    rejectLabel: 'Cancel',
-    rejectProps: {
-      label: 'Cancel',
-      severity: 'secondary',
-      outlined: true
-    },
-    acceptProps: {
-      label: 'Delete',
-      severity: 'danger'
-    },
-    accept: async () => {
-      console.log('deleting...')
-      // ...
-    },
-    reject: () => {}
+const stoppable = ref(!!pipelineId)
+const pausing = ref(false)
+async function stop() {
+  if (pausing.value || !running.value) {
+    return
+  }
+  pausing.value = true
+  console.log('stop!')
+  // ...
+  pausing.value = false
+  running.value = false
+}
+
+const saving = ref(false)
+async function save() {
+  if (saving.value) {
+    return
+  }
+  saving.value = true
+  if (pipelineId) {
+    const payload = {
+      ...pipeline.value,
+      name: pipelineName.value,
+      description: pipelineDescription.value,
+      color: pipelineColor.value,
+      workflow: getWorkflowJson(true)
+    }
+    if (isNewPipeline.value) {
+      createPipeline(payload)
+    } else {
+      updatePipeline(payload)
+    }
+    return
+  } else {
+    const { json, langchain_json } = exportJson(false)
+    let langchain = localStorage.getItem('langchain')
+    if (langchain) {
+      langchain = JSON.parse(langchain)
+    } else {
+      langchain = {}
+    }
+    langchain[langchain_json.workflow_name] = langchain_json
+    localStorage.setItem('langchain', JSON.stringify(langchain))
+    sessionStorage.setItem('workflow', JSON.stringify(json))
+  }
+  saving.value = false
+  toast.add({
+    severity: 'success',
+    summary: 'Saved',
+    detail: 'Changes have been saved!',
+    life: 3000
   })
-  togglePipOver(e)
 }
 const confirmSave = (e) => {
   if (running.value) {
@@ -799,70 +906,35 @@ const confirmSave = (e) => {
   })
 }
 
-let runningTimer = null
-const running = ref(false)
-async function run(e) {
-  if (runMenu.value) {
-    runMenu.value.hide(e)
-  }
-  if (running.value) {
-    return
-  }
-  running.value = true
-  if (!pipelineId) {
-    const { json, langchain_json } = exportJson(false)
-    const answers = await langchainChat(langchain_json)
-    console.log(answers)
-  }
-  // ...
-  // await new Promise((r) => {
-  //   runningTimer = setTimeout(r, 5000)
-  // })
-  running.value = false
-}
-
-const stoppable = ref(!!pipelineId)
-const pausing = ref(false)
-async function stop() {
-  if (pausing.value || !running.value) {
-    return
-  }
-  pausing.value = true
-  // ...
-  await new Promise((r) => setTimeout(r))
-  pausing.value = false
-  clearTimeout(runningTimer)
-  runningTimer = null
-  running.value = false
-}
-
-const saving = ref(false)
-async function save() {
-  if (saving.value) {
-    return
-  }
-  saving.value = true
-  if (!pipelineId) {
-    const { json, langchain_json } = exportJson(false)
-    let langchain = localStorage.getItem('langchain')
-    if (langchain) {
-      langchain = JSON.parse(langchain)
-    } else {
-      langchain = {}
-    }
-    langchain[langchain_json.workflow_name] = langchain_json
-    localStorage.setItem('langchain', JSON.stringify(langchain))
-    sessionStorage.setItem('workflow', JSON.stringify(json))
-  }
-  // ...
-  // await new Promise((r) => setTimeout(r, 1000))
-  saving.value = false
-  toast.add({
-    severity: 'success',
-    summary: 'Saved',
-    detail: 'Changes have been saved!',
-    life: 3000
+const deleting = ref(false)
+const delBtn = ref()
+const delBtnHovered = useElementHover(delBtn)
+const confirmDelete = (e) => {
+  confirm.require({
+    group: 'confirm_deletion',
+    header: 'Delete Pipeline',
+    message: 'Do you want to delete this pipeline?',
+    icon: 'pi pi-exclamation-circle',
+    rejectLabel: 'Cancel',
+    rejectProps: {
+      label: 'Cancel',
+      severity: 'secondary',
+      outlined: true
+    },
+    acceptProps: {
+      label: 'Delete',
+      severity: 'danger'
+    },
+    accept: () => {
+      if (!pipelineId) {
+        return
+      }
+      deleting.value = true
+      return deletePipeline({ id: pipeline.value.id })
+    },
+    reject: () => {}
   })
+  togglePipOver(e)
 }
 
 function exportJson(download = true) {
@@ -908,7 +980,7 @@ function exportJson(download = true) {
   // ...
 }
 
-function getWorkflowJson() {
+function getWorkflowJson(stringify = false) {
   const workflow = comfyApp.graph.serialize()
   workflow.nodes.sort((a, b) => a.order - b.order)
   workflow.nodes.forEach(({ id, inputs, outputs }, i, nodes) => {
@@ -979,8 +1051,101 @@ function getWorkflowJson() {
     nodes[i].pmt_fields = pmt_fields
     return nodes[i]
   })
+  if (stringify) {
+    return JSON.stringify(workflow)
+  }
   return JSON.parse(JSON.stringify(workflow))
 }
+
+// ---
+
+function getPipeline(payload) {
+  if (window.$electron) {
+    window.$electron.ipcRendererSend('get-pipeline', payload)
+  }
+}
+function handleGetPipeline(e, payload) {
+  if (!loading.value) {
+    return
+  }
+  if (payload.id === pipeline.value.id) {
+    // console.log('current pipeline:', payload)
+  } else {
+    return
+  }
+  pipeline.value.name = payload.name
+  pipeline.value.description = payload.description
+  pipeline.value.color = payload.color
+  if (payload.workflow) {
+    pipeline.value.workflow = payload.workflow
+  } else {
+    delete pipeline.value.workflow
+  }
+  if (pipelineWorkflow.value?.nodes?.length) {
+    comfyApp.graph.configure(pipelineWorkflow.value)
+  }
+  loading.value = false
+}
+
+function createPipeline(payload) {
+  if (window.$electron) {
+    window.$electron.ipcRendererSend('create-pipeline', payload)
+  }
+}
+function handleCreatePipeline(e, payload) {
+  if (payload.id === pipeline.value.id) {
+    // console.log('created pipeline:', payload)
+  } else {
+    return
+  }
+  pipeline.value.name = payload.name
+  pipeline.value.description = payload.description
+  pipeline.value.color = payload.color
+  if (payload.workflow) {
+    pipeline.value.workflow = payload.workflow
+  } else {
+    delete pipeline.value.workflow
+  }
+  saving.value = false
+}
+
+function updatePipeline(payload) {
+  if (window.$electron) {
+    window.$electron.ipcRendererSend('update-pipeline', payload)
+  }
+}
+function handleUpdatePipeline(e, payload) {
+  if (payload.id === pipeline.value.id) {
+    // console.log('updated pipeline:', payload)
+  } else {
+    return
+  }
+  pipeline.value.name = payload.name
+  pipeline.value.description = payload.description
+  pipeline.value.color = payload.color
+  if (payload.workflow) {
+    pipeline.value.workflow = payload.workflow
+  } else {
+    delete pipeline.value.workflow
+  }
+  saving.value = false
+}
+
+function deletePipeline(payload) {
+  if (window.$electron) {
+    window.$electron.ipcRendererSend('delete-pipeline', payload)
+  }
+}
+function handleDeletePipeline(e, payload) {
+  if (payload.id === pipeline.value.id) {
+    // console.log('deleted pipeline:', payload)
+  } else {
+    return
+  }
+  deleting.value = false
+}
+
+// ---
 
 async function langchainChat(langchain_json) {
   if (!langchain_json) {
