@@ -823,12 +823,32 @@ async function run(e) {
     console.log(answers)
   } else {
     const { json } = exportJson(false)
-    console.log({
+    const formData = {
       id: pipeline.value.id,
       workflow: JSON.stringify(json)
+    }
+    // console.log(formData)
+    return fetch('connect://localhost/api/pipelines/run-once', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(formData)
     })
-    // ...
-    return
+      .then(async (res) => {
+        for await (const chunk of window.MessagePack.decodeMultiStream(
+          res.body
+        )) {
+          console.log('[CHUNK]', chunk)
+        }
+        console.log('[DONE]')
+      })
+      .catch((err) => {
+        console.error(err)
+      })
+      .finally(() => {
+        running.value = false
+      })
   }
   running.value = false
 }
