@@ -186,6 +186,11 @@ import { app as comfyApp } from '@/scripts/app'
 import { useNodeDefStore, SYSTEM_NODE_DEFS } from '@/stores/nodeDefStore'
 import { nodeStatusColor } from '@/extensions/core/colorPalette'
 
+let decodeMultiStream = (stream) => {
+  console.warn('MessagePack not found')
+  return stream
+}
+
 const nodeDefStore = useNodeDefStore()
 
 const route = useRoute()
@@ -738,6 +743,10 @@ onMounted(() => {
     )
   }
 
+  if (window.MessagePack) {
+    decodeMultiStream = window.MessagePack.decodeMultiStream
+  }
+
   window['driverObjs'] = []
   window['driverHighlight'] = (...args) => {
     window.driverObjs.push(highlight(...args))
@@ -836,10 +845,9 @@ async function run(e) {
       body: JSON.stringify(formData)
     })
       .then(async (res) => {
-        for await (const chunk of window.MessagePack.decodeMultiStream(
-          res.body
-        )) {
+        for await (const chunk of decodeMultiStream(res.body)) {
           console.log('[CHUNK]', chunk)
+          // ...
         }
         console.log('[DONE]')
       })
