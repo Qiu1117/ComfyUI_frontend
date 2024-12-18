@@ -599,15 +599,21 @@
     "output_node": false
   },
 
-  "output.data_to_image.main": {
-    "name": "output.data_to_image.main",
-    "category": "output/data_to_image",
-    "display_name": "Save to Image",
-    "description": "Main function.",
-    "python_module": "custom_nodes.data_to_image.main",
+  "converter.2d_to_image": {
+    "name": "converter.2d_to_image",
+    "category": "coverters",
+    "display_name": "2D to Image",
+    "description": "Convert 2D data to image file.",
+    "python_module": "custom_nodes.converter.2d_to_image",
     "input": {
       "required": {
-        "data": ["2D"]
+        "data": ["2D"],
+        "format": [
+          [
+            "png",
+            "jpg"
+          ]
+        ]
       },
       "optional": {
         "normalize": [
@@ -619,8 +625,98 @@
       }
     },
     "input_order": {
-      "required": ["data"],
+      "required": ["data", "format"],
       "optional": ["normalize"]
+    },
+    "output": ["IMAGE_FILE"],
+    "output_name": ["file"],
+    "output_is_list": [false],
+    "output_node": false
+  },
+  "converter.2d_to_dicom": {
+    "name": "converter.2d_to_dicom",
+    "category": "coverters",
+    "display_name": "2D to DICOM",
+    "description": "Convert 2D data to DICOM file.",
+    "python_module": "custom_nodes.converter.2d_to_dicom",
+    "input": {
+      "required": {
+        "data": ["2D"]
+      }
+    },
+    "input_order": {
+      "required": ["data"]
+    },
+    "output": ["DICOM_FILE"],
+    "output_name": ["file"],
+    "output_is_list": [false],
+    "output_node": false
+  },
+  "converter.3d_to_nifti": {
+    "name": "converter.3d_to_nifti",
+    "category": "coverters",
+    "display_name": "3D to NIFTI",
+    "description": "Convert 3D data to NIFTI file.",
+    "python_module": "custom_nodes.converter.3d_to_nifti",
+    "input": {
+      "required": {
+        "data": ["3D"]
+      }
+    },
+    "input_order": {
+      "required": ["data"]
+    },
+    "output": ["NIFTI_FILE"],
+    "output_name": ["file"],
+    "output_is_list": [false],
+    "output_node": false
+  },
+
+  "preview.volview": {
+    "name": "preview.volview",
+    "category": "preview",
+    "display_name": "VolView",
+    "description": "",
+    "python_module": "custom_nodes.preview.volview",
+    "input": {
+      "optional": {
+        "IMAGE_FILE": ["IMAGE_FILE"],
+        "DICOM_FILE": ["DICOM_FILE"],
+        "NIFTI_FILE": ["NIFTI_FILE"]
+      }
+    },
+    "input_order": {
+      "optional": [
+        "IMAGE_FILE",
+        "DICOM_FILE",
+        "NIFTI_FILE"
+      ]
+    },
+    "output": [],
+    "output_name": [],
+    "output_is_list": [],
+    "output_node": true
+  },
+
+  "output.export": {
+    "name": "output.export",
+    "category": "output",
+    "display_name": "Export",
+    "description": "",
+    "python_module": "custom_nodes.output.export",
+    "input": {
+      "optional": {
+        "IMAGE_FILE": ["IMAGE_FILE"],
+        "DICOM_FILE": ["DICOM_FILE"],
+        "NIFTI_FILE": ["NIFTI_FILE"]
+      }
+    },
+    "input_order": {
+      "optional": [
+        "IMAGE_FILE",
+        "DICOM_FILE",
+        "NIFTI_FILE"
+      ]
     },
     "output": [],
     "output_name": [],

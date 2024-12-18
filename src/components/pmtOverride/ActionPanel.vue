@@ -1066,22 +1066,36 @@ function getWorkflowJson(stringify = false) {
       }),
       status: nodes[i].pmt_fields?.status || (type === 'input' ? '' : 'pending')
     }
-    if (pmt_fields.type === 'input') {
-      // pmt_fields.inputs = []
-      // for temp test
-      pmt_fields.outputs[0] = {
-        oid: [pmt_fields.args.source || '123sacza-12312aas'],
-        path: ['./data/cache/a.dcm']
-      }
-    } else if (pmt_fields.type === 'output') {
-      // pmt_fields.outputs = []
-      // for preview
-      // pmt_fields.outputs = pmt_fields.inputs.map((i) => {
-      //   return {
-      //     oid: [],
-      //     path: []
-      //   }
-      // })
+    switch (pmt_fields.type) {
+      case 'input':
+        // pmt_fields.inputs = []
+        // for temp test
+        pmt_fields.outputs[0] = {
+          oid: [pmt_fields.args.source || '123sacza-12312aas'],
+          path: ['./data/cache/a.dcm']
+        }
+        // ...
+        break
+      case 'plugin':
+        // ...
+        break
+      case 'converter':
+        pmt_fields.plugin_name = null
+        // ...
+        break
+      case 'preview':
+        pmt_fields.plugin_name = null
+        pmt_fields.function_name = null
+        // ...
+        break
+      case 'output':
+        pmt_fields.plugin_name = null
+        pmt_fields.function_name = null
+        // ...
+        break
+      default:
+        // ...
+        break
     }
     nodes[i].pmt_fields = pmt_fields
     return nodes[i]
