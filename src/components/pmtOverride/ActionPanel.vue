@@ -125,7 +125,7 @@
         </Popover>
         <Button
           v-if="!loading"
-          class="btn-term max-md:hidden"
+          class="btn-term"
           size="small"
           :aria-label="'Terminal'"
           icon="pi pi-code"
@@ -168,9 +168,7 @@
       <ConfirmPopup group="confirm_saving" />
       <Toast />
     </Panel>
-    <div
-      class="terminal-container fixed top-0 right-0 rounded-bl overflow-hidden max-w-screen-sm max-md:hidden"
-    >
+    <div class="terminal-container">
       <div v-show="showTerminal" id="terminal"></div>
     </div>
   </teleport>
@@ -1309,6 +1307,12 @@ async function langchainChat(langchain_json) {
 <style scoped>
 .btn-pip {
   @apply truncate;
+}
+.btn-term {
+  @apply max-md:hidden;
+}
+.terminal-container {
+  @apply fixed top-0 right-0 rounded-bl overflow-hidden max-w-screen-sm max-md:hidden;
 }
 </style>
 
