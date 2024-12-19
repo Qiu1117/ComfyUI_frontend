@@ -1312,7 +1312,10 @@ async function langchainChat(langchain_json) {
   @apply max-md:hidden;
 }
 .terminal-container {
-  @apply fixed top-0 right-0 rounded-bl overflow-hidden max-w-screen-sm max-md:hidden;
+  @apply fixed top-0 right-0 max-w-screen-sm max-md:hidden;
+}
+#terminal {
+  @apply overflow-hidden border-black border-solid border-r-0 border-t-0 border-b-0 rounded-bl-lg shadow-lg;
 }
 </style>
 
