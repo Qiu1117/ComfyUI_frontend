@@ -169,10 +169,13 @@
       <Toast />
     </Panel>
     <div
-      class="terminal-container"
-      :class="showTerminal ? 'z-[9999]' : '-z-[1] pointer-events-none'"
+      class="terminal-container pointer-events-none"
+      :class="showTerminal ? 'z-[9999]' : '-z-[1]'"
     >
-      <div id="terminal" :class="showTerminal ? '' : 'invisible'"></div>
+      <div
+        id="terminal"
+        :class="showTerminal ? 'pointer-events-auto' : 'invisible'"
+      ></div>
     </div>
   </teleport>
 </template>
