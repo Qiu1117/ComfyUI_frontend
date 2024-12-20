@@ -168,8 +168,11 @@
       <ConfirmPopup group="confirm_saving" />
       <Toast />
     </Panel>
-    <div class="terminal-container">
-      <div v-show="showTerminal" id="terminal"></div>
+    <div
+      class="terminal-container"
+      :class="showTerminal ? 'z-[9999]' : '-z-[1] pointer-events-none'"
+    >
+      <div id="terminal" :class="showTerminal ? '' : 'invisible'"></div>
     </div>
   </teleport>
 </template>
@@ -766,8 +769,24 @@ async function run(e) {
     })
       .then(async (res) => {
         for await (const chunk of decodeMultiStream(res.body)) {
-          console.log('[CHUNK]', chunk)
-          // ...
+          if (chunk?.id === pipelineId) {
+            const { pythonMsg, graphJson } = chunk
+            const msg = pythonMsg?.msg || ''
+            const nodes = []
+            if (graphJson) {
+              graphJson.forEach(({ id, pmtFields: pmt_fields }) => {
+                if (pmt_fields) {
+                  const node = { id, pmt_fields: JSON.parse(pmt_fields) }
+                  // ...
+                  nodes.push(node)
+                }
+              })
+            }
+            if (msg) {
+              terminal.term.write(msg + (msg.endsWith('\r') ? '\n' : ''))
+            }
+            console.log(msg, nodes.length > 0 ? nodes : '')
+          }
         }
         console.log('[DONE]')
       })
@@ -1201,10 +1220,12 @@ async function langchainChat(langchain_json) {
   @apply max-md:hidden;
 }
 .terminal-container {
-  @apply fixed top-0 right-0 max-w-screen-sm max-md:hidden;
+  @apply fixed top-0 right-0 max-md:hidden;
 }
 #terminal {
-  @apply overflow-hidden border-black border-solid border-r-0 border-t-0 border-b-0 rounded-bl-lg shadow-lg;
+  @apply overflow-hidden border-black border-solid border-r border-b-4 border-l-4;
+  transform: scale(0.75);
+  transform-origin: top right;
 }
 </style>
 
@@ -1233,5 +1254,9 @@ async function langchainChat(langchain_json) {
 
 #btn-run-menu {
   margin-top: -5px !important;
+}
+
+#terminal .xterm-rows {
+  font-size: 14px;
 }
 </style>
