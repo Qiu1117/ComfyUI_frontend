@@ -21,3 +21,6 @@ import './widgetInputs'
 import './uploadAudio'
 import './electronAdapter'
 import './load3d'
+
+import '../pmt/uploadDicom'
+import '../pmt/uploadNifti'
