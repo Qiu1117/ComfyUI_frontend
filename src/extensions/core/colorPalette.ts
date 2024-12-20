@@ -15,12 +15,18 @@ export const datatypeColor = {
 
   '1D': '#facc15', // yellow
   DICT: '#fb923c', // orange
-  TABLE: '#60a5fa', // blue
+  TABLE: '#a3e635', // lime
 
-  '2D': '#2dd4bf', // teal
-  DICOM: '#0d9488', // teal
-  '3D': '#f472b6', // pink
-  NIFTI: '#db2777', // pink
+  '2D': '#22d3ee', // cyan
+  DICOM: '#2dd4bf', // teal
+  DICOM_FILE: '#0d9488', // teal
+
+  DICOM_VOLUME_FILE: '#ec4899', // pink
+  '3D': '#e879f9', // fuchsia
+  NIFTI: '#f472b6', // pink
+  NIFTI_FILE: '#db2777', // pink
+
+  IMAGE_FILE: '#60a5fa', // blue
 
   LOOP: '#be123c' // rose
 }
