@@ -526,7 +526,7 @@
   "input.2d": {
     "name": "input.2d",
     "category": "input",
-    "display_name": "2D",
+    "display_name": "2D - 已棄用",
     "description": "2D input.",
     "python_module": "nodes",
     "input": {
@@ -540,9 +540,9 @@
     "output": ["2D"],
     "output_name": ["data"],
     "output_is_list": [false],
-    "output_node": false
+    "output_node": false,
+    "deprecated": true
   },
-
   "input.load_image": {
     "name": "input.load_image",
     "category": "input",
