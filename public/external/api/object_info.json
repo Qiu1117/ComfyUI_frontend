@@ -543,6 +543,32 @@
     "output_node": false
   },
 
+  "input.load_image": {
+    "name": "input.load_image",
+    "category": "input",
+    "display_name": "Load Image",
+    "description": "",
+    "python_module": "nodes",
+    "input": {
+      "required": {
+        "image": [
+          [
+            ""
+          ],
+          {
+            "image_upload2": true
+          }
+        ]
+      }
+    },
+    "input_order": {
+      "required": ["image"]
+    },
+    "output": ["IMAGE_FILE"],
+    "output_name": ["IMAGE_FILE"],
+    "output_is_list": [false],
+    "output_node": false
+  },
   "input.load_dicom": {
     "name": "input.load_dicom",
     "category": "input",
