@@ -813,6 +813,25 @@
     "output_is_list": [false],
     "output_node": false
   },
+  "converter.image_to_2d": {
+    "name": "converter.image_to_2d",
+    "category": "coverters",
+    "display_name": "Image to 2D",
+    "description": "Convert image file to 2D data.",
+    "python_module": "custom_nodes.converter.image_to_2d",
+    "input": {
+      "required": {
+        "IMAGE_FILE": ["IMAGE_FILE"]
+      }
+    },
+    "input_order": {
+      "required": ["IMAGE_FILE"]
+    },
+    "output": ["2D"],
+    "output_name": ["data"],
+    "output_is_list": [false],
+    "output_node": false
+  },
   "converter.2d_to_dicom": {
     "name": "converter.2d_to_dicom",
     "category": "coverters",
@@ -829,6 +848,25 @@
     },
     "output": ["DICOM_FILE"],
     "output_name": ["DICOM_FILE"],
+    "output_is_list": [false],
+    "output_node": false
+  },
+  "converter.dicom_to_2d": {
+    "name": "converter.dicom_to_2d",
+    "category": "coverters",
+    "display_name": "DICOM to 2D",
+    "description": "Convert DICOM file to 2D data.",
+    "python_module": "custom_nodes.converter.dicom_to_2d",
+    "input": {
+      "required": {
+        "DICOM_FILE": ["DICOM_FILE"]
+      }
+    },
+    "input_order": {
+      "required": ["DICOM_FILE"]
+    },
+    "output": ["2D"],
+    "output_name": ["data"],
     "output_is_list": [false],
     "output_node": false
   },
@@ -870,6 +908,25 @@
     "output_is_list": [false],
     "output_node": false
   },
+  "converter.dicom_volume_to_3d": {
+    "name": "converter.dicom_volume_to_3d",
+    "category": "coverters",
+    "display_name": "DICOM Volume to 3D",
+    "description": "Convert DICOM volume file to 3D data.",
+    "python_module": "custom_nodes.converter.dicom_volume_to_3d",
+    "input": {
+      "required": {
+        "DICOM_VOLUME_FILE": ["DICOM_VOLUME_FILE"]
+      }
+    },
+    "input_order": {
+      "required": ["DICOM_VOLUME_FILE"]
+    },
+    "output": ["3D"],
+    "output_name": ["data"],
+    "output_is_list": [false],
+    "output_node": false
+  },
   "converter.3d_to_nifti": {
     "name": "converter.3d_to_nifti",
     "category": "coverters",
@@ -886,6 +943,25 @@
     },
     "output": ["NIFTI_FILE"],
     "output_name": ["NIFTI_FILE"],
+    "output_is_list": [false],
+    "output_node": false
+  },
+  "converter.nifti_to_3d": {
+    "name": "converter.nifti_to_3d",
+    "category": "coverters",
+    "display_name": "NIFTI to 3D",
+    "description": "Convert NIFTI file to 3D data.",
+    "python_module": "custom_nodes.converter.nifti_to_3d",
+    "input": {
+      "required": {
+        "NIFTI_FILE": ["NIFTI_FILE"]
+      }
+    },
+    "input_order": {
+      "required": ["NIFTI_FILE"]
+    },
+    "output": ["3D"],
+    "output_name": ["data"],
     "output_is_list": [false],
     "output_node": false
   },
