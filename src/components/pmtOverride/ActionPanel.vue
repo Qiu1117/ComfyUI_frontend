@@ -789,7 +789,11 @@ onMounted(() => {
     term.open(document.getElementById('terminal'))
     fitAddon.fit()
 
-    term.write('Hello from \x1B[1;3;31mxterm.js\x1B[0m $ ')
+    term.write('Hello from \x1B[1;3;31mxterm.js\x1B[0m')
+    term.write('\r\n')
+    term.write('$ ping\r\n')
+    term.write('PONG\r\n')
+    term.write('$ ')
   }
 })
 
