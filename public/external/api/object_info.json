@@ -567,11 +567,141 @@
     "output_node": false
   },
 
+  "plugin.head_deident.execution": {
+    "name": "plugin.head_deident.execution",
+    "category": "plugins/head_deident",
+    "display_name": "Head De-identify",
+    "description": "Head de-identifcation",
+    "python_module": "custom_nodes.head_deident.execution",
+    "input": {
+      "required": {
+        "head_data": ["3D"]
+      },
+      "optional": {
+        "modality": [
+          [
+            "CT",
+            "MR"
+          ]
+        ],
+        "threshold": [
+          "INT",
+          {
+            "default": 10,
+            "min": 0,
+            "max": 100,
+            "step": 1
+          }
+        ],
+        "thick": [
+          "INT",
+          {
+            "default": 2,
+            "min": 0,
+            "max": 100,
+            "step": 1
+          }
+        ],
+        "distort": [
+          "BOOLEAN",
+          {
+            "default": false
+          }
+        ],
+        "organ_eyes": [
+          ["blur", "remove", "keep"]
+        ],
+        "organ_nose": [
+          ["blur", "remove", "keep"]
+        ],
+        "organ_mouth": [
+          ["blur", "remove", "keep"]
+        ]
+      }
+    },
+    "input_order": {
+      "required": ["head_data"],
+      "optional": ["modality", "threshold", "thick", "distort", "organ_eyes", "organ_nose", "organ_mouth"]
+    },
+    "output": ["3D", "3D", "3D", "3D", "3D"],
+    "output_name": ["de_identified_data", "mask", "refined_mask", "contour", "difference_data"],
+    "output_is_list": [false, false, false, false, false],
+    "output_node": false
+  },
+  "plugin.ocr_deident.deident_ocr": {
+    "name": "plugin.ocr_deident.deident_ocr",
+    "category": "plugins/ocr_deident",
+    "display_name": "OCR De-identify",
+    "description": "OCR de-identifcation",
+    "python_module": "custom_nodes.ocr_deident.deident_ocr",
+    "input": {
+      "required": {
+        "dicom_obj": ["DICOM"]
+      },
+      "optional": {
+        "sensitive_list": [
+          "STRING",
+          {
+            "default": "PatientName,PatientID,PatientBirthDate",
+            "multiline": true
+          }
+        ],
+        "x": [
+          "INT",
+          {
+            "default": 0,
+            "min": 0
+          }
+        ],
+        "y": [
+          "INT",
+          {
+            "default": 0,
+            "min": 0
+          }
+        ],
+        "width": [
+          "INT",
+          {
+            "default": 0,
+            "min": 0
+          }
+        ],
+        "height": [
+          "INT",
+          {
+            "default": 0,
+            "min": 0
+          }
+        ],
+        "roi_only": [
+          "BOOLEAN",
+          {
+            "default": false
+          }
+        ],
+        "use_gpu": [
+          "BOOLEAN",
+          {
+            "default": false
+          }
+        ]
+      }
+    },
+    "input_order": {
+      "required": ["dicom_obj"],
+      "optional": ["sensitive_list", "x", "y", "width", "height", "roi_only", "use_gpu"]
+    },
+    "output": ["2D"],
+    "output_name": ["data"],
+    "output_is_list": [false],
+    "output_node": false
+  },
   "plugin.smooth.smooth_2d": {
     "name": "plugin.smooth.smooth_2d",
     "category": "plugins/smooth",
     "display_name": "Smooth (2D)",
-    "description": "main function",
+    "description": "smooth 2D data",
     "python_module": "custom_nodes.smooth.smooth_2d",
     "input": {
       "required": {
@@ -596,6 +726,56 @@
     "output": ["2D", "STRING"],
     "output_name": ["data", "test_txt"],
     "output_is_list": [false, false],
+    "output_node": false
+  },
+  "plugin.smooth.smooth_3d": {
+    "name": "plugin.smooth.smooth_3d",
+    "category": "plugins/smooth",
+    "display_name": "Smooth (3D)",
+    "description": "smooth 3D data",
+    "python_module": "custom_nodes.smooth.smooth_3d",
+    "input": {
+      "required": {
+        "data": ["3D"]
+      },
+      "optional": {
+        "sigma": [
+          "FLOAT",
+          {
+            "default": 4,
+            "min": 0,
+            "max": 50,
+            "step": 0.1
+          }
+        ]
+      }
+    },
+    "input_order": {
+      "required": ["data"],
+      "optional": ["sigma"]
+    },
+    "output": ["3D", "STRING"],
+    "output_name": ["data", "test_txt"],
+    "output_is_list": [false, false],
+    "output_node": false
+  },
+  "plugin.get_nifti.get_nifti": {
+    "name": "plugin.get_nifti.get_nifti",
+    "category": "plugins/get_nifti",
+    "display_name": "Get NIFTI",
+    "description": "生成nifti并存入缓存,返回这个序列的nifti地址",
+    "python_module": "custom_nodes.get_nifti.get_nifti",
+    "input": {
+      "required": {
+        "series": ["3D"]
+      }
+    },
+    "input_order": {
+      "required": ["series"]
+    },
+    "output": ["3D"],
+    "output_name": ["nifti"],
+    "output_is_list": [false],
     "output_node": false
   },
 
@@ -629,7 +809,7 @@
       "optional": ["normalize"]
     },
     "output": ["IMAGE_FILE"],
-    "output_name": ["file"],
+    "output_name": ["image_file"],
     "output_is_list": [false],
     "output_node": false
   },
@@ -648,7 +828,45 @@
       "required": ["data"]
     },
     "output": ["DICOM_FILE"],
-    "output_name": ["file"],
+    "output_name": ["dicom_file"],
+    "output_is_list": [false],
+    "output_node": false
+  },
+  "converter.2d_to_nifti": {
+    "name": "converter.2d_to_nifti",
+    "category": "coverters",
+    "display_name": "2D to NIFTI",
+    "description": "Convert 2D data to NIFTI file.",
+    "python_module": "custom_nodes.converter.2d_to_nifti",
+    "input": {
+      "required": {
+        "data": ["2D"]
+      }
+    },
+    "input_order": {
+      "required": ["data"]
+    },
+    "output": ["NIFTI_FILE"],
+    "output_name": ["nifti_file"],
+    "output_is_list": [false],
+    "output_node": false
+  },
+  "converter.3d_to_dicom_volume": {
+    "name": "converter.3d_to_dicom_volume",
+    "category": "coverters",
+    "display_name": "3D to DICOM Volume",
+    "description": "Convert 3D data to DICOM volume file.",
+    "python_module": "custom_nodes.converter.3d_to_dicom_volume",
+    "input": {
+      "required": {
+        "data": ["3D"]
+      }
+    },
+    "input_order": {
+      "required": ["data"]
+    },
+    "output": ["DICOM_VOLUME_FILE"],
+    "output_name": ["dicom_volume_file"],
     "output_is_list": [false],
     "output_node": false
   },
@@ -667,7 +885,7 @@
       "required": ["data"]
     },
     "output": ["NIFTI_FILE"],
-    "output_name": ["file"],
+    "output_name": ["nifti_file"],
     "output_is_list": [false],
     "output_node": false
   },
