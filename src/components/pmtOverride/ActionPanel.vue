@@ -205,7 +205,9 @@ import { useConfirm } from 'primevue/useconfirm'
 import { LiteGraph, LGraphCanvas } from '@comfyorg/litegraph'
 import { app as comfyApp } from '@/scripts/app'
 import { useNodeDefStore, SYSTEM_NODE_DEFS } from '@/stores/nodeDefStore'
-// import { nodeStatusColor } from '@/extensions/core/colorPalette'
+import { useCommandStore } from '@/stores/commandStore'
+import { workflowService } from '@/services/workflowService'
+import { nodeStatusColor } from '@/extensions/core/colorPalette'
 
 let decodeMultiStream = (stream) => {
   console.warn('MessagePack not found')
@@ -348,20 +350,35 @@ onMounted(() => {
         {
           content: 'Reset All Nodes',
           callback: async () => {
-            // reset all nodes status...
+            comfyApp.graph.nodes.forEach((node) => {
+              if (node.pmt_styles) {
+                delete node.pmt_styles
+                // ...
+              } else if (console.log(node)) {
+                node.pmt_styles = {
+                  ringColor: nodeStatusColor['white'],
+                  ringWidth: 2
+                }
+                node.setDirtyCanvas(true)
+                requestAnimationFrame(() => {
+                  delete node.pmt_styles
+                  node.setDirtyCanvas(true)
+                })
+              }
+            })
           }
         },
         {
-          content: 'Refresh Without Cache',
+          content: 'Refresh Node Definitions',
           callback: async () => {
-            // clear cache ...
-            router.go(0)
+            await useCommandStore().execute('Comfy.RefreshNodeDefinitions')
+            workflowService.reloadCurrentWorkflow()
           }
         },
         {
           content: 'Clear Workflow',
           callback: async () => {
-            // remove all nodes...
+            await useCommandStore().execute('Comfy.ClearWorkflow')
           }
         }
       )
@@ -379,8 +396,7 @@ onMounted(() => {
       options.splice(resetOptionIndex, 0, {
         content: 'Reset',
         callback: async () => {
-          // reset node status...
-          console.log('reset node status...')
+          console.log(node)
         }
       })
       return options

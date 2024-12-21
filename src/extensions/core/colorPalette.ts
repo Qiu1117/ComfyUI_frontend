@@ -32,6 +32,7 @@ export const datatypeColor = {
 }
 
 export const nodeStatusColor = {
+  white: '#fff',
   pending: '#ff0', // yellow
   current: '#3b82f6', // blue
   done: '#0f0', // green
