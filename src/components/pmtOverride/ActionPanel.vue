@@ -335,6 +335,7 @@ onMounted(() => {
   Object.keys(SYSTEM_NODE_DEFS).forEach((type) => {
     LiteGraph.unregisterNodeType(type)
   })
+  LiteGraph.unregisterNodeType('input.load_image')
 
   const getCanvasMenuOptions = LGraphCanvas.prototype.getCanvasMenuOptions
   LGraphCanvas.prototype.getCanvasMenuOptions = function () {
@@ -963,7 +964,7 @@ function getWorkflowJson(stringify = false) {
   workflow.nodes.forEach(({ id, inputs, outputs }, i, nodes) => {
     const node = comfyApp.graph.getNodeById(id)
     const nodeDef = nodeDefStore.nodeDefsByName[node.type]
-    const [type] = node.type.split('.')
+    const [type, subtype] = node.type.split('.')
     if (type === 'rag_llm') {
       const pmt_fields = {
         args: (node.widgets || []).reduce(
@@ -1016,6 +1017,36 @@ function getWorkflowJson(stringify = false) {
         }
         if (pmt_fields.outputs[0]?.path) {
           pmt_fields.outputs[0].path = []
+        }
+      }
+      if (subtype === 'boolean') {
+        pmt_fields.outputs[0] = {
+          ...(pmt_fields.outputs[0] || {}),
+          value: pmt_fields.args.bool
+        }
+      }
+      if (subtype === 'int') {
+        pmt_fields.outputs[0] = {
+          ...(pmt_fields.outputs[0] || {}),
+          value: pmt_fields.args.int
+        }
+      }
+      if (subtype === 'float') {
+        pmt_fields.outputs[0] = {
+          ...(pmt_fields.outputs[0] || {}),
+          value: pmt_fields.args.float
+        }
+      }
+      if (subtype === 'text') {
+        pmt_fields.outputs[0] = {
+          ...(pmt_fields.outputs[0] || {}),
+          value: pmt_fields.args.text
+        }
+      }
+      if (subtype === 'textarea') {
+        pmt_fields.outputs[0] = {
+          ...(pmt_fields.outputs[0] || {}),
+          value: pmt_fields.args.textarea
         }
       }
     }
