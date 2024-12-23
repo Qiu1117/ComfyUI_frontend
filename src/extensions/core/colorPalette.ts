@@ -5,39 +5,9 @@ import { $el } from '../../scripts/ui'
 import type { ColorPalettes, Palette } from '@/types/colorPalette'
 import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
 
+import { DATATYPE_COLOR } from '@/constants/pmtCore'
+
 // Manage color palettes
-
-export const datatypeColor = {
-  BOOLEAN: '#F77', // red
-  INT: '#7F7', // green
-  FLOAT: '#7F7', // green
-  STRING: '#77F', // purple
-
-  '1D': '#facc15', // yellow
-  DICT: '#fb923c', // orange
-  TABLE: '#a3e635', // lime
-
-  '2D': '#22d3ee', // cyan
-  DICOM: '#2dd4bf', // teal
-  DICOM_FILE: '#0d9488', // teal
-
-  DICOM_VOLUME_FILE: '#ec4899', // pink
-  '3D': '#e879f9', // fuchsia
-  NIFTI: '#f472b6', // pink
-  NIFTI_FILE: '#db2777', // pink
-
-  IMAGE_FILE: '#60a5fa', // blue
-
-  LOOP: '#be123c' // rose
-}
-
-export const nodeStatusColor = {
-  white: '#fff',
-  pending: '#ff0', // yellow
-  current: '#3b82f6', // blue
-  done: '#0f0', // green
-  error: '#f00' // red
-}
 
 const colorPalettes: ColorPalettes = {
   dark: {
@@ -45,7 +15,7 @@ const colorPalettes: ColorPalettes = {
     name: 'Dark (Default)',
     colors: {
       node_slot: {
-        ...datatypeColor,
+        ...DATATYPE_COLOR,
 
         CLIP: '#FFD500', // bright yellow
         CLIP_VISION: '#A8DADC', // light blue-gray

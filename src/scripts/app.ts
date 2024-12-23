@@ -65,6 +65,8 @@ import { st } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { ISerialisedGraph } from '@comfyorg/litegraph'
 
+import { NODE_STATUS_COLOR } from '@/constants/pmtCore'
+
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
 function sanitizeNodeName(string) {
@@ -1405,10 +1407,15 @@ export class ComfyApp {
         lineWidth = 2
       }
 
-      if ('pmt_styles' in node) {
-        const { ringColor, ringWidth } = (node.pmt_styles as any) || {}
-        color = ringColor || color
-        lineWidth = ringWidth || lineWidth
+      if ('pmt_fields' in node) {
+        const pmt_fields = node.pmt_fields as object
+        if ('status' in pmt_fields) {
+          const status = pmt_fields.status as string
+          if (status && NODE_STATUS_COLOR[status]) {
+            color = NODE_STATUS_COLOR[status]
+            lineWidth = 2
+          }
+        }
       }
 
       if (color) {

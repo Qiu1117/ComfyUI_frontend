@@ -181,12 +181,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, shallowRef } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   useBrowserLocation,
   useLocalStorage,
-  useElementHover
+  useElementHover,
+  useThrottleFn
 } from '@vueuse/core'
 import Panel from 'primevue/panel'
 import Menu from 'primevue/menu'
@@ -207,7 +208,6 @@ import { app as comfyApp } from '@/scripts/app'
 import { useNodeDefStore, SYSTEM_NODE_DEFS } from '@/stores/nodeDefStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { workflowService } from '@/services/workflowService'
-import { nodeStatusColor } from '@/extensions/core/colorPalette'
 
 let decodeMultiStream = (stream) => {
   console.warn('MessagePack not found')
@@ -262,6 +262,12 @@ function removePipelineEventListeners() {
     window.$electron.ipcRendererOff('deleted-pipeline')
   }
 }
+
+const nodesSelected = shallowRef([])
+const nodesSelectedCount = computed(() => nodesSelected.value.length)
+const updateNodesSelected = useThrottleFn(() => {
+  nodesSelected.value = comfyApp.graph.nodes.filter((node) => node.selected)
+}, 100)
 
 const location = useBrowserLocation()
 const volViewUrl = computed(() => {
@@ -350,22 +356,7 @@ onMounted(() => {
         {
           content: 'Reset All Nodes',
           callback: async () => {
-            comfyApp.graph.nodes.forEach((node) => {
-              if (node.pmt_styles) {
-                delete node.pmt_styles
-                // ...
-              } else if (console.log(node)) {
-                node.pmt_styles = {
-                  ringColor: nodeStatusColor['white'],
-                  ringWidth: 2
-                }
-                node.setDirtyCanvas(true)
-                requestAnimationFrame(() => {
-                  delete node.pmt_styles
-                  node.setDirtyCanvas(true)
-                })
-              }
-            })
+            comfyApp.graph.nodes.forEach(resetNodeStatus)
           }
         },
         {
@@ -396,7 +387,7 @@ onMounted(() => {
       options.splice(resetOptionIndex, 0, {
         content: 'Reset',
         callback: async () => {
-          console.log(node)
+          resetNodeStatus(node)
         }
       })
       return options
@@ -434,6 +425,38 @@ onMounted(() => {
     name: 'PMT.CustomExtension',
 
     async nodeCreated(node) {
+      const _onMouseEnter = node.onMouseEnter
+      node.onMouseEnter = function (e) {
+        // ...
+        return _onMouseEnter?.apply(this, arguments)
+      }
+      const _onMouseLeave = node.onMouseLeave
+      node.onMouseLeave = function (e) {
+        // ...
+        return _onMouseLeave?.apply(this, arguments)
+      }
+      const _onMouseDown = node.onMouseDown
+      node.onMouseDown = function (e, pos, canvas) {
+        // ...
+        return _onMouseDown?.apply(this, arguments)
+      }
+      const _onDblClick = node.onDblClick
+      node.onDblClick = function (e, pos, canvas) {
+        // ...
+        return _onDblClick?.apply(this, arguments)
+      }
+      const _onDrawBackground = node.onDrawBackground
+      node.onDrawBackground = function (
+        ctx,
+        canvas,
+        canvasElement,
+        mousePosition
+      ) {
+        // ...
+        updateNodesSelected()
+        return _onDrawBackground?.apply(this, arguments)
+      }
+
       if (
         node?.widgets?.findIndex((w) => {
           return w.type === 'customtext' && w.inputEl?.type === 'textarea'
@@ -444,55 +467,6 @@ onMounted(() => {
           node.setDirtyCanvas(true)
         })
       }
-
-      /*
-      if (node?.comfyClass === 'input.2d') {
-        const _onMouseEnter = node.onMouseEnter
-        node.onMouseEnter = function (e) {
-          node.pmt_styles = {
-            ringColor: nodeStatusColor['current'],
-            ringWidth: 2
-          }
-          return _onMouseEnter?.apply(this, arguments)
-        }
-
-        const _onMouseLeave = node.onMouseLeave
-        node.onMouseLeave = function (e) {
-          delete node.pmt_styles
-          return _onMouseLeave?.apply(this, arguments)
-        }
-
-        const _onMouseDown = node.onMouseDown
-        node.onMouseDown = function (e, pos, canvas) {
-          console.log(node.comfyClass, node, pos)
-          return _onMouseDown?.apply(this, arguments)
-        }
-      }
-      if (node?.comfyClass === 'output.data_to_image.main') {
-        const _onDblClick = node.onDblClick
-        node.onDblClick = function (e, pos, canvas) {
-          console.log(node.comfyClass, node, pos)
-          return _onDblClick?.apply(this, arguments)
-        }
-
-        // const _onDrawBackground = node.onDrawBackground
-        // node.onDrawBackground = function (ctx, canvas, canvasElement, mousePosition) {
-        //   console.log(node.comfyClass, node, mousePosition)
-        //   return _onDrawBackground?.apply(this, arguments)
-        // }
-
-        console.log(volViewUrl.value)
-        // const div = document.createElement('div')
-        // div.classList.add('relative', 'overflow-hidden')
-        // div.innerHTML = `
-        //   <div class="absolute inset-0 overflow-hidden" style="background: white; color: black;">
-        //     <iframe src="${volViewUrl.value}" frameborder="0" width="100%" height="100%"></iframe>
-        //   </div>
-        // `
-        // const widget = node.addDOMWidget('pmt_volview_embed', 'volview-embed', div, {})
-        // console.log(widget)
-      }
-      */
 
       if (node?.comfyClass.startsWith('rag_llm.prompt')) {
         const prompt_template_vars = {}
@@ -649,6 +623,20 @@ onMounted(() => {
           {}
         )
       }
+      /*
+      if (node?.comfyClass === 'output.data_to_image.main') {
+        console.log(volViewUrl.value)
+        // const div = document.createElement('div')
+        // div.classList.add('relative', 'overflow-hidden')
+        // div.innerHTML = `
+        //   <div class="absolute inset-0 overflow-hidden" style="background: white; color: black;">
+        //     <iframe src="${volViewUrl.value}" frameborder="0" width="100%" height="100%"></iframe>
+        //   </div>
+        // `
+        // const widget = node.addDOMWidget('pmt_volview_embed', 'volview-embed', div, {})
+        // console.log(widget)
+      }
+      */
     }
   })
 
@@ -722,32 +710,32 @@ const toast = useToast()
 const confirm = useConfirm()
 
 const runMenu = ref()
-const runMenuItems = ref([
+const runMenuItems = computed(() => [
   {
     label: 'Run',
     icon: 'pi pi-play',
     class: 'text-sm',
     disabled: false,
     command: () => {
-      run()
+      run(null, 'complete')
     }
   },
   {
-    label: 'Run (step-by-step)',
+    label: 'Run (one step)',
     icon: 'pi pi-step-forward',
     class: 'text-sm',
-    disabled: true,
+    disabled: false,
     command: () => {
-      run()
+      run(null, 'one-step')
     }
   },
   {
-    label: 'Run (to selected)',
+    label: 'Run (to node)',
     icon: 'pi pi-fast-forward',
     class: 'text-sm',
-    disabled: true,
+    disabled: nodesSelectedCount.value !== 1,
     command: () => {
-      //
+      run(null, 'to-node')
     }
   }
 ])
@@ -760,8 +748,19 @@ function togglePipOver(e) {
   pipOver.value.toggle(e)
 }
 
+function resetNodeStatus(node) {
+  if (node?.pmt_fields) {
+    delete node.pmt_fields
+    if (node.pmt_fields?.status) {
+      node.pmt_fields.status = 'pending'
+    }
+    node.setDirtyCanvas(true)
+  }
+}
+
 const running = ref(false)
-async function run(e) {
+const runningMode = ref('complete')
+async function run(e, mode = 'complete') {
   if (runMenu.value) {
     runMenu.value.hide(e)
   }
@@ -769,6 +768,7 @@ async function run(e) {
     return
   }
   running.value = true
+  runningMode.value = mode
   if (!pipelineId) {
     const { langchain_json } = exportJson(false)
     const answers = await langchainChat(langchain_json)
@@ -777,7 +777,8 @@ async function run(e) {
     const { json } = exportJson(false)
     const formData = {
       id: pipeline.value.id,
-      workflow: JSON.stringify(json)
+      workflow: JSON.stringify(json),
+      mode: runningMode.value
     }
     // console.log(formData)
     return fetch('connect://localhost/api/pipelines/run-once', {
@@ -792,20 +793,36 @@ async function run(e) {
           if (chunk?.id === pipelineId) {
             const { pythonMsg, graphJson } = chunk
             const msg = pythonMsg?.msg || ''
-            const nodes = []
+            const results = []
             if (graphJson) {
               graphJson.forEach(({ id, pmtFields: pmt_fields }) => {
                 if (pmt_fields) {
-                  const node = { id, pmt_fields: JSON.parse(pmt_fields) }
-                  // ...
-                  nodes.push(node)
+                  const result = { id, pmt_fields: JSON.parse(pmt_fields) }
+                  const node = comfyApp.graph.getNodeById(id)
+                  if (node) {
+                    if (result.pmt_fields.outputs) {
+                      console.log(result.pmt_fields)
+                    }
+                    if (
+                      result.pmt_fields.status &&
+                      result.pmt_fields.type !== 'input'
+                    ) {
+                      node.pmt_fields = {
+                        ...(node.pmt_fields || {}),
+                        status: result.pmt_fields.status
+                      }
+                    }
+                    node.setDirtyCanvas(true)
+                    return
+                  }
+                  results.push(result)
                 }
               })
             }
             if (msg) {
               terminal.term.write(msg + (msg.endsWith('\r') ? '\n' : ''))
+              console.log(msg, results.length > 0 ? results : '')
             }
-            console.log(msg, nodes.length > 0 ? nodes : '')
           }
         }
         console.log('[DONE]')
@@ -818,6 +835,7 @@ async function run(e) {
       })
   }
   running.value = false
+  runningMode.value = 'complete'
 }
 
 const stoppable = ref(!!pipelineId)
@@ -846,12 +864,12 @@ async function save() {
         name: pipelineName.value,
         description: pipelineDescription.value,
         color: pipelineColor.value,
-        workflow: getWorkflowJson(true)
+        workflow: getWorkflowJson(true, false)
       })
     } else {
       updatePipeline({
         ...pipeline.value,
-        workflow: getWorkflowJson(true)
+        workflow: getWorkflowJson(true, false)
       })
     }
     return
@@ -974,7 +992,7 @@ function exportJson(download = true) {
   return { json, langchain_json }
 }
 
-function getWorkflowJson(stringify = false) {
+function getWorkflowJson(stringify = false, keepStatus = true) {
   const workflow = comfyApp.graph.serialize()
   workflow.nodes.sort((a, b) => a.order - b.order)
   workflow.nodes.forEach(({ id, inputs, outputs }, i, nodes) => {
@@ -1030,7 +1048,7 @@ function getWorkflowJson(stringify = false) {
           path: []
         }
       }),
-      status: nodes[i].pmt_fields?.status || (type === 'input' ? '' : 'pending')
+      status: ''
     }
     if (pmt_fields.type === 'input') {
       const oid = pmt_fields.args.oid || pmt_fields.args.source
@@ -1072,6 +1090,12 @@ function getWorkflowJson(stringify = false) {
           value: pmt_fields.args.textarea
         }
       }
+    } else {
+      if (nodes[i].pmt_fields && 'status' in nodes[i].pmt_fields) {
+        pmt_fields.status = nodes[i].pmt_fields.status
+      } else {
+        pmt_fields.status = 'pending'
+      }
     }
     if (pmt_fields.type === 'plugin') {
       // ...
@@ -1099,6 +1123,9 @@ function getWorkflowJson(stringify = false) {
     if (pmt_fields.type === 'output') {
       pmt_fields.plugin_name = null
       pmt_fields.function_name = null
+    }
+    if (!keepStatus) {
+      delete pmt_fields.status
     }
     nodes[i].pmt_fields = pmt_fields
     return nodes[i]
