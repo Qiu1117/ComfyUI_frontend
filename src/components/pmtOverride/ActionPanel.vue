@@ -387,7 +387,37 @@ onMounted(() => {
       options.splice(resetOptionIndex, 0, {
         content: 'Reset',
         callback: async () => {
-          resetNodeStatus(node)
+          const nodeIds = []
+          try {
+            const { json } = exportJson(false)
+            const formData = {
+              id: pipeline.value.id,
+              workflow: JSON.stringify(json),
+              nodeId: node.id
+            }
+            // console.log(formData)
+            const res = await fetch(
+              'connect://localhost/api/pipelines/reset-pipeline-nodes-from-node-id',
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+              }
+            )
+            if (res?.nodeIds) {
+              nodeIds.push(...res.nodeIds)
+            }
+          } catch (err) {
+            console.error(err)
+          }
+          nodeIds.forEach((nodeId) => {
+            const node = comfyApp.graph.getNodeById(nodeId)
+            if (node) {
+              resetNodeStatus(node)
+            }
+          })
         }
       })
       return options
