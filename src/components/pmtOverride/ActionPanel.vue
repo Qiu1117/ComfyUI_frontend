@@ -1009,7 +1009,14 @@ function getWorkflowJson(stringify = false) {
       plugin_name: plugin_name || null,
       function_name: function_name || null,
       inputs: (inputs || []).map((i) => {
-        return {}
+        let optional = false
+        const optionalInput = nodeDef.inputs.optional?.[i.name]
+        if (optionalInput && optionalInput.type === i.type) {
+          optional = true
+        }
+        return {
+          optional
+        }
       }),
       args: (node.widgets || []).reduce((args, { type, name, value }) => {
         if (type !== 'converted-widget') {
