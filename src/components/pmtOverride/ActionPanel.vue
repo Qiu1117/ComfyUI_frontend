@@ -1131,8 +1131,14 @@ function getWorkflowJson(stringify = false, keepStatus = true) {
         pmt_fields.status = 'pending'
       }
     }
+    if (pmt_fields.type === 'manual') {
+      //
+    }
     if (pmt_fields.type === 'plugin') {
       // ...
+    } else {
+      pmt_fields.plugin_name = null
+      pmt_fields.function_name = null
     }
     if (pmt_fields.type === 'converter') {
       const inputNode = node.getInputNode(0)
@@ -1152,12 +1158,10 @@ function getWorkflowJson(stringify = false, keepStatus = true) {
       }
     }
     if (pmt_fields.type === 'preview') {
-      pmt_fields.plugin_name = null
-      pmt_fields.function_name = null
+      //
     }
     if (pmt_fields.type === 'output') {
-      pmt_fields.plugin_name = null
-      pmt_fields.function_name = null
+      //
     }
     if (!keepStatus) {
       delete pmt_fields.status
