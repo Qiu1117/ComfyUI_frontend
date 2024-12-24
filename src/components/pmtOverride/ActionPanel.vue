@@ -208,6 +208,7 @@ import { app as comfyApp } from '@/scripts/app'
 import { useNodeDefStore, SYSTEM_NODE_DEFS } from '@/stores/nodeDefStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { workflowService } from '@/services/workflowService'
+import { merge } from 'lodash'
 
 let decodeMultiStream = (stream) => {
   console.warn('MessagePack not found')
@@ -272,6 +273,8 @@ const updateNodesSelected = useThrottleFn(() => {
 const location = useBrowserLocation()
 const volViewUrl = computed(() => {
   const search = `?uiMode=lite&layoutName=${'Axial Only'}`
+  // + `&names=[data.png]&urls=[connect-file://localhost/C:\\sample test data\\data.png]`
+  // + `&names=[test.zip]&urls=[connect-file://localhost/C:\\sample test data\\test2\\MRI-PROSTATEx-0004.zip]&uid=test2&slice=0`
   let { port, origin, pathname } = location.value
   if (origin === 'file://') {
     pathname = pathname.replace('comfyui/', 'volview/')
@@ -497,7 +500,20 @@ onMounted(() => {
           node.setDirtyCanvas(true)
         })
       }
-
+      /*
+      if (node?.comfyClass === 'preview.volview') {
+        const div = document.createElement('div')
+        div.classList.add('relative', 'overflow-hidden')
+        div.innerHTML = `
+          <div class="absolute inset-0 overflow-hidden">
+            <iframe src="${volViewUrl.value}" frameborder="0" width="100%" height="100%"></iframe>
+          </div>
+        `
+        const widget = node.addDOMWidget('preview_volview', 'preview-volview', div, {})
+        console.log(volViewUrl.value, widget)
+        console.log(node.widgets)
+      }
+      */
       if (node?.comfyClass.startsWith('rag_llm.prompt')) {
         const prompt_template_vars = {}
         const findVars = (text) => {
@@ -653,20 +669,6 @@ onMounted(() => {
           {}
         )
       }
-      /*
-      if (node?.comfyClass === 'output.data_to_image.main') {
-        console.log(volViewUrl.value)
-        // const div = document.createElement('div')
-        // div.classList.add('relative', 'overflow-hidden')
-        // div.innerHTML = `
-        //   <div class="absolute inset-0 overflow-hidden" style="background: white; color: black;">
-        //     <iframe src="${volViewUrl.value}" frameborder="0" width="100%" height="100%"></iframe>
-        //   </div>
-        // `
-        // const widget = node.addDOMWidget('pmt_volview_embed', 'volview-embed', div, {})
-        // console.log(widget)
-      }
-      */
     }
   })
 
@@ -1052,7 +1054,7 @@ function getWorkflowJson(stringify = false, keepStatus = true) {
       return nodes[i]
     }
     const [_, plugin_name, function_name] = nodeDef.python_module.split('.')
-    const pmt_fields = {
+    const pmt_fields = merge(node?.pmt_fields || {}, {
       type,
       plugin_name: plugin_name || null,
       function_name: function_name || null,
@@ -1075,11 +1077,12 @@ function getWorkflowJson(stringify = false, keepStatus = true) {
       outputs: (outputs || []).map((o) => {
         return {
           oid: [],
-          path: []
+          path: [],
+          value: []
         }
       }),
       status: ''
-    }
+    })
     if (pmt_fields.type === 'input') {
       const oid = pmt_fields.args.oid || pmt_fields.args.source
       if (oid) {
@@ -1087,7 +1090,8 @@ function getWorkflowJson(stringify = false, keepStatus = true) {
           pmt_fields.outputs[0].oid = [oid]
         }
         if (pmt_fields.outputs[0]?.path) {
-          pmt_fields.outputs[0].path = []
+          pmt_fields.outputs[0].path = [...(pmt_fields.outputs[0].path || [])]
+          pmt_fields.outputs[0].value = [...(pmt_fields.outputs[0].value || [])]
         }
       }
       if (subtype === 'boolean') {
@@ -1121,8 +1125,8 @@ function getWorkflowJson(stringify = false, keepStatus = true) {
         }
       }
     } else {
-      if (nodes[i].pmt_fields && 'status' in nodes[i].pmt_fields) {
-        pmt_fields.status = nodes[i].pmt_fields.status
+      if (node.pmt_fields?.status) {
+        pmt_fields.status = node.pmt_fields.status
       } else {
         pmt_fields.status = 'pending'
       }
@@ -1135,16 +1139,17 @@ function getWorkflowJson(stringify = false, keepStatus = true) {
       if (inputNode && inputNode.pmt_fields?.type === 'input') {
         if (inputNode.pmt_fields.outputs[0]?.oid && pmt_fields.inputs[0]) {
           pmt_fields.inputs[0].oid = [...inputNode.pmt_fields.outputs[0].oid]
-          pmt_fields.inputs[0].path = []
+          pmt_fields.inputs[0].path = [...(pmt_fields.inputs[0].path || [])]
+          pmt_fields.inputs[0].value = [...(pmt_fields.inputs[0].value || [])]
           if (pmt_fields.outputs[0]?.oid) {
             pmt_fields.outputs[0].oid = [...pmt_fields.inputs[0].oid]
           }
           if (pmt_fields.outputs[0]?.path) {
             pmt_fields.outputs[0].path = [...pmt_fields.inputs[0].path]
+            pmt_fields.outputs[0].value = [...pmt_fields.inputs[0].value]
           }
         }
       }
-      pmt_fields.plugin_name = null
     }
     if (pmt_fields.type === 'preview') {
       pmt_fields.plugin_name = null
