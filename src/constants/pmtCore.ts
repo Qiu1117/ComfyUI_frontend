@@ -18,6 +18,7 @@ export const DATATYPE_COLOR = {
   NIFTI_FILE: '#db2777', // pink
 
   IMAGE_FILE: '#60a5fa', // blue
+  LABELMAP: '#86efac', // green
 
   LOOP: '#be123c' // rose
 }
