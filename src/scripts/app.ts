@@ -63,7 +63,6 @@ import { useWidgetStore } from '@/stores/widgetStore'
 import { deserialiseAndCreate } from '@/extensions/core/vintageClipboard'
 import { st } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
-import { ISerialisedGraph } from '@comfyorg/litegraph'
 
 import { NODE_STATUS_COLOR } from '@/constants/pmtCore'
 
@@ -593,9 +592,13 @@ export class ComfyApp {
       options.push({
         content: 'Bypass',
         callback: (obj) => {
-          if (this.mode === LGraphEventMode.BYPASS)
-            this.mode = LGraphEventMode.ALWAYS
-          else this.mode = LGraphEventMode.BYPASS
+          const mode =
+            this.mode === LGraphEventMode.BYPASS
+              ? LGraphEventMode.ALWAYS
+              : LGraphEventMode.BYPASS
+          for (const item of app.canvas.selectedItems) {
+            if (item instanceof LGraphNode) item.mode = mode
+          }
           this.graph.change()
         }
       })
@@ -1562,6 +1565,7 @@ export class ComfyApp {
     api.addEventListener('executing', ({ detail }) => {
       this.progress = null
       this.graph.setDirtyCanvas(true, false)
+      this.revokePreviews(this.runningNodeId)
       delete this.nodePreviewImages[this.runningNodeId]
     })
 
@@ -1604,6 +1608,8 @@ export class ComfyApp {
 
       const blob = detail
       const blobUrl = URL.createObjectURL(blob)
+      // Ensure clean up if `executing` event is missed.
+      this.revokePreviews(id)
       this.nodePreviewImages[id] = [blobUrl]
     })
 
@@ -1622,52 +1628,6 @@ export class ComfyApp {
         app.configuringGraph = false
       }
     }
-  }
-
-  #addWidgetLinkHandling() {
-    app.canvas.getWidgetLinkType = function (widget, node) {
-      const nodeDefStore = useNodeDefStore()
-      const nodeDef = nodeDefStore.nodeDefsByName[node.type]
-      const input = nodeDef.inputs.getInput(widget.name)
-      return input?.type
-    }
-
-    type ConnectingWidgetLink = {
-      subType: 'connectingWidgetLink'
-      widget: IWidget
-      node: LGraphNode
-      link: { node: LGraphNode; slot: number }
-    }
-
-    document.addEventListener(
-      'litegraph:canvas',
-      async (e: CustomEvent<ConnectingWidgetLink>) => {
-        if (e.detail.subType === 'connectingWidgetLink') {
-          const { convertToInput } = await import(
-            '@/extensions/core/widgetInputs'
-          )
-
-          const { node, link, widget } = e.detail
-          if (!node || !link || !widget) return
-
-          const nodeData = node.constructor.nodeData
-          if (!nodeData) return
-          const all = {
-            ...nodeData?.input?.required,
-            ...nodeData?.input?.optional
-          }
-          const inputSpec = all[widget.name]
-          if (!inputSpec) return
-
-          const input = convertToInput(node, widget, inputSpec)
-          if (!input) return
-
-          const originNode = link.node
-
-          originNode.connect(link.slot, node, node.inputs.lastIndexOf(input))
-        }
-      }
-    )
   }
 
   #addAfterConfigureHandler() {
@@ -1694,13 +1654,15 @@ export class ComfyApp {
    * Loads all extensions from the API into the window in parallel
    */
   async #loadExtensions() {
-    useExtensionStore().loadDisabledExtensionNames()
+    const extensionStore = useExtensionStore()
+    extensionStore.loadDisabledExtensionNames()
 
     const extensions = await api.getExtensions()
 
     // Need to load core extensions first as some custom extensions
     // may depend on them.
     await import('../extensions/core/index')
+    extensionStore.captureCoreExtensions()
     await Promise.all(
       extensions
         .filter((extension) => !extension.includes('extensions/core'))
@@ -1802,7 +1764,6 @@ export class ComfyApp {
     this.#addDropHandler()
     this.#addCopyHandler()
     this.#addPasteHandler()
-    this.#addWidgetLinkHandling()
 
     await this.#invokeExtensionsAsync('setup')
   }
@@ -2904,10 +2865,23 @@ export class ComfyApp {
   }
 
   /**
+   * Frees memory allocated to image preview blobs for a specific node, by revoking the URLs associated with them.
+   * @param nodeId ID of the node to revoke all preview images of
+   */
+  revokePreviews(nodeId: NodeId) {
+    if (!this.nodePreviewImages[nodeId]?.[Symbol.iterator]) return
+    for (const url of this.nodePreviewImages[nodeId]) {
+      URL.revokeObjectURL(url)
+    }
+  }
+  /**
    * Clean current state
    */
   clean() {
     this.nodeOutputs = {}
+    for (const id of Object.keys(this.nodePreviewImages)) {
+      this.revokePreviews(id)
+    }
     this.nodePreviewImages = {}
     this.lastNodeErrors = null
     this.lastExecutionError = null

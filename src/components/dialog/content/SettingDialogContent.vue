@@ -82,6 +82,10 @@ import { isElectron } from '@/utils/envUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { useI18n } from 'vue-i18n'
 
+const props = defineProps<{
+  defaultPanel?: 'about' | 'keybinding' | 'extension' | 'server-config'
+}>()
+
 const KeybindingPanel = defineAsyncComponent(
   () => import('./setting/KeybindingPanel.vue')
 )
@@ -116,12 +120,6 @@ const serverConfigPanelNode: SettingTreeNode = {
   children: []
 }
 
-const extensionPanelNodeList = computed<SettingTreeNode[]>(() => {
-  const settingStore = useSettingStore()
-  const showExtensionPanel = settingStore.get('Comfy.Settings.ExtensionPanel')
-  return showExtensionPanel ? [extensionPanelNode] : []
-})
-
 /**
  * Server config panel is only available in Electron. We might want to support
  * it in the web version in the future.
@@ -140,7 +138,7 @@ const categories = computed<SettingTreeNode[]>(() =>
   [
     ...settingCategories.value,
     keybindingPanelNode,
-    ...extensionPanelNodeList.value,
+    extensionPanelNode,
     ...serverConfigPanelNodeList.value,
     aboutPanelNode
   ].map((node) => ({
@@ -162,7 +160,10 @@ watch(activeCategory, (newCategory, oldCategory) => {
 })
 
 onMounted(() => {
-  activeCategory.value = categories.value[0]
+  activeCategory.value = props.defaultPanel
+    ? categories.value.find((x) => x.key === props.defaultPanel) ??
+      categories.value[0]
+    : categories.value[0]
 })
 
 const sortedGroups = (category: SettingTreeNode): ISettingGroup[] => {

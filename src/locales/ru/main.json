@@ -69,6 +69,7 @@
     "close": "Закрыть",
     "color": "Цвет",
     "comingSoon": "Скоро будет",
+    "command": "Команда",
     "confirm": "Подтвердить",
     "copyToClipboard": "Скопировать в буфер обмена",
     "currentUser": "Текущий пользователь",
@@ -77,8 +78,10 @@
     "delete": "Удалить",
     "deprecated": "УСТАРЕЛО",
     "devices": "Устройства",
+    "disableAll": "Отключить все",
     "download": "Скачать",
     "empty": "Пусто",
+    "enableAll": "Включить все",
     "error": "Ошибка",
     "experimental": "БЕТА",
     "extensionName": "Имя расширения",
@@ -88,6 +91,7 @@
     "icon": "Иконка",
     "imageFailedToLoad": "Не удалось загрузить изображение",
     "insert": "Вставить",
+    "keybinding": "Привязка клавиш",
     "loadAllFolders": "Загрузить все папки",
     "loadWorkflow": "Загрузить рабочий процесс",
     "loading": "Загрузка",
@@ -122,6 +126,7 @@
     "showReport": "Показать отчет",
     "systemInfo": "Информация о системе",
     "terminal": "Терминал",
+    "upload": "Загрузить",
     "videoFailedToLoad": "Не удалось загрузить видео"
   },
   "graphCanvasMenu": {
@@ -153,7 +158,7 @@
     "appPathLocationTooltip": "Директория активов приложения ComfyUI. Хранит код и активы ComfyUI",
     "chooseInstallationLocation": "Выберите место установки",
     "customNodes": "Пользовательские узлы",
-    "customNodesDescription": "Ссылайтесь на файлы пользовательских узлов из существующих установок ComfyUI и устанавливайте их зависимости.",
+    "customNodesDescription": "Переустановите пользовательские узлы из существующих установок ComfyUI.",
     "desktopAppSettings": "Настройки настольного приложения",
     "desktopAppSettingsDescription": "Настройте, как ComfyUI ведет себя на вашем рабочем столе. Вы можете изменить эти настройки позже.",
     "desktopSettings": "Настройки рабочего стола",
@@ -235,6 +240,7 @@
     "toggleBottomPanel": "Переключить нижнюю панель"
   },
   "menuLabels": {
+    "About ComfyUI": "О ComfyUI",
     "Browse Templates": "Просмотреть шаблоны",
     "Bypass/Unbypass Selected Nodes": "Обойти/восстановить выбранные узлы",
     "Canvas Toggle Link Visibility": "Переключение видимости ссылки на холст",
