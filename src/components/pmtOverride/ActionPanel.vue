@@ -890,6 +890,35 @@ async function save() {
   }
   saving.value = true
   if (pipelineId) {
+    let isValid = true
+    try {
+      const { json } = exportJson(false, false)
+      const formData = {
+        id: pipeline.value.id,
+        workflow: JSON.stringify(json)
+      }
+      // console.log(formData)
+      const res = await fetch(
+        'connect://localhost/api/pipelines/validate-pipeline-graph-json',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(formData)
+        }
+      )
+      if (res?.result) {
+        console.log('validate result:', JSON.parse(res.result))
+        // ...
+      }
+    } catch (err) {
+      console.error(err)
+    }
+    if (!isValid) {
+      saving.value = false
+      return
+    }
     if (isNewPipeline.value) {
       createPipeline({
         ...pipeline.value,
@@ -906,7 +935,7 @@ async function save() {
     }
     return
   } else {
-    const { json, langchain_json } = exportJson(false)
+    const { json, langchain_json } = exportJson(false, false)
     let langchain = localStorage.getItem('langchain')
     if (langchain) {
       langchain = JSON.parse(langchain)
@@ -980,8 +1009,8 @@ const confirmDelete = (e) => {
   togglePipOver(e)
 }
 
-function exportJson(download = true) {
-  const json = getWorkflowJson()
+function exportJson(download = true, keepStatus = true) {
+  const json = getWorkflowJson(false, keepStatus)
   console.log(json)
 
   if (download) {
