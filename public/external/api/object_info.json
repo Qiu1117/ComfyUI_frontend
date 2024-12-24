@@ -728,6 +728,28 @@
     "output_node": false
   },
 
+  "manual.segmentation": {
+    "name": "manual.segmentation",
+    "category": "manual",
+    "display_name": "Segmentation",
+    "description": "Manual segmentations.",
+    "python_module": "custom_nodes.manual.segmentation",
+    "input": {
+      "required": {
+        "DICOM_FILE": ["DICOM_FILE"]
+      }
+    },
+    "input_order": {
+      "required": [
+        "DICOM_FILE"
+      ]
+    },
+    "output": ["LABELMAP"],
+    "output_name": ["labelmap"],
+    "output_is_list": [false],
+    "output_node": false
+  },
+
   "plugin.head_deident.execution": {
     "name": "plugin.head_deident.execution",
     "category": "plugins/head_deident",
@@ -940,12 +962,12 @@
     "output_node": false
   },
 
-  "converter.image_to_2d": {
-    "name": "converter.image_to_2d",
-    "category": "coverters",
+  "converter.file_to_data.image_to_2d": {
+    "name": "converter.file_to_data.image_to_2d",
+    "category": "coverters/file_to_data",
     "display_name": "Image to 2D",
     "description": "Convert image file to 2D data.",
-    "python_module": "custom_nodes.converter.image_to_2d",
+    "python_module": "custom_nodes.file_to_data.image_to_2d",
     "input": {
       "required": {
         "IMAGE_FILE": ["IMAGE_FILE"]
@@ -959,12 +981,12 @@
     "output_is_list": [false],
     "output_node": false
   },
-  "converter.dicom_to_2d": {
-    "name": "converter.dicom_to_2d",
-    "category": "coverters",
+  "converter.file_to_data.dicom_to_2d": {
+    "name": "converter.file_to_data.dicom_to_2d",
+    "category": "coverters/file_to_data",
     "display_name": "DICOM to 2D",
     "description": "Convert DICOM file to 2D data.",
-    "python_module": "custom_nodes.converter.dicom_to_2d",
+    "python_module": "custom_nodes.file_to_data.dicom_to_2d",
     "input": {
       "required": {
         "DICOM_FILE": ["DICOM_FILE"]
@@ -978,12 +1000,12 @@
     "output_is_list": [false],
     "output_node": false
   },
-  "converter.dicom_volume_to_3d": {
-    "name": "converter.dicom_volume_to_3d",
-    "category": "coverters",
+  "converter.file_to_data.dicom_volume_to_3d": {
+    "name": "converter.file_to_data.dicom_volume_to_3d",
+    "category": "coverters/file_to_data",
     "display_name": "DICOM Volume to 3D",
     "description": "Convert DICOM volume file to 3D data.",
-    "python_module": "custom_nodes.converter.dicom_volume_to_3d",
+    "python_module": "custom_nodes.file_to_data.dicom_volume_to_3d",
     "input": {
       "required": {
         "DICOM_VOLUME_FILE": ["DICOM_VOLUME_FILE"]
@@ -997,12 +1019,12 @@
     "output_is_list": [false],
     "output_node": false
   },
-  "converter.nifti_to_3d": {
-    "name": "converter.nifti_to_3d",
-    "category": "coverters",
+  "converter.file_to_data.nifti_to_3d": {
+    "name": "converter.file_to_data.nifti_to_3d",
+    "category": "coverters/file_to_data",
     "display_name": "NIFTI to 3D",
     "description": "Convert NIFTI file to 3D data.",
-    "python_module": "custom_nodes.converter.nifti_to_3d",
+    "python_module": "custom_nodes.file_to_data.nifti_to_3d",
     "input": {
       "required": {
         "NIFTI_FILE": ["NIFTI_FILE"]
@@ -1016,13 +1038,12 @@
     "output_is_list": [false],
     "output_node": false
   },
-
-  "converter.2d_to_image": {
-    "name": "converter.2d_to_image",
-    "category": "coverters",
+  "converter.data_to_file.2d_to_image": {
+    "name": "converter.data_to_file.2d_to_image",
+    "category": "coverters/data_to_file",
     "display_name": "2D to Image",
     "description": "Convert 2D data to image file.",
-    "python_module": "custom_nodes.converter.2d_to_image",
+    "python_module": "custom_nodes.data_to_file.2d_to_image",
     "input": {
       "required": {
         "data": ["2D"],
@@ -1051,12 +1072,12 @@
     "output_is_list": [false],
     "output_node": false
   },
-  "converter.2d_to_dicom": {
-    "name": "converter.2d_to_dicom",
-    "category": "coverters",
+  "converter.data_to_file.2d_to_dicom": {
+    "name": "converter.data_to_file.2d_to_dicom",
+    "category": "coverters/data_to_file",
     "display_name": "2D to DICOM",
     "description": "Convert 2D data to DICOM file.",
-    "python_module": "custom_nodes.converter.2d_to_dicom",
+    "python_module": "custom_nodes.data_to_file.2d_to_dicom",
     "input": {
       "required": {
         "data": ["2D"]
@@ -1070,12 +1091,12 @@
     "output_is_list": [false],
     "output_node": false
   },
-  "converter.2d_to_nifti": {
-    "name": "converter.2d_to_nifti",
-    "category": "coverters",
+  "converter.data_to_file.2d_to_nifti": {
+    "name": "converter.data_to_file.2d_to_nifti",
+    "category": "coverters/data_to_file",
     "display_name": "2D to NIFTI",
     "description": "Convert 2D data to NIFTI file.",
-    "python_module": "custom_nodes.converter.2d_to_nifti",
+    "python_module": "custom_nodes.data_to_file.2d_to_nifti",
     "input": {
       "required": {
         "data": ["2D"]
@@ -1089,12 +1110,12 @@
     "output_is_list": [false],
     "output_node": false
   },
-  "converter.3d_to_dicom_volume": {
-    "name": "converter.3d_to_dicom_volume",
-    "category": "coverters",
+  "converter.data_to_file.3d_to_dicom_volume": {
+    "name": "converter.data_to_file.3d_to_dicom_volume",
+    "category": "coverters/data_to_file",
     "display_name": "3D to DICOM Volume",
     "description": "Convert 3D data to DICOM volume file.",
-    "python_module": "custom_nodes.converter.3d_to_dicom_volume",
+    "python_module": "custom_nodes.data_to_file.3d_to_dicom_volume",
     "input": {
       "required": {
         "data": ["3D"]
@@ -1108,12 +1129,12 @@
     "output_is_list": [false],
     "output_node": false
   },
-  "converter.3d_to_nifti": {
-    "name": "converter.3d_to_nifti",
-    "category": "coverters",
+  "converter.data_to_file.3d_to_nifti": {
+    "name": "converter.data_to_file.3d_to_nifti",
+    "category": "coverters/data_to_file",
     "display_name": "3D to NIFTI",
     "description": "Convert 3D data to NIFTI file.",
-    "python_module": "custom_nodes.converter.3d_to_nifti",
+    "python_module": "custom_nodes.data_to_file.3d_to_nifti",
     "input": {
       "required": {
         "data": ["3D"]
