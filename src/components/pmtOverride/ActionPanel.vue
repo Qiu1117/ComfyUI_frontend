@@ -1192,7 +1192,16 @@ function getWorkflowJson(stringify = false, keepStatus = true) {
     if (pmt_fields.type === 'output') {
       //
     }
-    if (!keepStatus) {
+    if (keepStatus) {
+      if (runningMode.value === 'to-node') {
+        if (nodesSelectedCount.value === 1) {
+          if (node === nodesSelected.value[0]) {
+            pmt_fields.status = 'current'
+            node.setDirtyCanvas(true)
+          }
+        }
+      }
+    } else {
       delete pmt_fields.status
     }
     nodes[i].pmt_fields = pmt_fields
