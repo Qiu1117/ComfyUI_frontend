@@ -5,8 +5,6 @@ import { $el } from '../../scripts/ui'
 import type { ColorPalettes, Palette } from '@/types/colorPalette'
 import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
 
-import { DATATYPE_COLOR } from '@/constants/pmtCore'
-
 // Manage color palettes
 
 const colorPalettes: ColorPalettes = {
@@ -15,8 +13,6 @@ const colorPalettes: ColorPalettes = {
     name: 'Dark (Default)',
     colors: {
       node_slot: {
-        ...DATATYPE_COLOR,
-
         CLIP: '#FFD500', // bright yellow
         CLIP_VISION: '#A8DADC', // light blue-gray
         CLIP_VISION_OUTPUT: '#ad7452', // rusty brown-orange
