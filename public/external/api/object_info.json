@@ -1148,6 +1148,25 @@
     "output_is_list": [false],
     "output_node": false
   },
+  "converter.data_to_data.2d_to_tensor": {
+    "name": "converter.data_to_data.2d_to_tensor",
+    "category": "coverters/data_to_data",
+    "display_name": "2D to Tensor",
+    "description": "Convert 2D data to torch.Tensor python datatype.",
+    "python_module": "custom_nodes.data_to_data.2d_to_tensor",
+    "input": {
+      "required": {
+        "data": ["2D"]
+      }
+    },
+    "input_order": {
+      "required": ["data"]
+    },
+    "output": ["IMAGE"],
+    "output_name": ["tensor"],
+    "output_is_list": [false],
+    "output_node": false
+  },
 
   "preview.volview": {
     "name": "preview.volview",
