@@ -181,12 +181,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, shallowRef } from 'vue'
+import { ref, shallowRef, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   useBrowserLocation,
   useLocalStorage,
   useElementHover,
+  useWebSocket,
   useThrottleFn
 } from '@vueuse/core'
 import Panel from 'primevue/panel'
@@ -245,24 +246,6 @@ const commitPipEdit = (e) => {
 }
 
 const loading = ref(!!pipeline.value?.id)
-
-function addPipelineEventListeners() {
-  if (window.$electron) {
-    window.$electron.ipcRendererOn('got-pipeline', handleGetPipeline)
-    window.$electron.ipcRendererOn('created-pipeline', handleCreatePipeline)
-    window.$electron.ipcRendererOn('updated-pipeline', handleUpdatePipeline)
-    window.$electron.ipcRendererOn('deleted-pipeline', handleDeletePipeline)
-  }
-}
-
-function removePipelineEventListeners() {
-  if (window.$electron) {
-    window.$electron.ipcRendererOff('got-pipeline')
-    window.$electron.ipcRendererOff('created-pipeline')
-    window.$electron.ipcRendererOff('updated-pipeline')
-    window.$electron.ipcRendererOff('deleted-pipeline')
-  }
-}
 
 const nodesSelected = shallowRef([])
 const nodesSelectedCount = computed(() => nodesSelected.value.length)
@@ -338,15 +321,15 @@ const toggleTerminal = (val) => {
 }
 
 onMounted(() => {
-  addPipelineEventListeners()
   if (loading.value) {
     getPipeline({ ...pipeline.value })
   }
 
-  Object.keys(SYSTEM_NODE_DEFS).forEach((type) => {
-    LiteGraph.unregisterNodeType(type)
+  ;['input.load_image', ...Object.keys(SYSTEM_NODE_DEFS)].forEach((type) => {
+    if (LiteGraph.getNodeType(type)) {
+      LiteGraph.unregisterNodeType(type)
+    }
   })
-  LiteGraph.unregisterNodeType('input.load_image')
 
   const getCanvasMenuOptions = LGraphCanvas.prototype.getCanvasMenuOptions
   LGraphCanvas.prototype.getCanvasMenuOptions = function () {
@@ -719,8 +702,6 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  removePipelineEventListeners()
-
   comfyApp.canvasEl.removeEventListener('drop', onDrop)
 
   if (window.driverObjs?.length) {
@@ -890,6 +871,7 @@ async function save() {
   }
   saving.value = true
   if (pipelineId) {
+    /*
     let isValid = true
     try {
       const { json } = exportJson(false, false)
@@ -919,6 +901,7 @@ async function save() {
       saving.value = false
       return
     }
+    */
     if (isNewPipeline.value) {
       createPipeline({
         ...pipeline.value,
@@ -1164,10 +1147,7 @@ function getWorkflowJson(stringify = false, keepStatus = true) {
       //
     }
     if (pmt_fields.type === 'plugin') {
-      // ...
-    } else {
-      pmt_fields.plugin_name = null
-      pmt_fields.function_name = null
+      //
     }
     if (pmt_fields.type === 'converter') {
       const inputNode = node.getInputNode(0)
@@ -1215,12 +1195,35 @@ function getWorkflowJson(stringify = false, keepStatus = true) {
 
 // ---
 
-function getPipeline(payload) {
-  if (window.$electron) {
-    window.$electron.ipcRendererSend('get-pipeline', payload)
+const ws = useWebSocket(localStorage.getItem('_ws') || undefined, {
+  heartbeat: true
+})
+watch(ws.data, async (data) => {
+  data = typeof data === 'string' ? data : await data.text()
+  if (data.startsWith('{')) data = JSON.parse(data)
+  if (data.sender === 'self') return
+  if (data.message?.startsWith('{')) data.message = JSON.parse(data.message)
+  if (data.message?.payload) {
+    const { type, payload } = data.message
+    if (type === 'got-pipeline') {
+      return handleGetPipeline(payload)
+    }
+    if (type === 'created-pipeline') {
+      return handleCreatePipeline(payload)
+    }
+    if (type === 'updated-pipeline') {
+      return handleUpdatePipeline(payload)
+    }
+    if (type === 'deleted-pipeline') {
+      return handleDeletePipeline(payload)
+    }
   }
+})
+
+function getPipeline(payload) {
+  ws.send(JSON.stringify({ type: 'get-pipeline', payload }))
 }
-function handleGetPipeline(e, payload) {
+function handleGetPipeline(payload) {
   if (!loading.value) {
     return
   }
@@ -1244,11 +1247,9 @@ function handleGetPipeline(e, payload) {
 }
 
 function createPipeline(payload) {
-  if (window.$electron) {
-    window.$electron.ipcRendererSend('create-pipeline', payload)
-  }
+  ws.send(JSON.stringify({ type: 'create-pipeline', payload }))
 }
-function handleCreatePipeline(e, payload) {
+function handleCreatePipeline(payload) {
   if (payload.id === pipeline.value.id) {
     // console.log('created pipeline:', payload)
   } else {
@@ -1266,11 +1267,9 @@ function handleCreatePipeline(e, payload) {
 }
 
 function updatePipeline(payload) {
-  if (window.$electron) {
-    window.$electron.ipcRendererSend('update-pipeline', payload)
-  }
+  ws.send(JSON.stringify({ type: 'update-pipeline', payload }))
 }
-function handleUpdatePipeline(e, payload) {
+function handleUpdatePipeline(payload) {
   if (payload.id === pipeline.value.id) {
     // console.log('updated pipeline:', payload)
   } else {
@@ -1288,11 +1287,9 @@ function handleUpdatePipeline(e, payload) {
 }
 
 function deletePipeline(payload) {
-  if (window.$electron) {
-    window.$electron.ipcRendererSend('delete-pipeline', payload)
-  }
+  ws.send(JSON.stringify({ type: 'delete-pipeline', payload }))
 }
-function handleDeletePipeline(e, payload) {
+function handleDeletePipeline(payload) {
   if (payload.id === pipeline.value.id) {
     // console.log('deleted pipeline:', payload)
   } else {
