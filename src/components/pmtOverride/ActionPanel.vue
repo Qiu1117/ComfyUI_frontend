@@ -1195,15 +1195,15 @@ function getWorkflowJson(stringify = false, keepStatus = true) {
 
 // ---
 
-const ws = useWebSocket(localStorage.getItem('_ws') || undefined, {
-  heartbeat: true
-})
+const _wsId = `comfyui-${pipelineId || '*'}`
+const _ws = ref(localStorage.getItem('_ws') || undefined)
+const ws = useWebSocket(_ws, { heartbeat: true })
 watch(ws.data, async (data) => {
   data = typeof data === 'string' ? data : await data.text()
   if (data.startsWith('{')) data = JSON.parse(data)
   if (data.sender === 'self') return
   if (data.message?.startsWith('{')) data.message = JSON.parse(data.message)
-  if (data.message?.payload) {
+  if (data.message?.source === _wsId) {
     const { type, payload } = data.message
     if (type === 'got-pipeline') {
       return handleGetPipeline(payload)
@@ -1221,7 +1221,7 @@ watch(ws.data, async (data) => {
 })
 
 function getPipeline(payload) {
-  ws.send(JSON.stringify({ type: 'get-pipeline', payload }))
+  ws.send(JSON.stringify({ source: _wsId, type: 'get-pipeline', payload }))
 }
 function handleGetPipeline(payload) {
   if (!loading.value) {
@@ -1247,7 +1247,7 @@ function handleGetPipeline(payload) {
 }
 
 function createPipeline(payload) {
-  ws.send(JSON.stringify({ type: 'create-pipeline', payload }))
+  ws.send(JSON.stringify({ source: _wsId, type: 'create-pipeline', payload }))
 }
 function handleCreatePipeline(payload) {
   if (payload.id === pipeline.value.id) {
@@ -1267,7 +1267,7 @@ function handleCreatePipeline(payload) {
 }
 
 function updatePipeline(payload) {
-  ws.send(JSON.stringify({ type: 'update-pipeline', payload }))
+  ws.send(JSON.stringify({ source: _wsId, type: 'update-pipeline', payload }))
 }
 function handleUpdatePipeline(payload) {
   if (payload.id === pipeline.value.id) {
@@ -1287,7 +1287,7 @@ function handleUpdatePipeline(payload) {
 }
 
 function deletePipeline(payload) {
-  ws.send(JSON.stringify({ type: 'delete-pipeline', payload }))
+  ws.send(JSON.stringify({ source: _wsId, type: 'delete-pipeline', payload }))
 }
 function handleDeletePipeline(payload) {
   if (payload.id === pipeline.value.id) {
