@@ -6,8 +6,6 @@ import nord from '@/assets/palettes/nord.json'
 import github from '@/assets/palettes/github.json'
 import type { ColorPalettes } from '@/types/colorPaletteTypes'
 
-import { DATATYPE_COLOR } from '@/constants/pmtCore'
-
 export const CORE_COLOR_PALETTES: ColorPalettes = {
   dark,
   light,
@@ -16,11 +14,3 @@ export const CORE_COLOR_PALETTES: ColorPalettes = {
   nord,
   github
 } as const
-
-Object.keys(CORE_COLOR_PALETTES).forEach((key) => {
-  const colorPalette = CORE_COLOR_PALETTES[key]
-  colorPalette.colors.node_slot = {
-    ...colorPalette.colors.node_slot,
-    ...DATATYPE_COLOR
-  }
-})
