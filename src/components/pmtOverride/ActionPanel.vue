@@ -208,7 +208,7 @@ import { LiteGraph, LGraphCanvas } from '@comfyorg/litegraph'
 import { app as comfyApp } from '@/scripts/app'
 import { useNodeDefStore, SYSTEM_NODE_DEFS } from '@/stores/nodeDefStore'
 import { useCommandStore } from '@/stores/commandStore'
-import { workflowService } from '@/services/workflowService'
+import { useWorkflowService } from '@/services/workflowService'
 import { merge } from 'lodash'
 
 let decodeMultiStream = (stream) => {
@@ -349,7 +349,7 @@ onMounted(() => {
           content: 'Refresh Node Definitions',
           callback: async () => {
             await useCommandStore().execute('Comfy.RefreshNodeDefinitions')
-            workflowService.reloadCurrentWorkflow()
+            useWorkflowService().reloadCurrentWorkflow()
           }
         },
         {
