@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+
 import { comfyPageFixture as test } from './fixtures/ComfyPage'
 
 test.describe('Item Interaction', () => {
@@ -451,6 +452,9 @@ test.describe('Canvas Interaction', () => {
     await comfyPage.page.mouse.move(10, 10)
     expect(await getCursorStyle()).toBe('default')
     await comfyPage.page.mouse.down()
+    expect(await getCursorStyle()).toBe('grabbing')
+    // Move mouse should not alter cursor style.
+    await comfyPage.page.mouse.move(10, 20)
     expect(await getCursorStyle()).toBe('grabbing')
     await comfyPage.page.mouse.up()
     expect(await getCursorStyle()).toBe('default')
