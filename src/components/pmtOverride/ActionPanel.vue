@@ -498,44 +498,58 @@ onMounted(() => {
             canvasElement,
             mousePosition
           ) {
-            if (node.pmt_fields?.status === 'done') {
-              const imageInputNode = node.getInputNode(0)
-              const imageInputs = imageInputNode?.pmt_fields?.outputs || []
-              const imagePath = imageInputs[0]?.path?.[0]
-              if (imagePath) {
-                let widget = node.widgets.find(
-                  (w) => w.name === 'preview-volview'
+            const imageInputNode =
+              node.pmt_fields?.status === 'done' ? node.getInputNode(0) : null
+            const imageInputs = imageInputNode?.pmt_fields?.outputs || []
+            const imagePath = imageInputs[0]?.path?.[0]
+            if (imagePath) {
+              let widget = node.widgets.find(
+                (w) => w.name === 'preview-volview'
+              )
+              if (!widget) {
+                const div = document.createElement('div')
+                div.classList.add('relative', 'overflow-hidden')
+                div.innerHTML = `
+                  <div class="absolute inset-0 overflow-hidden">
+                    <iframe src="${volViewUrl.value}" frameborder="0" width="100%" height="100%"></iframe>
+                  </div>
+                `
+                widget = node.addDOMWidget(
+                  'preview-volview',
+                  'preview-volview',
+                  div,
+                  {}
                 )
-                if (!widget) {
-                  const div = document.createElement('div')
-                  div.classList.add('relative', 'overflow-hidden')
-                  div.innerHTML = `
-                    <div class="absolute inset-0 overflow-hidden">
-                      <iframe src="${volViewUrl.value}" frameborder="0" width="100%" height="100%"></iframe>
-                    </div>
-                  `
-                  widget = node.addDOMWidget(
-                    'preview-volview',
-                    'preview-volview',
-                    div,
-                    {}
-                  )
+              }
+              const iframe = widget.element?.querySelector('iframe')
+              if (iframe) {
+                let ext = 'png'
+                if (imagePath.endsWith('.jpg')) {
+                  ext = 'jpg'
+                } else if (imagePath.endsWith('.jpeg')) {
+                  ext = 'jpeg'
+                }
+                const imageURL = new URL(
+                  volViewUrl.value +
+                    `&names=[file.${ext}]&urls=[connect-file://localhost/${imagePath}]`
+                )
+                if (iframe.src !== imageURL.href) {
                   node.setSize([400, 400])
                   node.setDirtyCanvas(true)
+                  widget.element.style.removeProperty('visibility')
+                  iframe.src = imageURL.href
                 }
+              }
+            } else {
+              let widget = node.widgets[0]
+              if (widget && widget.name === 'preview-volview') {
                 const iframe = widget.element?.querySelector('iframe')
                 if (iframe) {
-                  let ext = 'png'
-                  if (imagePath.endsWith('.jpg')) {
-                    ext = 'jpg'
-                  } else if (imagePath.endsWith('.jpeg')) {
-                    ext = 'jpeg'
-                  }
-                  const imageURL = new URL(
-                    volViewUrl.value +
-                      `&names=[file.${ext}]&urls=[connect-file://localhost/${imagePath}]`
-                  )
+                  const imageURL = new URL(volViewUrl.value)
                   if (iframe.src !== imageURL.href) {
+                    widget.element.style.setProperty('visibility', 'hidden')
+                    node.setSize([300, 100])
+                    node.setDirtyCanvas(true)
                     iframe.src = imageURL.href
                   }
                 }
