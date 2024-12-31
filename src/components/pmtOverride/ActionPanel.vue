@@ -871,7 +871,6 @@ async function save() {
   }
   saving.value = true
   if (pipelineId) {
-    /*
     let isValid = true
     try {
       const { json } = exportJson(false, false)
@@ -901,7 +900,6 @@ async function save() {
       saving.value = false
       return
     }
-    */
     if (isNewPipeline.value) {
       createPipeline({
         ...pipeline.value,
