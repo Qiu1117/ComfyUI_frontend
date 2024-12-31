@@ -19,7 +19,3 @@ import './widgetInputs'
 import './uploadAudio'
 import './electronAdapter'
 import './load3d'
-
-import '../pmt/uploadImage'
-import '../pmt/uploadDicom'
-import '../pmt/uploadNifti'
