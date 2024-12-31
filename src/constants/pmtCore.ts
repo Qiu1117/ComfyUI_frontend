@@ -16,9 +16,9 @@ export const DATATYPE_COLOR = {
   '3D': '#e879f9', // fuchsia
   NIFTI: '#f472b6', // pink
   NIFTI_FILE: '#db2777', // pink
+  // LABELMAP: '#86efac', // green
 
   IMAGE_FILE: '#60a5fa', // blue
-  LABELMAP: '#86efac', // green
 
   LOOP: '#be123c' // rose
 }

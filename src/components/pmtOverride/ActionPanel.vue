@@ -181,35 +181,36 @@
 </template>
 
 <script setup>
-import { ref, shallowRef, computed, watch, onMounted, onUnmounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
 import {
   useBrowserLocation,
-  useLocalStorage,
   useElementHover,
-  useWebSocket,
-  useThrottleFn
+  useLocalStorage,
+  useThrottleFn,
+  useWebSocket
 } from '@vueuse/core'
-import Panel from 'primevue/panel'
-import Menu from 'primevue/menu'
-import ButtonGroup from 'primevue/buttongroup'
+import { merge } from 'lodash'
 import Button from 'primevue/button'
-import Popover from 'primevue/popover'
+import ButtonGroup from 'primevue/buttongroup'
+import ConfirmDialog from 'primevue/confirmdialog'
+import ConfirmPopup from 'primevue/confirmpopup'
 import InputGroup from 'primevue/inputgroup'
 import InputGroupAddon from 'primevue/inputgroupaddon'
 import InputText from 'primevue/inputtext'
+import Menu from 'primevue/menu'
+import Panel from 'primevue/panel'
+import Popover from 'primevue/popover'
 import Textarea from 'primevue/textarea'
-import ConfirmDialog from 'primevue/confirmdialog'
-import ConfirmPopup from 'primevue/confirmpopup'
 import Toast from 'primevue/toast'
-import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
-import { LiteGraph, LGraphCanvas } from '@comfyorg/litegraph'
+import { useToast } from 'primevue/usetoast'
+import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+
 import { app as comfyApp } from '@/scripts/app'
-import { useNodeDefStore, SYSTEM_NODE_DEFS } from '@/stores/nodeDefStore'
-import { useCommandStore } from '@/stores/commandStore'
 import { useWorkflowService } from '@/services/workflowService'
-import { merge } from 'lodash'
+import { useCommandStore } from '@/stores/commandStore'
+import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 
 let decodeMultiStream = (stream) => {
   console.warn('MessagePack not found')
@@ -1180,7 +1181,7 @@ function getWorkflowJson(stringify = false, keepStatus = true) {
         }
       }
     } else {
-      delete pmt_fields.status
+      pmt_fields.status = ''
     }
     nodes[i].pmt_fields = pmt_fields
     return nodes[i]

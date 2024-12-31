@@ -744,8 +744,8 @@
         "DICOM_FILE"
       ]
     },
-    "output": ["LABELMAP"],
-    "output_name": ["labelmap"],
+    "output": ["NIFTI_FILE"],
+    "output_name": ["labelmap.nii.gz"],
     "output_is_list": [false],
     "output_node": false
   },
