@@ -1,3 +1,7 @@
+import '../pmt/uploadDicom'
+import '../pmt/uploadImage'
+import '../pmt/uploadNifti'
+// ...
 import './clipspace'
 import './contextMenuFilter'
 import './dynamicPrompts'

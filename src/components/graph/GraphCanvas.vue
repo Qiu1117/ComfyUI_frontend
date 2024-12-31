@@ -7,10 +7,11 @@
       v-if="comfyAppReady && betaMenuEnabled && !workspaceStore.focusMode"
     >
       <template #side-bar-panel>
-        <SideToolbar />
+        <SideToolbar v-if="false" />
       </template>
       <template #bottom-panel>
-        <BottomPanel />
+        <BottomPanel v-if="false" />
+        <ActionPanel v-else />
       </template>
       <template #graph-canvas-panel>
         <GraphCanvasMenu v-if="canvasMenuEnabled" />
@@ -46,6 +47,7 @@ import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
 import NodeBadge from '@/components/graph/NodeBadge.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
 import TitleEditor from '@/components/graph/TitleEditor.vue'
+import ActionPanel from '@/components/pmtOverride/ActionPanel.vue'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import { CORE_SETTINGS } from '@/constants/coreSettings'
