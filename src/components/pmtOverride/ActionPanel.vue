@@ -872,7 +872,7 @@ async function save() {
   }
   saving.value = true
   if (pipelineId) {
-    let isValid = true
+    let isValid = false
     try {
       const { json } = exportJson(false, false)
       const formData = {
@@ -890,15 +890,23 @@ async function save() {
           body: JSON.stringify(formData)
         }
       )
-      if (res?.result) {
-        console.log('validate result:', JSON.parse(res.result))
-        // ...
+      if (res.ok) {
+        const { error, message, result: data } = await res.json()
+        if (error) {
+          console.error(error, message)
+        } else if (data) {
+          const result = JSON.parse(data)
+          isValid = Object.keys(result).length === 1
+          console.log('validate result:', result)
+          // ...
+        }
       }
     } catch (err) {
       console.error(err)
     }
     if (!isValid) {
       saving.value = false
+      console.error('validation failed!')
       return
     }
     if (isNewPipeline.value) {
