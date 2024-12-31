@@ -817,10 +817,7 @@ async function run(e, mode = 'complete') {
                     if (result.pmt_fields.outputs) {
                       console.log(result.pmt_fields)
                     }
-                    if (
-                      result.pmt_fields.status &&
-                      result.pmt_fields.type !== 'input'
-                    ) {
+                    if (result.pmt_fields.status) {
                       node.pmt_fields = {
                         ...(node.pmt_fields || {}),
                         status: result.pmt_fields.status
