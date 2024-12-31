@@ -374,7 +374,6 @@ onMounted(() => {
       options.splice(resetOptionIndex, 0, {
         content: 'Reset',
         callback: async () => {
-          const nodeIds = []
           try {
             const { json } = exportJson(false)
             const formData = {
@@ -393,18 +392,23 @@ onMounted(() => {
                 body: JSON.stringify(formData)
               }
             )
-            if (res?.nodeIds) {
-              nodeIds.push(...res.nodeIds)
+            if (res.ok) {
+              const { error, message, nodeIds } = await res.json()
+              if (error) {
+                console.error(error, message)
+              } else if (nodeIds) {
+                nodeIds.forEach((nodeId) => {
+                  const node = comfyApp.graph.getNodeById(nodeId)
+                  if (node) {
+                    console.log('reset', node)
+                    resetNodeStatus(node)
+                  }
+                })
+              }
             }
           } catch (err) {
             console.error(err)
           }
-          nodeIds.forEach((nodeId) => {
-            const node = comfyApp.graph.getNodeById(nodeId)
-            if (node) {
-              resetNodeStatus(node)
-            }
-          })
         }
       })
       return options
@@ -484,20 +488,64 @@ onMounted(() => {
           node.setDirtyCanvas(true)
         })
       }
-      /*
+
       if (node?.comfyClass === 'preview.volview') {
-        const div = document.createElement('div')
-        div.classList.add('relative', 'overflow-hidden')
-        div.innerHTML = `
-          <div class="absolute inset-0 overflow-hidden">
-            <iframe src="${volViewUrl.value}" frameborder="0" width="100%" height="100%"></iframe>
-          </div>
-        `
-        const widget = node.addDOMWidget('preview_volview', 'preview-volview', div, {})
-        console.log(volViewUrl.value, widget)
-        console.log(node.widgets)
+        if (volViewUrl.value) {
+          const __onDrawBackground = node.onDrawBackground
+          node.onDrawBackground = function (
+            ctx,
+            canvas,
+            canvasElement,
+            mousePosition
+          ) {
+            if (node.pmt_fields?.status === 'done') {
+              const imageInputNode = node.getInputNode(0)
+              const imageInputs = imageInputNode?.pmt_fields?.outputs || []
+              const imagePath = imageInputs[0]?.path?.[0]
+              if (imagePath) {
+                let widget = node.widgets.find(
+                  (w) => w.name === 'preview-volview'
+                )
+                if (!widget) {
+                  const div = document.createElement('div')
+                  div.classList.add('relative', 'overflow-hidden')
+                  div.innerHTML = `
+                    <div class="absolute inset-0 overflow-hidden">
+                      <iframe src="${volViewUrl.value}" frameborder="0" width="100%" height="100%"></iframe>
+                    </div>
+                  `
+                  widget = node.addDOMWidget(
+                    'preview-volview',
+                    'preview-volview',
+                    div,
+                    {}
+                  )
+                  node.setSize([400, 400])
+                  node.setDirtyCanvas(true)
+                }
+                const iframe = widget.element?.querySelector('iframe')
+                if (iframe) {
+                  let ext = 'png'
+                  if (imagePath.endsWith('.jpg')) {
+                    ext = 'jpg'
+                  } else if (imagePath.endsWith('.jpeg')) {
+                    ext = 'jpeg'
+                  }
+                  const imageURL = new URL(
+                    volViewUrl.value +
+                      `&names=[file.${ext}]&urls=[connect-file://localhost/${imagePath}]`
+                  )
+                  if (iframe.src !== imageURL.href) {
+                    iframe.src = imageURL.href
+                  }
+                }
+              }
+            }
+            return __onDrawBackground?.apply(this, arguments)
+          }
+        }
       }
-      */
+
       if (node?.comfyClass.startsWith('rag_llm.prompt')) {
         const prompt_template_vars = {}
         const findVars = (text) => {
@@ -813,15 +861,36 @@ async function run(e, mode = 'complete') {
                 if (pmt_fields) {
                   const result = { id, pmt_fields: JSON.parse(pmt_fields) }
                   const node = comfyApp.graph.getNodeById(id)
-                  if (node) {
+                  if (node && node.pmt_fields) {
                     if (result.pmt_fields.outputs) {
                       console.log(result.pmt_fields)
+                      result.pmt_fields.outputs.forEach((output, o) => {
+                        const { name, type, oid, path, value } = output
+                        if (oid) {
+                          if (node.pmt_fields.outputs[o].oid) {
+                            node.pmt_fields.outputs[o].oid = [oid]
+                          }
+                        }
+                        if (path) {
+                          if (node.pmt_fields.outputs[o].path) {
+                            node.pmt_fields.outputs[o].path = [path]
+                          }
+                        }
+                        if (value) {
+                          if (node.pmt_fields.outputs[o].value) {
+                            if (
+                              Array.isArray(node.pmt_fields.outputs[o].value)
+                            ) {
+                              node.pmt_fields.outputs[o].value = [value]
+                            } else {
+                              node.pmt_fields.outputs[o].value = value
+                            }
+                          }
+                        }
+                      })
                     }
                     if (result.pmt_fields.status) {
-                      node.pmt_fields = {
-                        ...(node.pmt_fields || {}),
-                        status: result.pmt_fields.status
-                      }
+                      node.pmt_fields.status = result.pmt_fields.status
                     }
                     node.setDirtyCanvas(true)
                     return
@@ -893,9 +962,25 @@ async function save() {
           console.error(error, message)
         } else if (data) {
           const result = JSON.parse(data)
-          isValid = Object.keys(result).length === 1
-          console.log('validate result:', result)
-          // ...
+          let pTotal = 0
+          Object.keys(result).forEach((p) => {
+            pTotal++
+            const { nodes, has_output } = result[p]
+            console.log('pipeline:', p, { nodes, has_output })
+            if (pTotal > 1) {
+              // nodes.forEach...
+            }
+          })
+          if (pTotal <= 1) {
+            isValid = true
+          } else {
+            toast.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: `Only 1 pipeline per workflow, got ${pTotal}!`,
+              life: 5000
+            })
+          }
         }
       }
     } catch (err) {
@@ -903,7 +988,7 @@ async function save() {
     }
     if (!isValid) {
       saving.value = false
-      console.error('validation failed!')
+      console.error('validation failed')
       return
     }
     if (isNewPipeline.value) {
@@ -1067,38 +1152,43 @@ function getWorkflowJson(stringify = false, keepStatus = true) {
         status: ''
       }
       nodes[i].pmt_fields = pmt_fields
+      node.pmt_fields = nodes[i].pmt_fields
+      node.setDirtyCanvas(true)
       return nodes[i]
     }
     const [_, plugin_name, function_name] = nodeDef.python_module.split('.')
-    const pmt_fields = merge(node?.pmt_fields || {}, {
-      type,
-      plugin_name: plugin_name || null,
-      function_name: function_name || null,
-      inputs: (inputs || []).map((i) => {
-        let optional = false
-        const optionalInput = nodeDef.inputs.optional?.[i.name]
-        if (optionalInput && optionalInput.type === i.type) {
-          optional = true
-        }
-        return {
-          optional
-        }
-      }),
-      args: (node.widgets || []).reduce((args, { type, name, value }) => {
-        if (type !== 'converted-widget') {
-          args[name] = value
-        }
-        return args
-      }, {}),
-      outputs: (outputs || []).map((o) => {
-        return {
-          oid: [],
-          path: [],
-          value: []
-        }
-      }),
-      status: ''
-    })
+    const pmt_fields = merge(
+      {
+        type,
+        plugin_name: plugin_name || null,
+        function_name: function_name || null,
+        inputs: (inputs || []).map((i) => {
+          let optional = false
+          const optionalInput = nodeDef.inputs.optional?.[i.name]
+          if (optionalInput && optionalInput.type === i.type) {
+            optional = true
+          }
+          return {
+            optional
+          }
+        }),
+        args: (node.widgets || []).reduce((args, { type, name, value }) => {
+          if (type !== 'converted-widget') {
+            args[name] = value
+          }
+          return args
+        }, {}),
+        outputs: (outputs || []).map((o) => {
+          return {
+            oid: [],
+            path: [],
+            value: []
+          }
+        }),
+        status: ''
+      },
+      node?.pmt_fields || {}
+    )
     if (pmt_fields.type === 'input') {
       const oid = pmt_fields.args.oid || pmt_fields.args.source
       if (oid) {
@@ -1181,7 +1271,6 @@ function getWorkflowJson(stringify = false, keepStatus = true) {
         if (nodesSelectedCount.value === 1) {
           if (node === nodesSelected.value[0]) {
             pmt_fields.status = 'current'
-            node.setDirtyCanvas(true)
           }
         }
       }
@@ -1189,6 +1278,8 @@ function getWorkflowJson(stringify = false, keepStatus = true) {
       pmt_fields.status = ''
     }
     nodes[i].pmt_fields = pmt_fields
+    node.pmt_fields = nodes[i].pmt_fields
+    node.setDirtyCanvas(true)
     return nodes[i]
   })
   if (stringify) {
