@@ -1296,16 +1296,24 @@ function getWorkflowJson(stringify = false, keepStatus = true) {
 
 // ---
 
-const _wsId = `comfyui-${pipelineId || '*'}`
+const _wsId = `tab-pipeline-${pipelineId || '*'}`
 const _ws = ref(localStorage.getItem('_ws') || undefined)
 const ws = useWebSocket(_ws, { heartbeat: true })
 watch(ws.data, async (data) => {
-  data = typeof data === 'string' ? data : await data.text()
-  if (data.startsWith('{')) data = JSON.parse(data)
-  if (data.sender === 'self') return
-  if (data.message?.startsWith('{')) data.message = JSON.parse(data.message)
-  if (data.message?.source === _wsId) {
-    const { type, payload } = data.message
+  let message = typeof data === 'string' ? data : await data.text()
+  if (message.startsWith('{')) message = JSON.parse(message)
+  if (message?.type === 'open') {
+    return ws.send(
+      JSON.stringify({
+        type: 'map',
+        payload: { peerUid: _wsId },
+        from: message.to,
+        to: message.from
+      })
+    )
+  }
+  if (message?.to === _wsId) {
+    const { type, payload } = message
     if (type === 'got-pipeline') {
       return handleGetPipeline(payload)
     }
@@ -1319,17 +1327,25 @@ watch(ws.data, async (data) => {
       return handleDeletePipeline(payload)
     }
   }
+  // console.log('[ws] message', message);
 })
 
 function getPipeline(payload) {
-  ws.send(JSON.stringify({ source: _wsId, type: 'get-pipeline', payload }))
+  ws.send(
+    JSON.stringify({
+      type: 'get-pipeline',
+      payload,
+      from: _wsId,
+      to: 'mod-pipelines'
+    })
+  )
 }
 function handleGetPipeline(payload) {
   if (!loading.value) {
     return
   }
   if (payload.id === pipeline.value.id) {
-    // console.log('current pipeline:', payload)
+    console.log('current pipeline:', payload)
   } else {
     return
   }
@@ -1348,11 +1364,18 @@ function handleGetPipeline(payload) {
 }
 
 function createPipeline(payload) {
-  ws.send(JSON.stringify({ source: _wsId, type: 'create-pipeline', payload }))
+  ws.send(
+    JSON.stringify({
+      type: 'create-pipeline',
+      payload,
+      from: _wsId,
+      to: 'mod-pipelines'
+    })
+  )
 }
 function handleCreatePipeline(payload) {
   if (payload.id === pipeline.value.id) {
-    // console.log('created pipeline:', payload)
+    console.log('created pipeline:', payload)
   } else {
     return
   }
@@ -1368,11 +1391,18 @@ function handleCreatePipeline(payload) {
 }
 
 function updatePipeline(payload) {
-  ws.send(JSON.stringify({ source: _wsId, type: 'update-pipeline', payload }))
+  ws.send(
+    JSON.stringify({
+      type: 'update-pipeline',
+      payload,
+      from: _wsId,
+      to: 'mod-pipelines'
+    })
+  )
 }
 function handleUpdatePipeline(payload) {
   if (payload.id === pipeline.value.id) {
-    // console.log('updated pipeline:', payload)
+    console.log('updated pipeline:', payload)
   } else {
     return
   }
@@ -1388,11 +1418,18 @@ function handleUpdatePipeline(payload) {
 }
 
 function deletePipeline(payload) {
-  ws.send(JSON.stringify({ source: _wsId, type: 'delete-pipeline', payload }))
+  ws.send(
+    JSON.stringify({
+      type: 'delete-pipeline',
+      payload,
+      from: _wsId,
+      to: 'mod-pipelines'
+    })
+  )
 }
 function handleDeletePipeline(payload) {
   if (payload.id === pipeline.value.id) {
-    // console.log('deleted pipeline:', payload)
+    console.log('deleted pipeline:', payload)
   } else {
     return
   }
