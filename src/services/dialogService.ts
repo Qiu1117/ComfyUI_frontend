@@ -12,6 +12,7 @@ import type { ExecutionErrorWsMessage } from '@/types/apiTypes'
 import type { MissingNodeType } from '@/types/comfy'
 
 export type ConfirmationDialogType =
+  | 'default'
   | 'overwrite'
   | 'delete'
   | 'dirtyClose'
@@ -84,7 +85,7 @@ export const useDialogService = () => {
     })
   }
 
-  async function showPromptDialog({
+  async function prompt({
     title,
     message,
     defaultValue = ''
@@ -119,18 +120,18 @@ export const useDialogService = () => {
    * `false` if denied (e.g. no in yes/no/cancel), or
    * `null` if the dialog is cancelled or closed
    */
-  async function showConfirmationDialog({
+  async function confirm({
     title,
-    type,
     message,
+    type = 'default',
     itemList = []
   }: {
     /** Dialog heading */
     title: string
-    /** Pre-configured dialog type */
-    type: ConfirmationDialogType
     /** The main message body */
     message: string
+    /** Pre-configured dialog type */
+    type?: ConfirmationDialogType
     /** Displayed as an unorderd list immediately below the message body */
     itemList?: string[]
   }): Promise<boolean | null> {
@@ -161,7 +162,7 @@ export const useDialogService = () => {
     showAboutDialog,
     showExecutionErrorDialog,
     showTemplateWorkflowsDialog,
-    showPromptDialog,
-    showConfirmationDialog
+    prompt,
+    confirm
   }
 }

@@ -11,9 +11,8 @@ import { buildTree } from '@/utils/treeUtil'
 export const getSettingInfo = (setting: SettingParams) => {
   const parts = setting.category || setting.id.split('.')
   return {
-    category: parts[0],
-    subCategory: parts[1],
-    name: parts.slice(2).join('.')
+    category: parts[0] ?? 'Other',
+    subCategory: parts[1] ?? 'Other'
   }
 }
 
@@ -25,13 +24,13 @@ function tryMigrateDeprecatedValue(setting: SettingParams, value: any) {
   return setting?.migrateDeprecatedValue?.(value) ?? value
 }
 
-function onChange(setting: SettingParams, value: any, oldValue: any) {
-  if (setting?.onChange && value !== oldValue) {
-    setting.onChange(value)
-    // Backward compatibility with old settings dialog.
-    // Some extensions still listens event emitted by the old settings dialog.
-    app.ui.settings.dispatchChange(setting.id, value, oldValue)
+function onChange(setting: SettingParams, newValue: any, oldValue: any) {
+  if (setting?.onChange) {
+    setting.onChange(newValue, oldValue)
   }
+  // Backward compatibility with old settings dialog.
+  // Some extensions still listens event emitted by the old settings dialog.
+  app.ui.settings.dispatchChange(setting.id, newValue, oldValue)
 }
 
 export const useSettingStore = defineStore('setting', () => {
@@ -76,9 +75,10 @@ export const useSettingStore = defineStore('setting', () => {
    */
   async function set<K extends keyof Settings>(key: K, value: Settings[K]) {
     const newValue = tryMigrateDeprecatedValue(settingsById.value[key], value)
-    const oldValue = settingValues.value[key]
-    onChange(settingsById.value[key], newValue, oldValue)
+    const oldValue = get(key)
+    if (newValue === oldValue) return
 
+    onChange(settingsById.value[key], newValue, oldValue)
     settingValues.value[key] = newValue
     await api.storeSetting(key, newValue)
   }

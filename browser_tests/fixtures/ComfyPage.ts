@@ -14,11 +14,13 @@ import { ComfyNodeSearchBox } from './components/ComfyNodeSearchBox'
 import { SettingDialog } from './components/SettingDialog'
 import {
   NodeLibrarySidebarTab,
+  QueueSidebarTab,
   WorkflowsSidebarTab
 } from './components/SidebarTab'
 import { Topbar } from './components/Topbar'
 import type { Position, Size } from './types'
 import { NodeReference } from './utils/litegraphUtils'
+import TaskHistory from './utils/taskHistory'
 
 dotenv.config()
 
@@ -43,6 +45,10 @@ class ComfyMenu {
 
   get workflowsTab() {
     return new WorkflowsSidebarTab(this.page)
+  }
+
+  get queueTab() {
+    return new QueueSidebarTab(this.page)
   }
 
   get topbar() {
@@ -85,11 +91,13 @@ class ConfirmDialog {
   public readonly delete: Locator
   public readonly overwrite: Locator
   public readonly reject: Locator
+  public readonly confirm: Locator
 
   constructor(public readonly page: Page) {
     this.delete = page.locator('button.p-button[aria-label="Delete"]')
     this.overwrite = page.locator('button.p-button[aria-label="Overwrite"]')
     this.reject = page.locator('button.p-button[aria-label="Cancel"]')
+    this.confirm = page.locator('button.p-button[aria-label="Confirm"]')
   }
 
   async click(locator: KeysOfType<ConfirmDialog, Locator>) {
@@ -231,6 +239,10 @@ export class ComfyPage {
     if (resp.status() !== 200) {
       throw new Error(`Failed to setup settings: ${await resp.text()}`)
     }
+  }
+
+  setupHistory(): TaskHistory {
+    return new TaskHistory(this)
   }
 
   async setup({ clearStorage = true }: { clearStorage?: boolean } = {}) {
@@ -520,6 +532,13 @@ export class ComfyPage {
     return this.page.locator('.p-dialog-content input[type="text"]')
   }
 
+  async fillPromptDialog(value: string) {
+    await this.promptDialogInput.fill(value)
+    await this.page.keyboard.press('Enter')
+    await this.promptDialogInput.waitFor({ state: 'hidden' })
+    await this.nextFrame()
+  }
+
   async disconnectEdge() {
     await this.dragAndDrop(this.clipTextEncodeNode1InputSlot, this.emptySpace)
   }
@@ -787,9 +806,7 @@ export class ComfyPage {
     await this.canvas.press('Control+a')
     const node = await this.getFirstNodeRef()
     await node!.clickContextMenuOption('Convert to Group Node')
-    await this.promptDialogInput.fill(groupNodeName)
-    await this.page.keyboard.press('Enter')
-    await this.promptDialogInput.waitFor({ state: 'hidden' })
+    await this.fillPromptDialog(groupNodeName)
     await this.nextFrame()
   }
 

@@ -1,7 +1,8 @@
 import { createPinia, setActivePinia } from 'pinia'
 
 import { api } from '@/scripts/api'
-import { useSettingStore } from '@/stores/settingStore'
+import { app } from '@/scripts/app'
+import { getSettingInfo, useSettingStore } from '@/stores/settingStore'
 import type { SettingParams } from '@/types/settingTypes'
 
 // Mock the api
@@ -123,6 +124,7 @@ describe('useSettingStore', () => {
 
     it('should set value and trigger onChange', async () => {
       const onChangeMock = jest.fn()
+      const dispatchChangeMock = app.ui.settings.dispatchChange as jest.Mock
       const setting: SettingParams = {
         id: 'test.setting',
         name: 'test.setting',
@@ -131,12 +133,100 @@ describe('useSettingStore', () => {
         onChange: onChangeMock
       }
       store.addSetting(setting)
+      // Adding the new setting should trigger onChange
+      expect(onChangeMock).toHaveBeenCalledTimes(1)
+      expect(dispatchChangeMock).toHaveBeenCalledTimes(1)
 
       await store.set('test.setting', 'newvalue')
 
       expect(store.get('test.setting')).toBe('newvalue')
-      expect(onChangeMock).toHaveBeenCalledWith('newvalue')
+      expect(onChangeMock).toHaveBeenCalledWith('newvalue', 'default')
+      expect(onChangeMock).toHaveBeenCalledTimes(2)
+      expect(dispatchChangeMock).toHaveBeenCalledTimes(2)
       expect(api.storeSetting).toHaveBeenCalledWith('test.setting', 'newvalue')
+
+      // Set the same value again, it should not trigger onChange
+      await store.set('test.setting', 'newvalue')
+      expect(onChangeMock).toHaveBeenCalledTimes(2)
+      expect(dispatchChangeMock).toHaveBeenCalledTimes(2)
+
+      // Set a different value, it should trigger onChange
+      await store.set('test.setting', 'differentvalue')
+      expect(onChangeMock).toHaveBeenCalledWith('differentvalue', 'newvalue')
+      expect(onChangeMock).toHaveBeenCalledTimes(3)
+      expect(dispatchChangeMock).toHaveBeenCalledTimes(3)
+      expect(api.storeSetting).toHaveBeenCalledWith(
+        'test.setting',
+        'differentvalue'
+      )
+    })
+  })
+})
+
+describe('getSettingInfo', () => {
+  const baseSetting: SettingParams = {
+    id: 'test.setting',
+    name: 'test.setting',
+    type: 'text',
+    defaultValue: 'default'
+  }
+
+  it('should handle settings with explicit category array', () => {
+    const setting: SettingParams = {
+      ...baseSetting,
+      id: 'test.setting',
+      category: ['Main', 'Sub', 'Detail']
+    }
+
+    const result = getSettingInfo(setting)
+
+    expect(result).toEqual({
+      category: 'Main',
+      subCategory: 'Sub'
+    })
+  })
+
+  it('should handle settings with id-based categorization', () => {
+    const setting: SettingParams = {
+      ...baseSetting,
+      id: 'main.sub.setting.name'
+    }
+
+    const result = getSettingInfo(setting)
+
+    expect(result).toEqual({
+      category: 'main',
+      subCategory: 'sub'
+    })
+  })
+
+  it('should use "Other" as default subCategory when missing', () => {
+    const setting: SettingParams = {
+      ...baseSetting,
+      id: 'single.setting',
+      category: ['single']
+    }
+
+    const result = getSettingInfo(setting)
+
+    expect(result).toEqual({
+      category: 'single',
+      subCategory: 'Other'
+    })
+  })
+
+  it('should use "Other" as default category when missing', () => {
+    const setting: SettingParams = {
+      ...baseSetting,
+      id: 'single.setting',
+      category: []
+    }
+
+    const result = getSettingInfo(setting)
+
+    expect(result).toEqual({
+      category: 'Other',
+      subCategory: 'Other'
     })
   })
 })
