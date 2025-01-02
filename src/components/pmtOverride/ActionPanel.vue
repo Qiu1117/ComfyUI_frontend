@@ -1296,7 +1296,7 @@ function getWorkflowJson(stringify = false, keepStatus = true) {
 
 // ---
 
-const _wsId = `tab-pipeline-${pipelineId || '*'}`
+const _wsId = `comfyui-${pipelineId || '*'}`
 const _ws = ref(localStorage.getItem('_ws') || undefined)
 const ws = useWebSocket(_ws, { heartbeat: true })
 watch(ws.data, async (data) => {
@@ -1334,7 +1334,7 @@ function getPipeline(payload) {
   ws.send(
     JSON.stringify({
       type: 'get-pipeline',
-      payload,
+      payload: { ...payload, ts: Date.now() },
       from: _wsId,
       to: 'mod-pipelines'
     })
@@ -1367,7 +1367,7 @@ function createPipeline(payload) {
   ws.send(
     JSON.stringify({
       type: 'create-pipeline',
-      payload,
+      payload: { ...payload, ts: Date.now() },
       from: _wsId,
       to: 'mod-pipelines'
     })
@@ -1394,7 +1394,7 @@ function updatePipeline(payload) {
   ws.send(
     JSON.stringify({
       type: 'update-pipeline',
-      payload,
+      payload: { ...payload, ts: Date.now() },
       from: _wsId,
       to: 'mod-pipelines'
     })
@@ -1421,7 +1421,7 @@ function deletePipeline(payload) {
   ws.send(
     JSON.stringify({
       type: 'delete-pipeline',
-      payload,
+      payload: { ...payload, ts: Date.now() },
       from: _wsId,
       to: 'mod-pipelines'
     })
