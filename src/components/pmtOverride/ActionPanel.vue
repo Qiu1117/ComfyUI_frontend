@@ -541,7 +541,7 @@ onMounted(() => {
                 }
               }
             } else {
-              let widget = node.widgets[0]
+              let widget = node.widgets?.[0]
               if (widget && widget.name === 'preview-volview') {
                 const iframe = widget.element?.querySelector('iframe')
                 if (iframe) {
@@ -881,25 +881,25 @@ async function run(e, mode = 'complete') {
                       result.pmt_fields.outputs.forEach((output, o) => {
                         const { name, type, oid, path, value } = output
                         if (oid) {
-                          if (node.pmt_fields.outputs[o].oid) {
-                            node.pmt_fields.outputs[o].oid = [oid]
-                          }
+                          node.pmt_fields.outputs[o].oid = Array.isArray(
+                            node.pmt_fields.outputs[o].oid
+                          )
+                            ? [oid]
+                            : oid
                         }
                         if (path) {
-                          if (node.pmt_fields.outputs[o].path) {
-                            node.pmt_fields.outputs[o].path = [path]
-                          }
+                          node.pmt_fields.outputs[o].path = Array.isArray(
+                            node.pmt_fields.outputs[o].path
+                          )
+                            ? [path]
+                            : path
                         }
                         if (value) {
-                          if (node.pmt_fields.outputs[o].value) {
-                            if (
-                              Array.isArray(node.pmt_fields.outputs[o].value)
-                            ) {
-                              node.pmt_fields.outputs[o].value = [value]
-                            } else {
-                              node.pmt_fields.outputs[o].value = value
-                            }
-                          }
+                          node.pmt_fields.outputs[o].value = Array.isArray(
+                            node.pmt_fields.outputs[o].value
+                          )
+                            ? [value]
+                            : value
                         }
                       })
                     }
@@ -1194,9 +1194,9 @@ function getWorkflowJson(stringify = false, keepStatus = true) {
         }, {}),
         outputs: (outputs || []).map((o) => {
           return {
-            oid: [],
-            path: [],
-            value: []
+            oid: null,
+            path: null,
+            value: null
           }
         }),
         status: ''
@@ -1206,43 +1206,29 @@ function getWorkflowJson(stringify = false, keepStatus = true) {
     if (pmt_fields.type === 'input') {
       const oid = pmt_fields.args.oid || pmt_fields.args.source
       if (oid) {
-        if (pmt_fields.outputs[0]?.oid) {
-          pmt_fields.outputs[0].oid = [oid]
-        }
-        if (pmt_fields.outputs[0]?.path) {
-          pmt_fields.outputs[0].path = [...(pmt_fields.outputs[0].path || [])]
-          pmt_fields.outputs[0].value = [...(pmt_fields.outputs[0].value || [])]
-        }
+        pmt_fields.outputs[0].oid = oid
+        pmt_fields.outputs[0].path = pmt_fields.outputs[0].path || ''
+        pmt_fields.outputs[0].value = pmt_fields.outputs[0].value || ''
       }
       if (subtype === 'boolean') {
-        pmt_fields.outputs[0] = {
-          ...(pmt_fields.outputs[0] || {}),
-          value: pmt_fields.args.bool
-        }
+        pmt_fields.outputs[0].value =
+          pmt_fields.outputs[0].value || pmt_fields.args.bool
       }
       if (subtype === 'int') {
-        pmt_fields.outputs[0] = {
-          ...(pmt_fields.outputs[0] || {}),
-          value: pmt_fields.args.int
-        }
+        pmt_fields.outputs[0].value =
+          pmt_fields.outputs[0].value || pmt_fields.args.int
       }
       if (subtype === 'float') {
-        pmt_fields.outputs[0] = {
-          ...(pmt_fields.outputs[0] || {}),
-          value: pmt_fields.args.float
-        }
+        pmt_fields.outputs[0].value =
+          pmt_fields.outputs[0].value || pmt_fields.args.float
       }
       if (subtype === 'text') {
-        pmt_fields.outputs[0] = {
-          ...(pmt_fields.outputs[0] || {}),
-          value: pmt_fields.args.text
-        }
+        pmt_fields.outputs[0].value =
+          pmt_fields.outputs[0].value || pmt_fields.args.text
       }
       if (subtype === 'textarea') {
-        pmt_fields.outputs[0] = {
-          ...(pmt_fields.outputs[0] || {}),
-          value: pmt_fields.args.textarea
-        }
+        pmt_fields.outputs[0].value =
+          pmt_fields.outputs[0].value || pmt_fields.args.textarea
       }
     } else {
       if (node.pmt_fields?.status) {
@@ -1259,18 +1245,24 @@ function getWorkflowJson(stringify = false, keepStatus = true) {
     }
     if (pmt_fields.type === 'converter') {
       const inputNode = node.getInputNode(0)
-      if (inputNode && inputNode.pmt_fields?.type === 'input') {
-        if (inputNode.pmt_fields.outputs[0]?.oid && pmt_fields.inputs[0]) {
-          pmt_fields.inputs[0].oid = [...inputNode.pmt_fields.outputs[0].oid]
-          pmt_fields.inputs[0].path = [...(pmt_fields.inputs[0].path || [])]
-          pmt_fields.inputs[0].value = [...(pmt_fields.inputs[0].value || [])]
-          if (pmt_fields.outputs[0]?.oid) {
-            pmt_fields.outputs[0].oid = [...pmt_fields.inputs[0].oid]
-          }
-          if (pmt_fields.outputs[0]?.path) {
-            pmt_fields.outputs[0].path = [...pmt_fields.inputs[0].path]
-            pmt_fields.outputs[0].value = [...pmt_fields.inputs[0].value]
-          }
+      if (
+        inputNode &&
+        inputNode.pmt_fields?.type === 'input' &&
+        inputNode.pmt_fields.outputs[0]?.oid
+      ) {
+        pmt_fields.inputs[0].oid = inputNode.pmt_fields.outputs[0].oid
+        pmt_fields.inputs[0].path =
+          inputNode.pmt_fields.outputs[0].path ||
+          pmt_fields.inputs[0].path ||
+          ''
+        pmt_fields.inputs[0].value =
+          inputNode.pmt_fields.outputs[0].value ||
+          pmt_fields.inputs[0].value ||
+          ''
+        if (pmt_fields.inputs[0].oid) {
+          pmt_fields.outputs[0].oid = pmt_fields.inputs[0].oid
+          pmt_fields.outputs[0].path = pmt_fields.inputs[0].path
+          pmt_fields.outputs[0].value = pmt_fields.inputs[0].value
         }
       }
     }
