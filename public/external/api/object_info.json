@@ -523,26 +523,6 @@
     "output_node": true
   },
 
-  "input.2d": {
-    "name": "input.2d",
-    "category": "input",
-    "display_name": "2D - 棄用",
-    "description": "2D input.",
-    "python_module": "nodes",
-    "input": {
-      "required": {
-        "source": ["STRING"]
-      }
-    },
-    "input_order": {
-      "required": ["source"]
-    },
-    "output": ["2D"],
-    "output_name": ["data"],
-    "output_is_list": [false],
-    "output_node": false,
-    "deprecated": true
-  },
   "input.boolean": {
     "name": "input.boolean",
     "category": "input",
