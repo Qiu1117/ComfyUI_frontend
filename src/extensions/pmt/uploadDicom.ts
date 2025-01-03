@@ -1,11 +1,9 @@
 // @ts-strict-ignore
-import { ComfyNodeDef } from '@/types/apiTypes'
+import { useExtensionService } from '@/services/extensionService'
 
-import { app } from '../../scripts/app'
-
-app.registerExtension({
-  name: 'Comfy.UploadDicom',
-  beforeRegisterNodeDef(nodeType, nodeData: ComfyNodeDef) {
+useExtensionService().registerExtension({
+  name: 'PMT.UploadDicom',
+  beforeRegisterNodeDef(nodeType, nodeData) {
     Object.keys(nodeData?.input || {}).forEach((t) => {
       Object.keys(nodeData.input[t]).forEach((inputName) => {
         const input = nodeData.input[t][inputName]
@@ -18,7 +16,9 @@ app.registerExtension({
     })
   },
   nodeCreated(node) {
-    // ...
+    if (node?.comfyClass !== 'input.load_dicom') {
+      return
+    }
 
     // @ts-expect-error override
     if (node.onDragOver) {

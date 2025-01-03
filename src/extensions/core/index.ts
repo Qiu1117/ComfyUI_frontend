@@ -1,3 +1,4 @@
+import '../pmt/previewVolView'
 import '../pmt/uploadDicom'
 import '../pmt/uploadImage'
 import '../pmt/uploadNifti'

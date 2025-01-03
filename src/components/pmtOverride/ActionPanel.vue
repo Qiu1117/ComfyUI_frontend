@@ -183,7 +183,6 @@
 <script setup>
 import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
 import {
-  useBrowserLocation,
   useElementHover,
   useLocalStorage,
   useThrottleFn,
@@ -253,24 +252,6 @@ const nodesSelectedCount = computed(() => nodesSelected.value.length)
 const updateNodesSelected = useThrottleFn(() => {
   nodesSelected.value = comfyApp.graph.nodes.filter((node) => node.selected)
 }, 100)
-
-const location = useBrowserLocation()
-const volViewUrl = computed(() => {
-  const search = `?uiMode=lite&layoutName=${'Axial Only'}`
-  // + `&names=[data.png]&urls=[connect-file://localhost/C:\\sample test data\\data.png]`
-  // + `&names=[test.zip]&urls=[connect-file://localhost/C:\\sample test data\\test2\\MRI-PROSTATEx-0004.zip]&uid=test2&slice=0`
-  let { port, origin, pathname } = location.value
-  if (origin === 'file://') {
-    pathname = pathname.replace('comfyui/', 'volview/')
-  } else {
-    if (port) {
-      origin = origin.replace(port, `${+port - 1}`)
-      // origin = origin.replace(port, `${+port - 3}`)
-    }
-    // pathname = pathname.replace('comfyui/', '') + 'volview/'
-  }
-  return origin + pathname + search
-})
 
 const driverObjs = []
 function highlight(element, popover = {}, config, step) {
@@ -491,79 +472,6 @@ onMounted(() => {
           node.setSize([...node.size])
           node.setDirtyCanvas(true)
         })
-      }
-
-      if (node?.comfyClass === 'preview.volview') {
-        if (volViewUrl.value) {
-          const __onDrawBackground = node.onDrawBackground
-          node.onDrawBackground = function (
-            ctx,
-            canvas,
-            canvasElement,
-            mousePosition
-          ) {
-            const imageInputNode =
-              node.pmt_fields?.status === 'done' ? node.getInputNode(0) : null
-            const imageInputs = imageInputNode?.pmt_fields?.outputs || []
-            const imagePath = Array.isArray(imageInputs[0]?.path)
-              ? imageInputs[0]?.path?.[0]
-              : imageInputs[0]?.path
-            if (imagePath) {
-              let widget = node.widgets.find(
-                (w) => w.name === 'preview-volview'
-              )
-              if (!widget) {
-                const div = document.createElement('div')
-                div.classList.add('relative', 'overflow-hidden')
-                div.innerHTML = `
-                  <div class="absolute inset-0 overflow-hidden">
-                    <iframe src="${volViewUrl.value}" frameborder="0" width="100%" height="100%"></iframe>
-                  </div>
-                `
-                widget = node.addDOMWidget(
-                  'preview-volview',
-                  'preview-volview',
-                  div,
-                  {}
-                )
-              }
-              const iframe = widget.element?.querySelector('iframe')
-              if (iframe) {
-                let ext = 'png'
-                if (imagePath.endsWith('.jpg')) {
-                  ext = 'jpg'
-                } else if (imagePath.endsWith('.jpeg')) {
-                  ext = 'jpeg'
-                }
-                const imageURL = new URL(
-                  volViewUrl.value +
-                    `&names=[file.${ext}]&urls=[connect-file://localhost/${imagePath}]`
-                )
-                if (iframe.src !== imageURL.href) {
-                  node.setSize([400, 400])
-                  node.setDirtyCanvas(true)
-                  widget.element.style.removeProperty('visibility')
-                  iframe.src = imageURL.href
-                }
-              }
-            } else {
-              let widget = node.widgets?.[0]
-              if (widget && widget.name === 'preview-volview') {
-                const iframe = widget.element?.querySelector('iframe')
-                if (iframe) {
-                  const imageURL = new URL(volViewUrl.value)
-                  if (iframe.src !== imageURL.href) {
-                    widget.element.style.setProperty('visibility', 'hidden')
-                    node.setSize([300, 100])
-                    node.setDirtyCanvas(true)
-                    iframe.src = imageURL.href
-                  }
-                }
-              }
-            }
-            return __onDrawBackground?.apply(this, arguments)
-          }
-        }
       }
 
       if (node?.comfyClass.startsWith('rag_llm.prompt')) {
