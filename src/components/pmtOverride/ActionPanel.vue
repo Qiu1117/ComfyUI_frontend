@@ -1161,27 +1161,7 @@ function getWorkflowJson(stringify = false, keepStatus = true) {
       //
     }
     if (pmt_fields.type === 'converter') {
-      const inputNode = node.getInputNode(0)
-      if (
-        inputNode &&
-        inputNode.pmt_fields?.type === 'input' &&
-        inputNode.pmt_fields.outputs[0]?.oid
-      ) {
-        pmt_fields.inputs[0].oid = inputNode.pmt_fields.outputs[0].oid
-        pmt_fields.inputs[0].path =
-          inputNode.pmt_fields.outputs[0].path ||
-          pmt_fields.inputs[0].path ||
-          ''
-        pmt_fields.inputs[0].value =
-          inputNode.pmt_fields.outputs[0].value ||
-          pmt_fields.inputs[0].value ||
-          ''
-        if (pmt_fields.inputs[0].oid) {
-          pmt_fields.outputs[0].oid = pmt_fields.inputs[0].oid
-          pmt_fields.outputs[0].path = pmt_fields.inputs[0].path
-          pmt_fields.outputs[0].value = pmt_fields.inputs[0].value
-        }
-      }
+      //
     }
     if (pmt_fields.type === 'preview') {
       //
