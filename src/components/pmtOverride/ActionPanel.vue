@@ -303,10 +303,6 @@ const toggleTerminal = (val) => {
 }
 
 onMounted(() => {
-  if (loading.value) {
-    getPipeline({ ...pipeline.value })
-  }
-
   ;[
     'input.load_image',
     // ...
@@ -1208,6 +1204,11 @@ watch(ws.data, async (data) => {
         to: message.from
       })
     )
+  }
+  if (message?.type === 'mapped') {
+    if (loading.value) {
+      return getPipeline({ ...pipeline.value })
+    }
   }
   if (message?.to === _wsId) {
     const { type, payload } = message
