@@ -78,8 +78,11 @@ useExtensionService().registerExtension({
         const widget = getiFrameWidget()
         const iframe = widget?.element?.querySelector('iframe')
         if (iframe) {
+          const decode = false
           let imageUrl = dicomOid
-            ? `${VOLVIEW_URL}&names=[rendered.png]&urls=[connect://localhost/orthanc/instances/${dicomOid}/rendered]`
+            ? decode
+              ? `${VOLVIEW_URL}&names=[preview.png]&urls=[connect://localhost/orthanc/instances/${dicomOid}/preview]`
+              : `${VOLVIEW_URL}&names=[file.dcm]&urls=[connect://localhost/orthanc/instances/${dicomOid}/file]`
             : `${VOLVIEW_URL}&names=[file.dcm]&urls=[connect-file://localhost/${dicomPath}]`
           imageUrl = new URL(imageUrl).href
           if (iframe.src !== imageUrl) {
