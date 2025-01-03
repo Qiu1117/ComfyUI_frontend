@@ -20,12 +20,11 @@ useExtensionService().registerExtension({
         }
         // pathname = pathname.replace('comfyui/', '') + 'volview/'
       }
-
       // eslint-disable-next-line prefer-const
       let search = `?uiMode=lite&layoutName=${'Axial Only'}`
       // serach += `&names=[data.png]&urls=[connect-file://localhost/C:\\sample test data\\data.png]`
-      // search += `&names=[test.zip]&urls=[connect-file://localhost/C:\\sample test data\\test2\\MRI-PROSTATEx-0004.zip]&uid=test2&slice=0`
-
+      // search += `&names=[file.dcm]&urls=[connect-file://localhost/C:\\sample test data\\test2\\IM_0036.dcm]&uid=test2`
+      // search += `&names=[test.zip]&urls=[connect-file://localhost/C:\\sample test data\\test2\\MRI-PROSTATEx-0004.zip]&uid=test&slice=0`
       return new URL(origin + pathname + search).href
     }
     const VOLVIEW_URL = getVolViewUrl()
@@ -54,16 +53,43 @@ useExtensionService().registerExtension({
     node.onDrawBackground = function (...args) {
       // @ts-expect-error custom pmt_fields
       const isDone = node.pmt_fields?.status === 'done'
+
       const imageInputNode = isDone ? node.getInputNode(0) : null
+      const dicomInputNode = isDone ? node.getInputNode(1) : null
+
       // @ts-expect-error custom pmt_fields
       const imageInputs = imageInputNode?.pmt_fields?.outputs || []
       const imagePath = Array.isArray(imageInputs[0]?.path)
         ? imageInputs[0]?.path?.[0]
         : imageInputs[0]?.path
 
+      // @ts-expect-error custom pmt_fields
+      const dicomInputs = dicomInputNode?.pmt_fields?.outputs || []
+      const dicomPath = Array.isArray(dicomInputs[0]?.path)
+        ? dicomInputs[0]?.path?.[0]
+        : dicomInputs[0]?.path
+      const dicomOid = Array.isArray(dicomInputs[0]?.oid)
+        ? dicomInputs[0]?.oid?.[0]
+        : dicomInputs[0]?.oid
+
       // ...
 
-      if (imagePath) {
+      if (dicomPath || dicomOid) {
+        const widget = getiFrameWidget()
+        const iframe = widget?.element?.querySelector('iframe')
+        if (iframe) {
+          let imageUrl = dicomOid
+            ? `${VOLVIEW_URL}&names=[rendered.png]&urls=[connect://localhost/orthanc/instances/${dicomOid}/rendered]`
+            : `${VOLVIEW_URL}&names=[file.dcm]&urls=[connect-file://localhost/${dicomPath}]`
+          imageUrl = new URL(imageUrl).href
+          if (iframe.src !== imageUrl) {
+            node.setSize([400, 400])
+            node.setDirtyCanvas(true)
+            widget.element.style.removeProperty('visibility')
+            iframe.src = imageUrl
+          }
+        }
+      } else if (imagePath) {
         const widget = getiFrameWidget()
         const iframe = widget?.element?.querySelector('iframe')
         if (iframe) {
@@ -73,10 +99,8 @@ useExtensionService().registerExtension({
           } else if (imagePath.endsWith('.jpeg')) {
             ext = 'jpeg'
           }
-          const imageUrl = new URL(
-            VOLVIEW_URL +
-              `&names=[file.${ext}]&urls=[connect-file://localhost/${imagePath}]`
-          ).href
+          let imageUrl = `${VOLVIEW_URL}&names=[file.${ext}]&urls=[connect-file://localhost/${imagePath}]`
+          imageUrl = new URL(imageUrl).href
           if (iframe.src !== imageUrl) {
             node.setSize([400, 400])
             node.setDirtyCanvas(true)
