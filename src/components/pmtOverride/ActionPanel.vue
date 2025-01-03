@@ -501,7 +501,9 @@ onMounted(() => {
             const imageInputNode =
               node.pmt_fields?.status === 'done' ? node.getInputNode(0) : null
             const imageInputs = imageInputNode?.pmt_fields?.outputs || []
-            const imagePath = imageInputs[0]?.path?.[0]
+            const imagePath = Array.isArray(imageInputs[0]?.path)
+              ? imageInputs[0]?.path?.[0]
+              : imageInputs[0]?.path
             if (imagePath) {
               let widget = node.widgets.find(
                 (w) => w.name === 'preview-volview'
