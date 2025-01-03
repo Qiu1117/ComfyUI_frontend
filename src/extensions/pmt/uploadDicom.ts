@@ -1,6 +1,7 @@
 // @ts-strict-ignore
-import { app } from '../../scripts/app'
 import { ComfyNodeDef } from '@/types/apiTypes'
+
+import { app } from '../../scripts/app'
 
 app.registerExtension({
   name: 'Comfy.UploadDicom',
@@ -15,6 +16,84 @@ app.registerExtension({
         }
       })
     })
+  },
+  nodeCreated(node) {
+    // ...
+
+    // @ts-expect-error override
+    if (node.onDragOver) {
+      // @ts-expect-error override
+      const _onDragOver = node.onDragOver
+      // @ts-expect-error Property 'onDragOver' does not exist on type 'LGraphNode'
+      node.onDragOver = function (e, ...args) {
+        let handled = _onDragOver?.apply(this, [e, ...args])
+        if (e.dataTransfer && e.dataTransfer.items) {
+          const text = [...e.dataTransfer.items].find(
+            (f) => f.kind === 'string'
+          )
+          if (text) {
+            handled = true
+          }
+        }
+        return handled
+      }
+    } else {
+      // @ts-expect-error Property 'onDragOver' does not exist on type 'LGraphNode'
+      node.onDragOver = function (e) {
+        if (e.dataTransfer && e.dataTransfer.items) {
+          const text = [...e.dataTransfer.items].find(
+            (f) => f.kind === 'string'
+          )
+          return !!text
+        }
+        return false
+      }
+    }
+
+    // @ts-expect-error override
+    if (node.onDragDrop) {
+      // @ts-expect-error override
+      const _onDragDrop = node.onDragDrop
+      // @ts-expect-error Property 'onDragDrop' does not exist on type 'LGraphNode'
+      node.onDragDrop = function (e, ...args) {
+        let handled = _onDragDrop?.apply(this, [e, ...args])
+        const text = e.dataTransfer.getData('text')
+        if (text && text.startsWith('{')) {
+          const json = JSON.parse(text)
+          if (json && json.oid) {
+            const oidWidget = node.widgets.find((w) => {
+              return w.name === 'oid'
+            })
+            if (oidWidget) {
+              oidWidget.value = json.oid
+            }
+            handled = true
+          }
+        }
+        return handled
+      }
+    } else {
+      // @ts-expect-error Property 'onDragDrop' does not exist on type 'LGraphNode'
+      node.onDragDrop = function (e) {
+        let handled = false
+        const text = e.dataTransfer.getData('text')
+        if (text && text.startsWith('{')) {
+          const json = JSON.parse(text)
+          if (json && json.oid) {
+            const oidWidget = node.widgets.find((w) => {
+              return w.name === 'oid'
+            })
+            if (oidWidget) {
+              oidWidget.value = json.oid
+            }
+            handled = true
+          }
+        }
+        return handled
+      }
+    }
+
+    // ...
   },
   getCustomWidgets(app) {
     return {

@@ -326,7 +326,11 @@ onMounted(() => {
     getPipeline({ ...pipeline.value })
   }
 
-  ;['input.load_image', ...Object.keys(SYSTEM_NODE_DEFS)].forEach((type) => {
+  ;[
+    'input.load_image',
+    // ...
+    ...Object.keys(SYSTEM_NODE_DEFS)
+  ].forEach((type) => {
     if (LiteGraph.getNodeType(type)) {
       LiteGraph.unregisterNodeType(type)
     }

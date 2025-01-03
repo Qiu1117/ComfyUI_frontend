@@ -1,6 +1,7 @@
 // @ts-strict-ignore
-import { app } from '../../scripts/app'
 import { ComfyNodeDef } from '@/types/apiTypes'
+
+import { app } from '../../scripts/app'
 
 app.registerExtension({
   name: 'Comfy.UploadImage2',
@@ -15,6 +16,9 @@ app.registerExtension({
         }
       })
     })
+  },
+  nodeCreated(node) {
+    // ...
   },
   getCustomWidgets(app) {
     return {
