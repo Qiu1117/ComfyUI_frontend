@@ -954,14 +954,9 @@ async function save() {
   }
   saving.value = true
   if (pipelineId) {
+    const { json } = exportJson(false, false)
     let isValid = false
     try {
-      const { json } = exportJson(false, false)
-      const formData = {
-        id: pipeline.value.id,
-        workflow: JSON.stringify(json)
-      }
-      // console.log(formData)
       const res = await fetch(
         'connect://localhost/api/pipelines/validate-pipeline-graph-json',
         {
@@ -969,7 +964,10 @@ async function save() {
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(formData)
+          body: JSON.stringify({
+            id: pipeline.value.id,
+            workflow: JSON.stringify(json)
+          })
         }
       )
       if (res.ok) {
@@ -1002,7 +1000,12 @@ async function save() {
     } catch (err) {
       console.error(err)
     }
-    if (!isValid) {
+    if (isValid) {
+      json.nodes = json.nodes.map((node) => {
+        delete node.pmt_fields
+        return node
+      })
+    } else {
       saving.value = false
       console.error('validation failed')
       return
@@ -1013,12 +1016,12 @@ async function save() {
         name: pipelineName.value,
         description: pipelineDescription.value,
         color: pipelineColor.value,
-        workflow: getWorkflowJson(true, false)
+        workflow: JSON.stringify(json)
       })
     } else {
       updatePipeline({
         ...pipeline.value,
-        workflow: getWorkflowJson(true, false)
+        workflow: JSON.stringify(json)
       })
     }
     return
