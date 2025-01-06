@@ -90,6 +90,7 @@ useExtensionService().registerExtension({
             node.setDirtyCanvas(true)
             widget.element.style.removeProperty('visibility')
             iframe.src = imageUrl
+            console.log('[volview] link:', imageUrl)
           }
         }
       } else if (imagePath) {
@@ -109,6 +110,7 @@ useExtensionService().registerExtension({
             node.setDirtyCanvas(true)
             widget.element.style.removeProperty('visibility')
             iframe.src = imageUrl
+            console.log('[volview] link:', imageUrl)
           }
         }
       } else {
