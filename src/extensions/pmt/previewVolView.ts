@@ -53,9 +53,11 @@ useExtensionService().registerExtension({
     node.onDrawBackground = function (...args) {
       // @ts-expect-error custom pmt_fields
       const pmt_fields = node.pmt_fields as any
-      const mayPreview = ['pending', 'current', 'done'].includes(
-        pmt_fields?.status
-      )
+      const mayPreview = [
+        // 'pending',
+        'current',
+        'done'
+      ].includes(pmt_fields?.status)
 
       const imageInputNode = node.getInputNode(0)
       const dicomInputNode = node.getInputNode(2) || node.getInputNode(1)
@@ -119,6 +121,9 @@ useExtensionService().registerExtension({
           let imageUrl = `${VOLVIEW_URL}&layoutName=${'Axial Only'}&names=[file.${ext}]&urls=[connect-file://localhost/${imagePath}]`
           imageUrl = new URL(imageUrl).href
           if (iframe.src !== imageUrl) {
+            if (pmt_fields.status !== 'done') {
+              pmt_fields.status = 'done'
+            }
             node.setSize([400, 400])
             node.setDirtyCanvas(true)
             widget.element.style.removeProperty('visibility')
@@ -138,6 +143,9 @@ useExtensionService().registerExtension({
             : `${VOLVIEW_URL}&layoutName=${'Axial Only'}&names=[file.dcm]&urls=[connect-file://localhost/${dicomPath}]`
           imageUrl = new URL(imageUrl).href
           if (iframe.src !== imageUrl) {
+            if (pmt_fields.status !== 'done') {
+              pmt_fields.status = 'done'
+            }
             node.setSize([400, 400])
             node.setDirtyCanvas(true)
             widget.element.style.removeProperty('visibility')
@@ -158,6 +166,9 @@ useExtensionService().registerExtension({
           let imageUrl = `${VOLVIEW_URL}&layoutName=${'Quad View'}&names=[file.${ext}]&urls=[connect-file://localhost/${niftiPath}]`
           imageUrl = new URL(imageUrl).href
           if (iframe.src !== imageUrl) {
+            if (pmt_fields.status !== 'done') {
+              pmt_fields.status = 'done'
+            }
             node.setSize([512, 512])
             node.setDirtyCanvas(true)
             widget.element.style.removeProperty('visibility')
@@ -175,6 +186,9 @@ useExtensionService().registerExtension({
           let imageUrl = `${VOLVIEW_URL}&layoutName=${'Axial Only'}`
           imageUrl = new URL(imageUrl).href
           if (iframe.src !== imageUrl) {
+            if (pmt_fields.status === 'done') {
+              pmt_fields.status = ''
+            }
             widget.element.style.setProperty('visibility', 'hidden')
             node.setSize([300, 100])
             node.setDirtyCanvas(true)
