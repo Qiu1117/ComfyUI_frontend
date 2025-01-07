@@ -160,6 +160,100 @@
           @contextmenu.prevent="exportJson(false)"
         />
       </ButtonGroup>
+
+      <ButtonGroup class="ml-2">
+        <Button
+          class="btn-input"
+          size="small"
+          :aria-label="'Input Node'"
+          label="#9"
+          severity="secondary"
+          :loading="false"
+          :disabled="loading || running"
+          @click="handleInputNode"
+        />
+        <Button
+          class="btn-quality"
+          size="small"
+          :aria-label="'Quality Control'"
+          label="#6"
+          severity="secondary"
+          :loading="false"
+          :disabled="loading || running"
+          @click="handleQualityControl"
+        />
+        <Button
+          class="btn-dynamic"
+          size="small"
+          :aria-label="'Dynamic Scan'"
+          label="#1"
+          severity="secondary"
+          :loading="false"
+          :disabled="loading || running"
+          @click="handleValidator"
+        />
+        <Button
+          class="btn-phase"
+          size="small"
+          :aria-label="'Phase Map'"
+          label="#2"
+          severity="secondary"
+          :loading="false"
+          :disabled="loading || running"
+          @click="handlePhaseMap"
+        />
+        <Button
+          class="btn-rmpfsl"
+          size="small"
+          :aria-label="'RMPFSL'"
+          label="#3"
+          severity="secondary"
+          :loading="false"
+          :disabled="loading || running"
+          @click="handleRMPFSL"
+        />
+        <Button
+          class="btn-mpf"
+          size="small"
+          :aria-label="'MPF Calculator'"
+          label="#13"
+          severity="secondary"
+          :loading="false"
+          :disabled="loading || running"
+          @click="handleMPF"
+        />
+        <Button
+          class="btn-roi-mask"
+          size="small"
+          :aria-label="'ROI Mask'"
+          label="#10"
+          severity="secondary"
+          :loading="false"
+          :disabled="loading || running"
+          @click="handleROIMask"
+        />
+        <Button
+          class="btn-roi-analyzer"
+          size="small"
+          :aria-label="'ROI Analyzer'"
+          label="#5"
+          severity="secondary"
+          :loading="false"
+          :disabled="loading || running"
+          @click="handleROIAnalyzer"
+        />
+        <Button
+          class="btn-mpf-report"
+          size="small"
+          :aria-label="'MPF Report'"
+          label="#7"
+          severity="secondary"
+          :loading="false"
+          :disabled="loading || running"
+          @click="handleMPFReport"
+        />
+      </ButtonGroup>
+
       <ConfirmDialog
         group="confirm_deletion"
         dismissable-mask
@@ -228,6 +322,7 @@ const pipelineColor = ref('#FFFFFF')
 const pipelines = useLocalStorage('pipelines', pipelineId ? [] : null)
 const pipeline = ref({
   id: pipelineId,
+  // id: 1,
   name: pipelineName.value,
   description: pipelineDescription.value,
   color: pipelineColor.value
@@ -322,9 +417,519 @@ const token =
 
 const presets = {
   no: '{"last_node_id":0,"last_link_id":0,"nodes":[],"links":[],"groups":[],"config":{},"extra":{"ds":{"scale":1,"offset":[0,0]}},"version":0.4}',
-  default: `{"last_node_id":4,"last_link_id":4,"nodes":[{"id":1,"type":"rag_llm.prompt","pos":[105.33335876464844,322.6666564941406],"size":[400,400],"flags":{},"order":0,"mode":0,"inputs":[{"name":"history","type":"LOOP","link":4,"shape":7},{"name":"text","type":"STRING","link":null,"widget":{"name":"text"}},{"name":"optional_text","type":"STRING","link":null,"widget":{"name":"optional_text"},"shape":7}],"outputs":[{"name":"prompt","type":"STRING","links":[1],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.prompt"},"widgets_values":["","hub","rlm/rag-prompt","You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise.\\nQuestion: {question} \\nContext: {context} \\nAnswer:","{messages}","",null],"pmt_fields":{"args":{"type":"hub","hub_link":"rlm/rag-prompt","system":"You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise.\\nQuestion: {question} \\nContext: {context} \\nAnswer:","human":"{messages}","prompt_template_vars":{"question":"","context":"","messages":""}},"status":""}},{"id":2,"type":"rag_llm.model","pos":[559.333251953125,333.3333435058594],"size":[315,106],"flags":{},"order":1,"mode":0,"inputs":[{"name":"text","type":"STRING","link":1,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[2],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.model"},"widgets_values":["","gpt-4o-mini",0.5],"pmt_fields":{"args":{"model_name":"gpt-4o-mini","temperature":0.5},"status":""}},{"id":3,"type":"rag_llm.response","pos":[922,137.3333282470703],"size":[315,126],"flags":{},"order":2,"mode":0,"inputs":[{"name":"text","type":"STRING","link":2,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[3],"slot_index":0},{"name":"history","type":"LOOP","links":[4],"slot_index":1}],"properties":{"Node name for S&R":"rag_llm.response"},"widgets_values":["",true,10000],"pmt_fields":{"args":{"enable_history":true,"max_tokens":10000},"status":""}},{"id":4,"type":"rag_llm.preview_text","pos":[1282.6666259765625,272.0000305175781],"size":[300,200],"flags":{},"order":3,"mode":0,"inputs":[{"name":"text","type":"STRING","link":3,"widget":{"name":"text"}}],"outputs":[],"properties":{"Node name for S&R":"rag_llm.preview_text"},"widgets_values":["",null],"pmt_fields":{"args":{},"status":""}}],"links":[[1,1,0,2,0,"STRING"],[2,2,0,3,0,"STRING"],[3,3,0,4,0,"STRING"],[4,3,1,1,0,"LOOP"]],"groups":[],"config":{},"extra":{"ds":{"scale":1,"offset":[0,0]}},"version":0.4}`,
-  rag: `{"last_node_id":7,"last_link_id":7,"nodes":[{"id":5,"type":"rag_llm.knowledge","pos":[-1120.1199951171875,387.8730773925781],"size":[400,200],"flags":{},"order":0,"mode":0,"inputs":[],"outputs":[{"name":"kownledge","type":"STRING","links":[5],"slot_index":0},{"name":"log","type":"STRING","links":null}],"properties":{"Node name for S&R":"rag_llm.knowledge"},"widgets_values":["web",""],"pmt_fields":{"args":{"type":"web","sources":""},"status":""}},{"id":6,"type":"rag_llm.text_splitter","pos":[-661.6609497070312,327.746826171875],"size":[315,154],"flags":{},"order":1,"mode":0,"inputs":[{"name":"text","type":"STRING","link":5,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[6],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.text_splitter"},"widgets_values":["","token",350,0,""],"pmt_fields":{"args":{"type":"token","chunk_size":350,"chunk_overlap":0,"separators":""},"status":""}},{"id":7,"type":"rag_llm.vector_db","pos":[-292.3180236816406,386.7991638183594],"size":[315,130],"flags":{},"order":2,"mode":0,"inputs":[{"name":"text","type":"STRING","link":6,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[7],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.vector_db"},"widgets_values":["","chroma","openai",3],"pmt_fields":{"args":{"type":"chroma","embedding_type":"openai","retrieve_num":3},"status":""}},{"id":1,"type":"rag_llm.prompt","pos":[105.33335876464844,322.6666564941406],"size":[400,400],"flags":{},"order":3,"mode":0,"inputs":[{"name":"history","type":"LOOP","link":4,"shape":7},{"name":"text","type":"STRING","link":7,"widget":{"name":"text"}},{"name":"optional_text","type":"STRING","link":null,"widget":{"name":"optional_text"},"shape":7}],"outputs":[{"name":"prompt","type":"STRING","links":[1],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.prompt"},"widgets_values":["","hub","rlm/rag-prompt","You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise.\\nQuestion: {question} \\nContext: {context} \\nAnswer:","{messages}","",null],"pmt_fields":{"args":{"type":"hub","hub_link":"rlm/rag-prompt","system":"You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise.\\nQuestion: {question} \\nContext: {context} \\nAnswer:","human":"{messages}","prompt_template_vars":{"question":"","context":"","messages":""}},"status":""}},{"id":2,"type":"rag_llm.model","pos":[559.333251953125,333.3333435058594],"size":[315,106],"flags":{},"order":4,"mode":0,"inputs":[{"name":"text","type":"STRING","link":1,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[2],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.model"},"widgets_values":["","gpt-4o-mini",0.5],"pmt_fields":{"args":{"model_name":"gpt-4o-mini","temperature":0.5},"status":""}},{"id":3,"type":"rag_llm.response","pos":[922,137.3333282470703],"size":[315,126],"flags":{},"order":5,"mode":0,"inputs":[{"name":"text","type":"STRING","link":2,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[3],"slot_index":0},{"name":"history","type":"LOOP","links":[4],"slot_index":1}],"properties":{"Node name for S&R":"rag_llm.response"},"widgets_values":["",true,10000],"pmt_fields":{"args":{"enable_history":true,"max_tokens":10000},"status":""}},{"id":4,"type":"rag_llm.preview_text","pos":[1282.6666259765625,272.0000305175781],"size":[300,200],"flags":{},"order":6,"mode":0,"inputs":[{"name":"text","type":"STRING","link":3,"widget":{"name":"text"}}],"outputs":[],"properties":{"Node name for S&R":"rag_llm.preview_text"},"widgets_values":["",null],"pmt_fields":{"args":{},"status":""}}],"links":[[1,1,0,2,0,"STRING"],[2,2,0,3,0,"STRING"],[3,3,0,4,0,"STRING"],[4,3,1,1,0,"LOOP"],[5,5,0,6,0,"STRING"],[6,6,0,7,0,"STRING"],[7,7,0,1,1,"STRING"]],"groups":[],"config":{},"extra":{"ds":{"scale":1,"offset":[0,0]}},"version":0.4}`,
-  crag: `{"last_node_id":12,"last_link_id":14,"nodes":[{"id":5,"type":"rag_llm.knowledge","pos":[-1795.305419921875,219.73934936523438],"size":[400,200],"flags":{},"order":0,"mode":0,"inputs":[],"outputs":[{"name":"kownledge","type":"STRING","links":[5],"slot_index":0},{"name":"log","type":"STRING","links":null}],"properties":{"Node name for S&R":"rag_llm.knowledge"},"widgets_values":["web",""],"pmt_fields":{"args":{"type":"web","sources":""},"status":""}},{"id":6,"type":"rag_llm.text_splitter","pos":[-1314.37060546875,248.50851440429688],"size":[315,154],"flags":{},"order":1,"mode":0,"inputs":[{"name":"text","type":"STRING","link":5,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[6],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.text_splitter"},"widgets_values":["","token",350,0,""],"pmt_fields":{"args":{"type":"token","chunk_size":350,"chunk_overlap":0,"separators":""},"status":""}},{"id":7,"type":"rag_llm.vector_db","pos":[-879.9946899414062,331.4211730957031],"size":[315,130],"flags":{},"order":2,"mode":0,"inputs":[{"name":"text","type":"STRING","link":6,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[8],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.vector_db"},"widgets_values":["","chroma","openai",3],"pmt_fields":{"args":{"type":"chroma","embedding_type":"openai","retrieve_num":3},"status":""}},{"id":8,"type":"rag_llm.prompt.grade_docs","pos":[-1945.737548828125,588.7113647460938],"size":[400,400],"flags":{},"order":3,"mode":0,"inputs":[{"name":"history","type":"LOOP","link":null,"shape":7},{"name":"text","type":"STRING","link":8,"widget":{"name":"text"}},{"name":"optional_text","type":"STRING","link":null,"widget":{"name":"optional_text"},"shape":7}],"outputs":[{"name":"prompt","type":"STRING","links":[9],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.prompt.grade_docs"},"widgets_values":["","customize","","You are a document retrieval evaluator that's responsible for checking the relevancy of a retrieved document to the user's question.\\n\\nIf the document contains keyword(s) or semantic meaning related to the question, grade it as relevant.\\n\\nOutput a binary score 'yes' or 'no' to indicate whether the document is relevant to the question.","Retrieved document:\\n\\n{document}\\n\\nUser question: {question}","",null],"pmt_fields":{"args":{"type":"customize","hub_link":"","system":"You are a document retrieval evaluator that's responsible for checking the relevancy of a retrieved document to the user's question.\\n\\nIf the document contains keyword(s) or semantic meaning related to the question, grade it as relevant.\\n\\nOutput a binary score 'yes' or 'no' to indicate whether the document is relevant to the question.","human":"Retrieved document:\\n\\n{document}\\n\\nUser question: {question}","prompt_template_vars":{"document":"","question":""}},"status":""}},{"id":9,"type":"rag_llm.model.grade_docs","pos":[-1483.99658203125,621.377685546875],"size":[315,106],"flags":{},"order":4,"mode":0,"inputs":[{"name":"text","type":"STRING","link":9,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[10,11],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.model.grade_docs"},"widgets_values":["","gpt-4o-mini",0.5],"pmt_fields":{"args":{"model_name":"gpt-4o-mini","temperature":0.5},"status":""}},{"id":10,"type":"rag_llm.prompt.transform_query","pos":[-1117.678466796875,694.4251098632812],"size":[400,400],"flags":{},"order":5,"mode":0,"inputs":[{"name":"history","type":"LOOP","link":null,"shape":7},{"name":"text","type":"STRING","link":11,"widget":{"name":"text"}},{"name":"optional_text","type":"STRING","link":null,"widget":{"name":"optional_text"},"shape":7}],"outputs":[{"name":"prompt","type":"STRING","links":[12],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.prompt.transform_query"},"widgets_values":["","customize","","You are a question re-writer that converts an input question to a better version that is optimized for web search.\\n\\nLook at the input and try to reason about the underlying semantic intent / meaning.","Here is the initial question:\\n\\n{question}\\n\\nFormulate an improved question.","",null],"pmt_fields":{"args":{"type":"customize","hub_link":"","system":"You are a question re-writer that converts an input question to a better version that is optimized for web search.\\n\\nLook at the input and try to reason about the underlying semantic intent / meaning.","human":"Here is the initial question:\\n\\n{question}\\n\\nFormulate an improved question.","prompt_template_vars":{"question":""}},"status":""}},{"id":11,"type":"rag_llm.model.transform_query","pos":[-655.8319091796875,621.2080688476562],"size":[315,106],"flags":{},"order":6,"mode":0,"inputs":[{"name":"text","type":"STRING","link":12,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[13],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.model.transform_query"},"widgets_values":["","gpt-4o-mini",0.5],"pmt_fields":{"args":{"model_name":"gpt-4o-mini","temperature":0.5},"status":""}},{"id":12,"type":"rag_llm.web_search","pos":[-282.0015563964844,544.7903442382812],"size":[315,82],"flags":{},"order":7,"mode":0,"inputs":[{"name":"text","type":"STRING","link":13,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[14],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.web_search"},"widgets_values":["",57],"pmt_fields":{"args":{"k":57},"status":""}},{"id":1,"type":"rag_llm.prompt","pos":[105.33335876464844,322.6666564941406],"size":[400,400],"flags":{},"order":8,"mode":0,"inputs":[{"name":"history","type":"LOOP","link":4,"shape":7},{"name":"text","type":"STRING","link":10,"widget":{"name":"text"}},{"name":"optional_text","type":"STRING","link":14,"widget":{"name":"optional_text"},"shape":7}],"outputs":[{"name":"prompt","type":"STRING","links":[1],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.prompt"},"widgets_values":["","hub","rlm/rag-prompt","You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise.\\nQuestion: {question} \\nContext: {context} \\nAnswer:","{messages}","",null],"pmt_fields":{"args":{"type":"hub","hub_link":"rlm/rag-prompt","system":"You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise.\\nQuestion: {question} \\nContext: {context} \\nAnswer:","human":"{messages}","prompt_template_vars":{"question":"","context":"","messages":""}},"status":""}},{"id":2,"type":"rag_llm.model","pos":[559.333251953125,333.3333435058594],"size":[315,106],"flags":{},"order":9,"mode":0,"inputs":[{"name":"text","type":"STRING","link":1,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[2],"slot_index":0}],"properties":{"Node name for S&R":"rag_llm.model"},"widgets_values":["","gpt-4o-mini",0.5],"pmt_fields":{"args":{"model_name":"gpt-4o-mini","temperature":0.5},"status":""}},{"id":3,"type":"rag_llm.response","pos":[922,137.3333282470703],"size":[315,126],"flags":{},"order":10,"mode":0,"inputs":[{"name":"text","type":"STRING","link":2,"widget":{"name":"text"}}],"outputs":[{"name":"text","type":"STRING","links":[3],"slot_index":0},{"name":"history","type":"LOOP","links":[4],"slot_index":1}],"properties":{"Node name for S&R":"rag_llm.response"},"widgets_values":["",true,10000],"pmt_fields":{"args":{"enable_history":true,"max_tokens":10000},"status":""}},{"id":4,"type":"rag_llm.preview_text","pos":[1282.6666259765625,272.0000305175781],"size":[300,200],"flags":{},"order":11,"mode":0,"inputs":[{"name":"text","type":"STRING","link":3,"widget":{"name":"text"}}],"outputs":[],"properties":{"Node name for S&R":"rag_llm.preview_text"},"widgets_values":["",null],"pmt_fields":{"args":{},"status":""}}],"links":[[1,1,0,2,0,"STRING"],[2,2,0,3,0,"STRING"],[3,3,0,4,0,"STRING"],[4,3,1,1,0,"LOOP"],[5,5,0,6,0,"STRING"],[6,6,0,7,0,"STRING"],[8,7,0,8,1,"STRING"],[9,8,0,9,0,"STRING"],[10,9,0,1,1,"STRING"],[11,9,0,10,1,"STRING"],[12,10,0,11,0,"STRING"],[13,11,0,12,0,"STRING"],[14,12,0,1,2,"STRING"]],"groups":[],"config":{},"extra":{"ds":{"scale":1,"offset":[0,0]}},"version":0.4}`
+  default: `{"last_node_id":13,"last_link_id":31,"nodes":[{"id":9,"type":"Input_Node","pos":[-51.22222900390625,244.55557250976562],"size":[211.60000610351562,118],"flags":{},"order":0,"mode":0,"inputs":[{"name":"Dynamic Scan","type":"IMAGE","link":null,"localized_name":"Dynamic Scan"},{"name":"B1 Map","type":"IMAGE","link":null,"localized_name":"B1 Map"},{"name":"Dictionary","type":"DICT","link":null,"localized_name":"Dictionary"}],"outputs":[{"name":"Dynamic Scan","type":"IMAGE","links":[14],"slot_index":0,"shape":3,"localized_name":"Dynamic Scan"},{"name":"B1 Map","type":"IMAGE","links":[24],"slot_index":1,"shape":3,"localized_name":"B1 Map"},{"name":"Dictionary","type":"DICT","links":[25],"slot_index":2,"shape":3,"localized_name":"Dictionary"},{"name":"TSL","type":"FLOAT","links":[31],"localized_name":"TSL","slot_index":3}],"properties":{"Node name for S&R":"Input_Node"},"widgets_values":[],"pmt_fields":{"type":"Input_Node","plugin_name":"input","function_name":null,"inputs":[{},{},{}],"args":{},"outputs":[{"oid":[],"path":[]},{"oid":[],"path":[]},{"oid":[],"path":[]},{"oid":[],"path":[]}],"status":"pending"}},{"id":6,"type":"Image_Quality_Control","pos":[192.44451904296875,83.99998474121094],"size":[220,46],"flags":{},"order":1,"mode":0,"inputs":[{"name":"Dynamic Scan","type":"IMAGE","link":14,"localized_name":"Dynamic Scan"}],"outputs":[{"name":"Dynamic Scan","type":"IMAGE","links":[3],"slot_index":0,"shape":3,"localized_name":"Dynamic Scan"},{"name":"Image Quality","type":"DICT","links":[13],"slot_index":1,"shape":3,"localized_name":"Image Quality"}],"properties":{"Node name for S&R":"Image_Quality_Control"},"widgets_values":[],"pmt_fields":{"type":"Image_Quality_Control","plugin_name":"quality","function_name":null,"inputs":[{}],"args":{},"outputs":[{"oid":[],"path":[]},{"oid":[],"path":[]}],"status":"pending"}},{"id":1,"type":"Dynamic_Scan_Validator","pos":[478.22222900390625,77.33338928222656],"size":[211.60000610351562,26],"flags":{},"order":2,"mode":0,"inputs":[{"name":"Dynamic Scan","type":"IMAGE","link":3,"localized_name":"Dynamic Scan"}],"outputs":[{"name":"Complex Data","type":"IMAGE","links":[4],"slot_index":0,"shape":3,"localized_name":"Complex Data"}],"properties":{"Node name for S&R":"Dynamic_Scan_Validator"},"widgets_values":[],"pmt_fields":{"type":"Dynamic_Scan_Validator","plugin_name":"validator","function_name":null,"inputs":[{}],"args":{},"outputs":[{"oid":[],"path":[]}],"status":"pending"}},{"id":2,"type":"Phase_Map_Calculator","pos":[741.2222900390625,82.11111450195312],"size":[270.3999938964844,66],"flags":{},"order":3,"mode":0,"inputs":[{"name":"Complex Data","type":"IMAGE","link":4,"localized_name":"Complex Data"}],"outputs":[{"name":"Phase Map","type":"IMAGE","links":null,"slot_index":0,"shape":3,"localized_name":"Phase Map"},{"name":"Phase Mask","type":"IMAGE","links":[30],"shape":3,"localized_name":"Phase Mask","slot_index":1},{"name":"Complex Data","type":"IMAGE","links":[5,27],"slot_index":2,"shape":3,"localized_name":"Complex Data"}],"properties":{"Node name for S&R":"Phase_Map_Calculator"},"widgets_values":[],"pmt_fields":{"type":"Phase_Map_Calculator","plugin_name":"calculator","function_name":null,"inputs":[{}],"args":{},"outputs":[{"oid":[],"path":[]},{"oid":[],"path":[]},{"oid":[],"path":[]}],"status":"pending"}},{"id":3,"type":"RMPFSL_Calculator","pos":[1127.3333740234375,75],"size":[220,26],"flags":{},"order":4,"mode":0,"inputs":[{"name":"Complex Data","type":"IMAGE","link":5,"localized_name":"Complex Data"}],"outputs":[{"name":"Rmpfsl Result","type":"IMAGE","links":[7,17],"slot_index":0,"shape":3,"localized_name":"Rmpfsl Result"}],"properties":{"Node name for S&R":"RMPFSL_Calculator"},"widgets_values":[],"pmt_fields":{"type":"RMPFSL_Calculator","plugin_name":"calculator","function_name":null,"inputs":[{}],"args":{},"outputs":[{"oid":[],"path":[]}],"status":"pending"}},{"id":13,"type":"MPF_Calculator","pos":[1003,426],"size":[210,98],"flags":{},"order":5,"mode":0,"inputs":[{"name":"Complex Data","type":"IMAGE","link":27,"localized_name":"Complex Data"},{"name":"B1 Map","type":"IMAGE","link":24,"localized_name":"B1 Map"},{"name":"Dictionary","type":"DICT","link":25,"localized_name":"Dictionary"},{"name":"TSL","type":"FLOAT","link":31,"widget":{"name":"TSL"}}],"outputs":[{"name":"MPF Result","type":"IMAGE","links":[28,29],"slot_index":0,"shape":3,"localized_name":"MPF Result"}],"properties":{"Node name for S&R":"MPF_Calculator"},"widgets_values":[0.1],"pmt_fields":{"type":"MPF_Calculator","plugin_name":"calculator","function_name":null,"inputs":[{},{},{},{}],"args":{},"outputs":[{"oid":[],"path":[]}],"status":"pending"}},{"id":10,"type":"Generate_ROI_Mask","pos":[1360.333251953125,405.3333435058594],"size":[186.39999389648438,46],"flags":{},"order":6,"mode":0,"inputs":[{"name":"Rmpfsl Result","type":"IMAGE","link":17,"localized_name":"Rmpfsl Result"},{"name":"MPF Result","type":"IMAGE","link":28,"localized_name":"MPF Result"}],"outputs":[{"name":"ROI Mask","type":"MASK","links":[19],"slot_index":0,"shape":3,"localized_name":"ROI Mask"}],"properties":{"Node name for S&R":"Generate_ROI_Mask"},"widgets_values":[],"pmt_fields":{"type":"Generate_ROI_Mask","plugin_name":"roi","function_name":null,"inputs":[{},{}],"args":{},"outputs":[{"oid":[],"path":[]}],"status":"pending"}},{"id":5,"type":"ROI_Analyzer","pos":[1577,131],"size":[253.60000610351562,86],"flags":{},"order":7,"mode":0,"inputs":[{"name":"Rmpfsl Result","type":"IMAGE","link":7,"localized_name":"Rmpfsl Result"},{"name":"MPF Result","type":"IMAGE","link":29,"localized_name":"MPF Result"},{"name":"ROI Mask","type":"MASK","link":19,"localized_name":"ROI Mask"},{"name":"Phase Mask","type":"IMAGE","link":30,"localized_name":"Phase Mask"}],"outputs":[{"name":"Rmpfsl Histogram","type":"IMAGE","links":[9],"slot_index":0,"shape":3,"localized_name":"Rmpfsl Histogram"},{"name":"MPF Histogram","type":"IMAGE","links":[10],"slot_index":1,"shape":3,"localized_name":"MPF Histogram"},{"name":"Rmpfsl Statistic","type":"DICT","links":[11],"slot_index":2,"shape":3,"localized_name":"Rmpfsl Statistic"},{"name":"MPF Statistic","type":"DICT","links":[12],"slot_index":3,"shape":3,"localized_name":"MPF Statistic"}],"properties":{"Node name for S&R":"ROI_Analyzer"},"widgets_values":[],"pmt_fields":{"type":"ROI_Analyzer","plugin_name":"analyzer","function_name":null,"inputs":[{},{},{},{}],"args":{},"outputs":[{"oid":[],"path":[]},{"oid":[],"path":[]},{"oid":[],"path":[]},{"oid":[],"path":[]}],"status":"pending"}},{"id":7,"type":"MPF_Report","pos":[1975.888916015625,293.3333435058594],"size":[270.3999938964844,106],"flags":{},"order":8,"mode":0,"inputs":[{"name":"Rmpfsl Histogram","type":"IMAGE","link":9,"localized_name":"Rmpfsl Histogram"},{"name":"MPF Histogram","type":"IMAGE","link":10,"localized_name":"MPF Histogram"},{"name":"Rmpfsl Statistic","type":"DICT","link":11,"localized_name":"Rmpfsl Statistic"},{"name":"MPF Statistic","type":"DICT","link":12,"localized_name":"MPF Statistic"},{"name":"Image Quality","type":"DICT","link":13,"localized_name":"Image Quality"}],"outputs":[{"name":"Analysis Report","type":"DICT","links":null,"shape":3,"localized_name":"Analysis Report"}],"properties":{"Node name for S&R":"MPF_Report"},"widgets_values":[],"pmt_fields":{"type":"MPF_Report","plugin_name":"report","function_name":null,"inputs":[{},{},{},{},{}],"args":{},"outputs":[{"oid":[],"path":[]}],"status":"pending"}}],"links":[[3,6,0,1,0,"IMAGE"],[4,1,0,2,0,"IMAGE"],[5,2,2,3,0,"IMAGE"],[7,3,0,5,0,"IMAGE"],[9,5,0,7,0,"IMAGE"],[10,5,1,7,1,"IMAGE"],[11,5,2,7,2,"DICT"],[12,5,3,7,3,"DICT"],[13,6,1,7,4,"DICT"],[14,9,0,6,0,"IMAGE"],[17,3,0,10,0,"IMAGE"],[19,10,0,5,2,"MASK"],[24,9,1,13,1,"IMAGE"],[25,9,2,13,2,"DICT"],[27,2,2,13,0,"IMAGE"],[28,13,0,10,1,"IMAGE"],[29,13,0,5,1,"IMAGE"],[30,2,1,5,3,"IMAGE"],[31,9,3,13,3,"FLOAT"]],"groups":[],"config":{},"extra":{"ds":{"scale":1,"offset":[-158.22216796875,124.4443359375]}},"version":0.4}`,
+  smooth: `{
+  "last_node_id": 7,
+  "last_link_id": 6,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "input.load_dicom",
+      "pos": [
+        60.95134735107422,
+        207.33335876464844
+      ],
+      "size": [
+        315,
+        58
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "DICOM_FILE",
+          "type": "DICOM_FILE",
+          "links": [
+            1
+          ],
+          "slot_index": 0,
+          "localized_name": "DICOM_FILE"
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "input.load_dicom"
+      },
+      "widgets_values": [
+        "5635780f-64565673-9b29cf17-d39808a3-29710ad3"
+      ],
+      "pmt_fields": {
+        "type": "input",
+        "plugin_name": null,
+        "function_name": null,
+        "inputs": [],
+        "args": {
+          "oid": "5635780f-64565673-9b29cf17-d39808a3-29710ad3"
+        },
+        "outputs": [
+          {
+            "oid": "5635780f-64565673-9b29cf17-d39808a3-29710ad3",
+            "path": "E:\\Code\\PWH_Volunteer_Analysis\\Sample\\MPF\\MPF.dcm",
+            "value": "E:\\Code\\PWH_Volunteer_Analysis\\Sample\\MPF\\MPF.dcm"
+          }
+        ],
+        "status": ""
+      }
+    },
+    {
+      "id": 2,
+      "type": "converter.file_to_data.dicom_to_2d",
+      "pos": [
+        422.8067626953125,
+        249.34979248046875
+      ],
+      "size": [
+        210,
+        26
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "link": 1,
+          "name": "DICOM_FILE",
+          "type": "DICOM_FILE",
+          "localized_name": "DICOM_FILE"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "data",
+          "type": "2D",
+          "links": [
+            2
+          ],
+          "slot_index": 0,
+          "localized_name": "data"
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "converter.file_to_data.dicom_to_2d"
+      },
+      "widgets_values": [],
+      "pmt_fields": {
+        "type": "converter",
+        "plugin_name": "file_to_data",
+        "function_name": "dicom_to_2d",
+        "inputs": [
+          {
+            "optional": false
+          }
+        ],
+        "args": {},
+        "outputs": [
+          {
+            "oid": null,
+            "path": null,
+            "value": null
+          }
+        ],
+        "status": "pending"
+      }
+    },
+    {
+      "id": 3,
+      "type": "plugin.smooth.smooth_2d",
+      "pos": [
+        681.537109375,
+        227.4853515625
+      ],
+      "size": [
+        315,
+        78
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "link": 2,
+          "name": "data",
+          "type": "2D",
+          "localized_name": "data"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "data",
+          "type": "2D",
+          "links": [
+            3,
+            4
+          ],
+          "slot_index": 0,
+          "localized_name": "data"
+        },
+        {
+          "name": "test_txt",
+          "type": "STRING",
+          "links": null,
+          "localized_name": "test_txt"
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "plugin.smooth.smooth_2d"
+      },
+      "widgets_values": [
+        4
+      ],
+      "pmt_fields": {
+        "type": "plugin",
+        "plugin_name": "smooth",
+        "function_name": "smooth_2d",
+        "inputs": [
+          {
+            "optional": false
+          }
+        ],
+        "args": {
+          "sigma": 4
+        },
+        "outputs": [
+          {
+            "oid": null,
+            "path": null,
+            "value": null
+          },
+          {
+            "oid": null,
+            "path": null,
+            "value": null
+          }
+        ],
+        "status": "pending"
+      }
+    },
+    {
+      "id": 5,
+      "type": "converter.data_to_file.2d_to_dicom",
+      "pos": [
+        1055.71875,
+        305.19781494140625
+      ],
+      "size": [
+        210,
+        26
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "link": 3,
+          "name": "data",
+          "type": "2D",
+          "localized_name": "data"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "DICOM_FILE",
+          "type": "DICOM_FILE",
+          "links": [
+            6
+          ],
+          "slot_index": 0,
+          "localized_name": "DICOM_FILE"
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "converter.data_to_file.2d_to_dicom"
+      },
+      "widgets_values": [],
+      "pmt_fields": {
+        "type": "converter",
+        "plugin_name": "data_to_file",
+        "function_name": "2d_to_dicom",
+        "inputs": [
+          {
+            "optional": false
+          }
+        ],
+        "args": {},
+        "outputs": [
+          {
+            "oid": null,
+            "path": null,
+            "value": null
+          }
+        ],
+        "status": "pending"
+      }
+    },
+    {
+      "id": 4,
+      "type": "converter.data_to_file.2d_to_image",
+      "pos": [
+        1128.01904296875,
+        140.12298583984375
+      ],
+      "size": [
+        315,
+        82
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "link": 4,
+          "name": "data",
+          "type": "2D",
+          "localized_name": "data"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE_FILE",
+          "type": "IMAGE_FILE",
+          "links": [
+            5
+          ],
+          "slot_index": 0,
+          "localized_name": "IMAGE_FILE"
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "converter.data_to_file.2d_to_image"
+      },
+      "widgets_values": [
+        "png",
+        true
+      ],
+      "pmt_fields": {
+        "type": "converter",
+        "plugin_name": "data_to_file",
+        "function_name": "2d_to_image",
+        "inputs": [
+          {
+            "optional": false
+          }
+        ],
+        "args": {
+          "format": "png",
+          "normalize": true
+        },
+        "outputs": [
+          {
+            "oid": null,
+            "path": null,
+            "value": null
+          }
+        ],
+        "status": "pending"
+      }
+    },
+    {
+      "id": 7,
+      "type": "output.export",
+      "pos": [
+        1317.01708984375,
+        363.1414794921875
+      ],
+      "size": [
+        152.8000030517578,
+        86
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "link": null,
+          "name": "IMAGE_FILE",
+          "type": "IMAGE_FILE",
+          "shape": 7,
+          "localized_name": "IMAGE_FILE"
+        },
+        {
+          "link": 6,
+          "name": "DICOM_FILE",
+          "type": "DICOM_FILE",
+          "shape": 7,
+          "localized_name": "DICOM_FILE"
+        },
+        {
+          "link": null,
+          "name": "DICOM_VOLUME_FILE",
+          "type": "DICOM_VOLUME_FILE",
+          "shape": 7,
+          "localized_name": "DICOM_VOLUME_FILE"
+        },
+        {
+          "link": null,
+          "name": "NIFTI_FILE",
+          "type": "NIFTI_FILE",
+          "shape": 7,
+          "localized_name": "NIFTI_FILE"
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "output.export"
+      },
+      "widgets_values": [],
+      "pmt_fields": {
+        "type": "output",
+        "plugin_name": "output",
+        "function_name": "export",
+        "inputs": [
+          {
+            "optional": true
+          },
+          {
+            "optional": true
+          },
+          {
+            "optional": true
+          },
+          {
+            "optional": true
+          }
+        ],
+        "args": {},
+        "outputs": [],
+        "status": "pending"
+      }
+    },
+    {
+      "id": 6,
+      "type": "preview.volview",
+      "pos": [
+        1526.077880859375,
+        199.8821563720703
+      ],
+      "size": [
+        152.8000030517578,
+        86
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "link": 5,
+          "name": "IMAGE_FILE",
+          "type": "IMAGE_FILE",
+          "shape": 7,
+          "localized_name": "IMAGE_FILE"
+        },
+        {
+          "link": null,
+          "name": "DICOM_FILE",
+          "type": "DICOM_FILE",
+          "shape": 7,
+          "localized_name": "DICOM_FILE"
+        },
+        {
+          "link": null,
+          "name": "DICOM_VOLUME_FILE",
+          "type": "DICOM_VOLUME_FILE",
+          "shape": 7,
+          "localized_name": "DICOM_VOLUME_FILE"
+        },
+        {
+          "link": null,
+          "name": "NIFTI_FILE",
+          "type": "NIFTI_FILE",
+          "shape": 7,
+          "localized_name": "NIFTI_FILE"
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "preview.volview"
+      },
+      "widgets_values": [],
+      "pmt_fields": {
+        "type": "preview",
+        "plugin_name": "preview",
+        "function_name": "volview",
+        "inputs": [
+          {
+            "optional": true
+          },
+          {
+            "optional": true
+          },
+          {
+            "optional": true
+          },
+          {
+            "optional": true
+          }
+        ],
+        "args": {},
+        "outputs": [],
+        "status": "pending"
+      }
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      2,
+      0,
+      "DICOM_FILE"
+    ],
+    [
+      2,
+      2,
+      0,
+      3,
+      0,
+      "2D"
+    ],
+    [
+      3,
+      3,
+      0,
+      5,
+      0,
+      "2D"
+    ],
+    [
+      4,
+      3,
+      0,
+      4,
+      0,
+      "2D"
+    ],
+    [
+      5,
+      4,
+      0,
+      6,
+      0,
+      "IMAGE_FILE"
+    ],
+    [
+      6,
+      5,
+      0,
+      7,
+      1,
+      "DICOM_FILE"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 1,
+      "offset": [
+        0,
+        0
+      ]
+    }
+  },
+  "version": 0.4
+}`
 }
 
 const terminal = Object.create(null)
@@ -346,7 +951,7 @@ onMounted(() => {
   Object.keys(SYSTEM_NODE_DEFS).forEach((type) => {
     LiteGraph.unregisterNodeType(type)
   })
-  LiteGraph.unregisterNodeType('input.load_image')
+  // LiteGraph.unregisterNodeType('input.load_image')
 
   const getCanvasMenuOptions = LGraphCanvas.prototype.getCanvasMenuOptions
   LGraphCanvas.prototype.getCanvasMenuOptions = function () {
@@ -801,73 +1406,418 @@ async function run(e, mode = 'complete') {
   }
   running.value = true
   runningMode.value = mode
-  if (!pipelineId) {
-    const { langchain_json } = exportJson(false)
-    const answers = await langchainChat(langchain_json)
-    console.log(answers)
-  } else {
-    const { json } = exportJson(false)
-    const formData = {
-      id: pipeline.value.id,
-      workflow: JSON.stringify(json),
-      mode: runningMode.value
-    }
-    // console.log(formData)
-    return fetch('connect://localhost/api/pipelines/run-once', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(formData)
-    })
-      .then(async (res) => {
-        for await (const chunk of decodeMultiStream(res.body)) {
-          if (chunk?.id === pipelineId) {
-            const { pythonMsg, graphJson } = chunk
-            const msg = pythonMsg?.msg || ''
-            const results = []
-            if (graphJson) {
-              graphJson.forEach(({ id, pmtFields: pmt_fields }) => {
-                if (pmt_fields) {
-                  const result = { id, pmt_fields: JSON.parse(pmt_fields) }
+
+  // if (!pipelineId) {
+  //   const { langchain_json } = exportJson(false)
+  //   const answers = await langchainChat(langchain_json)
+  //   console.log(answers)
+  // } else {
+  const { json } = exportJson(false)
+  const formData = {
+    id: 1,
+    workflow: JSON.stringify(json),
+    mode: runningMode.value
+  }
+  console.log(formData)
+  return fetch('http://localhost:5000/pipelines/run-once', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(formData)
+  })
+    .then(async (res) => {
+      // console.log("Res:", res);
+      // for await (const chunk of decodeMultiStream(res.body)) {
+      //   console.log(res.body)
+      //   // console.log(chunk)
+      //     if (chunk?.id === pipelineId) {
+      //       const { pythonMsg, graphJson } = chunk
+      //       const msg = pythonMsg?.msg || ''
+      //       const results = []
+      //       if (graphJson) {
+      //         graphJson.forEach(({ id, pmtFields: pmt_fields }) => {
+      //           if (pmt_fields) {
+      //             const result = { id, pmt_fields: JSON.parse(pmt_fields) }
+      //             const node = comfyApp.graph.getNodeById(id)
+      //             if (node && node.pmt_fields) {
+      //               if (result.pmt_fields.outputs) {
+      //                 console.log(result.pmt_fields)
+      //                 result.pmt_fields.outputs.forEach((output, o) => {
+      //                   const { name, type, oid, path, value } = output
+      //                   if (oid) {
+      //                     node.pmt_fields.outputs[o].oid = Array.isArray(
+      //                       node.pmt_fields.outputs[o].oid
+      //                     )
+      //                       ? [oid]
+      //                       : oid
+      //                   }
+      //                   if (path) {
+      //                     node.pmt_fields.outputs[o].path = Array.isArray(
+      //                       node.pmt_fields.outputs[o].path
+      //                     )
+      //                       ? [path]
+      //                       : path
+      //                   }
+      //                   if (value) {
+      //                     node.pmt_fields.outputs[o].value = Array.isArray(
+      //                       node.pmt_fields.outputs[o].value
+      //                     )
+      //                       ? [value]
+      //                       : value
+      //                   }
+      //                 })
+      //               }
+      //               if (result.pmt_fields.status) {
+      //                 node.pmt_fields.status = result.pmt_fields.status
+      //               }
+      //               node.setDirtyCanvas(true)
+      //               return
+      //             }
+      //             results.push(result)
+      //           }
+      //         })
+      //       }
+      //       if (msg) {
+      //         terminal.term.write(msg + (msg.endsWith('\r') ? '\n' : ''))
+      //         console.log(msg, results.length > 0 ? results : '')
+      //       }
+      //     }
+      //   }
+      //   console.log('[DONE]')
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (true) {
+        const { value, done } = await reader.read()
+        if (done) {
+          console.log('[Stream completed]')
+          break
+        }
+
+        buffer += decoder.decode(value, { stream: true })
+
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
+
+        for (const line of lines) {
+          if (!line.trim()) continue
+
+          try {
+            const chunk = JSON.parse(line)
+
+            if (chunk?.id === 1) {
+              const { pythonMsg, graphJson } = chunk
+
+              if (pythonMsg?.msg) {
+                terminal.term.write(pythonMsg.msg.trim() + '\n')
+                // terminal.term.write(pythonMsg.msg + '\n');
+                console.log('Message:', pythonMsg.msg)
+              }
+
+              if (graphJson) {
+                graphJson.forEach(({ id, pmtFields }) => {
                   const node = comfyApp.graph.getNodeById(id)
-                  if (node) {
-                    if (result.pmt_fields.outputs) {
-                      console.log(result.pmt_fields)
+                  if (node && node.pmt_fields) {
+                    if (pmtFields.outputs) {
+                      pmtFields.outputs.forEach((output, index) => {
+                        if (output.oid) {
+                          node.pmt_fields.outputs[index].oid = Array.isArray(
+                            node.pmt_fields.outputs[index].oid
+                          )
+                            ? [output.oid]
+                            : output.oid
+                        }
+                        if (output.path) {
+                          node.pmt_fields.outputs[index].path = Array.isArray(
+                            node.pmt_fields.outputs[index].path
+                          )
+                            ? [output.path]
+                            : output.path
+                        }
+                        if (output.value) {
+                          node.pmt_fields.outputs[index].value = Array.isArray(
+                            node.pmt_fields.outputs[index].value
+                          )
+                            ? [output.value]
+                            : output.value
+                        }
+                      })
                     }
-                    if (
-                      result.pmt_fields.status &&
-                      result.pmt_fields.type !== 'input'
-                    ) {
-                      node.pmt_fields = {
-                        ...(node.pmt_fields || {}),
-                        status: result.pmt_fields.status
-                      }
+
+                    // 更新状态
+                    if (pmtFields.status) {
+                      node.pmt_fields.status = pmtFields.status
                     }
+
                     node.setDirtyCanvas(true)
-                    return
                   }
-                  results.push(result)
-                }
-              })
+                })
+              }
             }
-            if (msg) {
-              terminal.term.write(msg + (msg.endsWith('\r') ? '\n' : ''))
-              console.log(msg, results.length > 0 ? results : '')
-            }
+          } catch (error) {
+            console.error('Error parsing chunk:', error, line)
           }
         }
-        console.log('[DONE]')
-      })
-      .catch((err) => {
-        console.error(err)
-      })
-      .finally(() => {
-        running.value = false
-      })
+      }
+    })
+    .catch((err) => {
+      console.error(err)
+    })
+    .finally(() => {
+      running.value = false
+    })
+  // }
+  // const nodeData = getWorkflowJson()
+  // console.log(nodeData)
+
+  // const nodes = [...nodeData.nodes]
+  // nodes.sort((a, b) => a.order - b.order)
+  // console.log('开始执行工作流, 共有节点数:', nodes.length)
+
+  // for (const node of nodes) {
+  //   console.log('执行节点:', {
+  //     name: node.type,
+  //     inputs: node.inputs?.map(input => ({
+  //       name: input.name,
+  //       type: input.type,
+  //       link: input.link
+  //     })) || [],
+  //     outputs: node.outputs?.map(output => ({
+  //       name: output.name,
+  //       type: output.type,
+  //       links: output.links
+  //     })) || []
+  //   })
+
+  //   switch(node.type) {
+  //     case 'Input_Node':
+  //       await handleInputNode(node)
+  //       break
+  //     case 'Image_Quality_Control':
+  //       await handleQualityControl(node)
+  //       break
+  //     case 'Dynamic_Scan_Validator':
+  //       await handleValidator(node)
+  //       break
+  //     case 'Phase_Map_Calculator':
+  //       await handlePhaseMap(node)
+  //       break
+  //     case 'RMPFSL_Calculator':
+  //       await handleRMPFSL(node)
+  //       break
+  //     case 'MPF_Calculator':
+  //       await handleMPF(node)
+  //       break
+  //     case 'Generate_ROI_Mask':
+  //       await handleROIMask(node)
+  //       break
+  //     case 'ROI_Analyzer':
+  //       await handleROIAnalyzer(node)
+  //       break
+  //     case 'MPF_Report':
+  //       await handleMPFReport(node)
+  //       break
+  //     default:
+  //       console.log('未知节点类型:', node.type)
+  //   }
+  // }
+
+  // running.value = false
+  // runningMode.value = 'complete'
+}
+
+async function handleInputNode(node) {
+  const uidData = {
+    studyInstanceUID: '1.2.840.113619.2.182.1080861414283.1698302236.6278539',
+    seriesInstanceUID: '1.3.46.670589.11.62044.5.0.11948.2023111014191779884'
   }
-  running.value = false
-  runningMode.value = 'complete'
+
+  window.parent.postMessage(
+    {
+      type: 'viewData',
+      message: `处理输入节点:${node.type}`,
+      data: {
+        id: node.id,
+        type: node.type,
+        inputs: node.inputs,
+        outputs: uidData,
+        status: node.pmt_fields?.status
+      }
+    },
+    '*'
+  )
+
+  // TODO: 处理输入节点的具体逻辑
+  console.log('[ComfyUI] 正在处理输入节点')
+}
+
+async function handleQualityControl(node) {
+  const uidData = {
+    studyInstanceUID: '1.2.840.113619.2.182.1080861414283.1698302236.6278539',
+    seriesInstanceUID: '1.3.46.670589.11.62044.5.0.11948.2023111014191779884'
+  }
+  window.parent.postMessage(
+    {
+      type: 'ImageQuality_Assessment',
+      message: `[ComfyUI] 处理图像质量核验节点:${node.type}`,
+      data: {
+        id: node.id,
+        type: node.type,
+        inputs: node.inputs,
+        outputs: uidData,
+        status: node.pmt_fields?.status
+      }
+    },
+    '*'
+  )
+
+  // TODO: 处理图像质量控制的具体逻辑
+  console.log('[ComfyUI] 正在进行图像质量核验')
+}
+
+async function handleValidator(node) {
+  window.parent.postMessage(
+    {
+      type: 'workflow_log',
+      message: `处理验证节点:${node.type}`,
+      data: {
+        id: node.id,
+        type: node.type,
+        inputs: node.inputs,
+        outputs: node.outputs,
+        status: node.pmt_fields?.status
+      }
+    },
+    '*'
+  )
+
+  console.log('[ComfyUI] 正在验证数据')
+}
+
+async function handlePhaseMap(node) {
+  window.parent.postMessage(
+    {
+      type: 'workflow_log',
+      message: `处理相位图计算节点:${node.type}`,
+      data: {
+        id: node.id,
+        type: node.type,
+        inputs: node.inputs,
+        outputs: node.outputs,
+        status: node.pmt_fields?.status
+      }
+    },
+    '*'
+  )
+
+  console.log('[ComfyUI] 正在计算相位图')
+}
+
+async function handleRMPFSL(node) {
+  const uidData = {
+    studyInstanceUID: '1.2.840.113619.2.182.1080861414283.1698302236.6278539',
+    seriesInstanceUID: '1.3.46.670589.11.62044.5.0.11948.2023111014191779884'
+  }
+
+  window.parent.postMessage(
+    {
+      type: 'view_RenderingData',
+      message: `处理RMPFSL计算节点:${node.type}`,
+      data: {
+        id: node.id,
+        type: node.type,
+        inputs: node.inputs,
+        outputs: uidData,
+        status: node.pmt_fields?.status
+      }
+    },
+    '*'
+  )
+
+  console.log('[ComfyUI] 正在进行RMPFSL计算')
+}
+
+async function handleMPF(node) {
+  window.parent.postMessage(
+    {
+      type: 'workflow_log',
+      message: `处理MPF计算节点:${node.type}`,
+      data: {
+        id: node.id,
+        type: node.type,
+        inputs: node.inputs,
+        outputs: node.outputs,
+        status: node.pmt_fields?.status
+      }
+    },
+    '*'
+  )
+
+  console.log('[ComfyUI] 正在计算MPF')
+}
+
+async function handleROIMask(node) {
+  const uidData = {
+    studyInstanceUID: '1.2.840.113619.2.182.1080861414283.1698302236.6278539',
+    seriesInstanceUID: '1.3.46.670589.11.62044.5.0.11948.2023111014191779884'
+  }
+
+  window.parent.postMessage(
+    {
+      type: 'ROI_Annotation',
+      message: `处理RMPFSL计算节点:${node.type}`,
+      data: {
+        id: node.id,
+        type: node.type,
+        inputs: node.inputs,
+        outputs: uidData,
+        status: node.pmt_fields?.status
+      }
+    },
+    '*'
+  )
+
+  console.log('[ComfyUI] 正在生成ROI MASK')
+}
+
+async function handleROIAnalyzer(node) {
+  window.parent.postMessage(
+    {
+      type: 'workflow_log',
+      message: ` 处理ROI分析节点:${node.type}`,
+      data: {
+        id: node.id,
+        type: node.type,
+        inputs: node.inputs,
+        outputs: node.outputs,
+        status: node.pmt_fields?.status
+      }
+    },
+    '*'
+  )
+
+  console.log('[ComfyUI] 正在进行ROI分析')
+}
+
+async function handleMPFReport(node) {
+  window.parent.postMessage(
+    {
+      type: 'workflow_log',
+      message: `处理MPF报告节点:${node.type}`,
+      data: {
+        id: node.id,
+        type: node.type,
+        inputs: node.inputs,
+        outputs: node.outputs,
+        status: node.pmt_fields?.status
+      }
+    },
+    '*'
+  )
+
+  console.log('[ComfyUI] 正在生成MPF报告')
 }
 
 const stoppable = ref(!!pipelineId)
@@ -1164,27 +2114,10 @@ function getWorkflowJson(stringify = false, keepStatus = true) {
       //
     }
     if (pmt_fields.type === 'plugin') {
-      // ...
-    } else {
-      pmt_fields.plugin_name = null
-      pmt_fields.function_name = null
+      //
     }
     if (pmt_fields.type === 'converter') {
-      const inputNode = node.getInputNode(0)
-      if (inputNode && inputNode.pmt_fields?.type === 'input') {
-        if (inputNode.pmt_fields.outputs[0]?.oid && pmt_fields.inputs[0]) {
-          pmt_fields.inputs[0].oid = [...inputNode.pmt_fields.outputs[0].oid]
-          pmt_fields.inputs[0].path = [...(pmt_fields.inputs[0].path || [])]
-          pmt_fields.inputs[0].value = [...(pmt_fields.inputs[0].value || [])]
-          if (pmt_fields.outputs[0]?.oid) {
-            pmt_fields.outputs[0].oid = [...pmt_fields.inputs[0].oid]
-          }
-          if (pmt_fields.outputs[0]?.path) {
-            pmt_fields.outputs[0].path = [...pmt_fields.inputs[0].path]
-            pmt_fields.outputs[0].value = [...pmt_fields.inputs[0].value]
-          }
-        }
-      }
+      //
     }
     if (pmt_fields.type === 'preview') {
       //
@@ -1202,9 +2135,11 @@ function getWorkflowJson(stringify = false, keepStatus = true) {
         }
       }
     } else {
-      delete pmt_fields.status
+      pmt_fields.status = ''
     }
     nodes[i].pmt_fields = pmt_fields
+    node.pmt_fields = nodes[i].pmt_fields
+    node.setDirtyCanvas(true)
     return nodes[i]
   })
   if (stringify) {
