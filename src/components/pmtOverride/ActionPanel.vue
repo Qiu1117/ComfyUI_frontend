@@ -738,7 +738,7 @@ function resetNodeStatus(node) {
   if (node?.pmt_fields) {
     delete node.pmt_fields
     if (node.pmt_fields?.status) {
-      node.pmt_fields.status = 'pending'
+      node.pmt_fields.status = ''
     }
     node.setDirtyCanvas(true)
   }
@@ -786,9 +786,10 @@ async function run(e, mode = 'complete') {
                   const result = { id, pmt_fields: JSON.parse(pmt_fields) }
                   const node = comfyApp.graph.getNodeById(id)
                   if (node && node.pmt_fields) {
-                    if (result.pmt_fields.outputs) {
+                    const { outputs, status, type } = result.pmt_fields
+                    if (outputs) {
                       console.log(result.pmt_fields)
-                      result.pmt_fields.outputs.forEach((output, o) => {
+                      outputs.forEach((output, o) => {
                         const { name, type, oid, path, value } = output
                         if (oid) {
                           node.pmt_fields.outputs[o].oid = Array.isArray(
@@ -813,8 +814,10 @@ async function run(e, mode = 'complete') {
                         }
                       })
                     }
-                    if (result.pmt_fields.status) {
-                      node.pmt_fields.status = result.pmt_fields.status
+                    if (status && type) {
+                      if (type !== 'output') {
+                        node.pmt_fields.status = status
+                      }
                     }
                     node.setDirtyCanvas(true)
                     return
@@ -884,6 +887,9 @@ async function save() {
           console.error(error, message)
         } else if (data) {
           const result = JSON.parse(data)
+          console.log('validation result:', result)
+          // ...
+          /*
           let pTotal = 0
           Object.keys(result).forEach((p) => {
             pTotal++
@@ -903,6 +909,8 @@ async function save() {
               life: 5000
             })
           }
+          */
+          isValid = true
         }
       }
     } catch (err) {
@@ -1163,7 +1171,7 @@ function getWorkflowJson(stringify = false, keepStatus = true) {
       //
     }
     if (pmt_fields.type === 'output') {
-      //
+      pmt_fields.status = ''
     }
     if (keepStatus) {
       if (runningMode.value === 'to-node') {

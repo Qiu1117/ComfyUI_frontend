@@ -52,48 +52,61 @@ useExtensionService().registerExtension({
     const _onDrawBackground = node.onDrawBackground
     node.onDrawBackground = function (...args) {
       // @ts-expect-error custom pmt_fields
-      const isDone = node.pmt_fields?.status === 'done'
+      const pmt_fields = node.pmt_fields as any
+      const mayPreview = ['pending', 'current', 'done'].includes(
+        pmt_fields?.status
+      )
 
-      const imageInputNode = isDone ? node.getInputNode(0) : null
-      const dicomInputNode = isDone ? node.getInputNode(1) : null
+      const imageInputNode = node.getInputNode(0)
+      const dicomInputNode = node.getInputNode(2) || node.getInputNode(1)
+      const niftiInputNode = node.getInputNode(3)
 
-      // @ts-expect-error custom pmt_fields
-      const imageInputs = imageInputNode?.pmt_fields?.outputs || []
-      const imagePath = Array.isArray(imageInputs[0]?.path)
-        ? imageInputs[0]?.path?.[0]
-        : imageInputs[0]?.path
-
-      // @ts-expect-error custom pmt_fields
-      const dicomInputs = dicomInputNode?.pmt_fields?.outputs || []
-      const dicomPath = Array.isArray(dicomInputs[0]?.path)
-        ? dicomInputs[0]?.path?.[0]
-        : dicomInputs[0]?.path
-      const dicomOid = Array.isArray(dicomInputs[0]?.oid)
-        ? dicomInputs[0]?.oid?.[0]
-        : dicomInputs[0]?.oid
-
-      // ...
-
-      if (dicomPath || dicomOid) {
-        const widget = getiFrameWidget()
-        const iframe = widget?.element?.querySelector('iframe')
-        if (iframe) {
-          const decode = false
-          let imageUrl = dicomOid
-            ? decode
-              ? `${VOLVIEW_URL}&names=[preview.png]&urls=[connect://localhost/orthanc/instances/${dicomOid}/preview]`
-              : `${VOLVIEW_URL}&names=[file.dcm]&urls=[connect://localhost/orthanc/instances/${dicomOid}/file]`
-            : `${VOLVIEW_URL}&names=[file.dcm]&urls=[connect-file://localhost/${dicomPath}]`
-          imageUrl = new URL(imageUrl).href
-          if (iframe.src !== imageUrl) {
-            node.setSize([400, 400])
-            node.setDirtyCanvas(true)
-            widget.element.style.removeProperty('visibility')
-            iframe.src = imageUrl
-            console.log('[volview] link:', imageUrl)
+      let imagePath
+      if (imageInputNode && mayPreview) {
+        // @ts-expect-error custom pmt_fields
+        const pmt_fields = imageInputNode.pmt_fields as any
+        if (pmt_fields?.status === 'done') {
+          const imageInputs = pmt_fields.outputs || []
+          if (Array.isArray(imageInputs[0]?.path)) {
+            imagePath = imageInputs[0]?.path?.[0]
+          } else {
+            imagePath = imageInputs[0]?.path
           }
         }
-      } else if (imagePath) {
+      }
+      let dicomPath, dicomOid
+      if (dicomInputNode && mayPreview) {
+        // @ts-expect-error custom pmt_fields
+        const pmt_fields = dicomInputNode.pmt_fields as any
+        if (pmt_fields?.status === 'done') {
+          const dicomInputs = pmt_fields.outputs || []
+          if (Array.isArray(dicomInputs[0]?.path)) {
+            dicomPath = dicomInputs[0]?.path?.[0]
+          } else {
+            dicomPath = dicomInputs[0]?.path
+          }
+          if (Array.isArray(dicomInputs[0]?.oid)) {
+            dicomOid = dicomInputs[0]?.oid?.[0]
+          } else {
+            dicomOid = dicomInputs[0]?.oid
+          }
+        }
+      }
+      let niftiPath
+      if (niftiInputNode && mayPreview) {
+        // @ts-expect-error custom pmt_fields
+        const pmt_fields = niftiInputNode.pmt_fields as any
+        if (pmt_fields?.status === 'done') {
+          const niftiInputs = pmt_fields.outputs || []
+          if (Array.isArray(niftiInputs[0]?.path)) {
+            niftiPath = niftiInputs[0]?.path?.[0]
+          } else {
+            niftiPath = niftiInputs[0]?.path
+          }
+        }
+      }
+
+      if (imagePath) {
         const widget = getiFrameWidget()
         const iframe = widget?.element?.querySelector('iframe')
         if (iframe) {
@@ -113,6 +126,27 @@ useExtensionService().registerExtension({
             console.log('[volview] link:', imageUrl)
           }
         }
+      } else if (dicomPath || dicomOid) {
+        const widget = getiFrameWidget()
+        const iframe = widget?.element?.querySelector('iframe')
+        if (iframe) {
+          const decode = false
+          let imageUrl = dicomOid
+            ? decode
+              ? `${VOLVIEW_URL}&names=[preview.png]&urls=[connect://localhost/orthanc/instances/${dicomOid}/preview]`
+              : `${VOLVIEW_URL}&names=[file.dcm]&urls=[connect://localhost/orthanc/instances/${dicomOid}/file]`
+            : `${VOLVIEW_URL}&names=[file.dcm]&urls=[connect-file://localhost/${dicomPath}]`
+          imageUrl = new URL(imageUrl).href
+          if (iframe.src !== imageUrl) {
+            node.setSize([400, 400])
+            node.setDirtyCanvas(true)
+            widget.element.style.removeProperty('visibility')
+            iframe.src = imageUrl
+            console.log('[volview] link:', imageUrl)
+          }
+        }
+      } else if (niftiPath) {
+        // ...
       } else {
         const widget = node.widgets?.[0]
         const iframe =
