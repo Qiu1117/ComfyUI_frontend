@@ -17,27 +17,30 @@
     </template>
   </SelectButton>
   <Button
+    v-tooltip="{ value: $t('sideToolbar.newBlankWorkflow'), showDelay: 300 }"
     class="new-blank-workflow-button"
     icon="pi pi-plus"
     text
     severity="secondary"
+    :aria-label="$t('sideToolbar.newBlankWorkflow')"
     @click="() => commandStore.execute('Comfy.NewBlankWorkflow')"
   />
   <ContextMenu ref="menu" :model="contextMenuItems" />
 </template>
 
 <script setup lang="ts">
+import Button from 'primevue/button'
+import ContextMenu from 'primevue/contextmenu'
+import SelectButton from 'primevue/selectbutton'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
+import { useWorkflowService } from '@/services/workflowService'
+import { useCommandStore } from '@/stores/commandStore'
 import { ComfyWorkflow } from '@/stores/workflowStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
-import { useCommandStore } from '@/stores/commandStore'
-import SelectButton from 'primevue/selectbutton'
-import Button from 'primevue/button'
-import { computed, ref } from 'vue'
-import { workflowService } from '@/services/workflowService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import ContextMenu from 'primevue/contextmenu'
-import { useI18n } from 'vue-i18n'
 
 interface WorkflowOption {
   value: string
@@ -51,6 +54,7 @@ const props = defineProps<{
 const { t } = useI18n()
 const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
+const workflowService = useWorkflowService()
 const rightClickedTab = ref<WorkflowOption>(null)
 const menu = ref()
 

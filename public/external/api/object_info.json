@@ -69,6 +69,7 @@
     "output_node": false
   },
 
+<<<<<<< HEAD
   "Dynamic_Scan_Validator": {
     "name": "Dynamic_Scan_Validator",
     "category": "Validation",
@@ -243,6 +244,8 @@
   },
 
   
+=======
+>>>>>>> upstream/pmt
   "input.boolean": {
     "name": "input.boolean",
     "category": "input",

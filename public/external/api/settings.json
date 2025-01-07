@@ -1,5 +1,5 @@
 {
-  "Comfy.Locale": "en",
   "Comfy.ColorPalette": "dark",
-  "Comfy.LinkRenderMode": 2
+  "Comfy.LinkRenderMode": 2,
+  "Comfy.Locale": "en"
 }

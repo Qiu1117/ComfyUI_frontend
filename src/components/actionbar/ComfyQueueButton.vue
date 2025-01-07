@@ -39,6 +39,7 @@
         :severity="executingPrompt ? 'danger' : 'secondary'"
         :disabled="!executingPrompt"
         text
+        :aria-label="$t('menu.interrupt')"
         @click="() => commandStore.execute('Comfy.Interrupt')"
       >
       </Button>
@@ -48,6 +49,7 @@
         :severity="hasPendingTasks ? 'danger' : 'secondary'"
         :disabled="!hasPendingTasks"
         text
+        :aria-label="$t('sideToolbar.queueTab.clearPendingTasks')"
         @click="() => commandStore.execute('Comfy.ClearPendingTasks')"
       />
     </ButtonGroup>
@@ -55,19 +57,21 @@
 </template>
 
 <script setup lang="ts">
-import SplitButton from 'primevue/splitbutton'
+import { storeToRefs } from 'pinia'
 import Button from 'primevue/button'
-import BatchCountEdit from './BatchCountEdit.vue'
 import ButtonGroup from 'primevue/buttongroup'
+import SplitButton from 'primevue/splitbutton'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { useCommandStore } from '@/stores/commandStore'
 import {
   useQueuePendingTaskCountStore,
   useQueueSettingsStore
 } from '@/stores/queueStore'
-import { storeToRefs } from 'pinia'
-import { computed } from 'vue'
-import { useCommandStore } from '@/stores/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+
+import BatchCountEdit from './BatchCountEdit.vue'
 
 const workspaceStore = useWorkspaceStore()
 const queueCountStore = storeToRefs(useQueuePendingTaskCountStore())

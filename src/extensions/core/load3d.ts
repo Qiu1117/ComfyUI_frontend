@@ -1,16 +1,41 @@
 // @ts-strict-ignore
-import { app } from '@/scripts/app'
-import { api } from '@/scripts/api'
-import { useToastStore } from '@/stores/toastStore'
+import { IWidget } from '@comfyorg/litegraph'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
-import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
-import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
+import { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
+import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader'
-import { IWidget } from '@comfyorg/litegraph'
 import { nextTick } from 'vue'
+
+import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
+import { useToastStore } from '@/stores/toastStore'
+
+async function uploadTempImage(imageData, prefix) {
+  const blob = await fetch(imageData).then((r) => r.blob())
+  const name = `${prefix}_${Date.now()}.png`
+  const file = new File([blob], name)
+
+  const body = new FormData()
+  body.append('image', file)
+  body.append('subfolder', 'threed')
+  body.append('type', 'temp')
+
+  const resp = await api.fetchApi('/upload/image', {
+    method: 'POST',
+    body
+  })
+
+  if (resp.status !== 200) {
+    const err = `Error uploading temp image: ${resp.status} - ${resp.statusText}`
+    useToastStore().addAlert(err)
+    throw new Error(err)
+  }
+
+  return await resp.json()
+}
 
 async function uploadFile(
   load3d: Load3d,
@@ -129,7 +154,7 @@ class Load3d {
     this.perspectiveCamera.lookAt(0, 0, 0)
     this.orthographicCamera.lookAt(0, 0, 0)
 
-    this.renderer = new THREE.WebGLRenderer({ antialias: true })
+    this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true })
     this.renderer.setSize(300, 300)
     this.renderer.setClearColor(0x282828)
 
@@ -183,6 +208,14 @@ class Load3d {
     this.handleResize()
 
     this.startAnimation()
+  }
+
+  setFOV(fov: number) {
+    if (this.activeCamera === this.perspectiveCamera) {
+      this.perspectiveCamera.fov = fov
+      this.perspectiveCamera.updateProjectionMatrix()
+      this.renderer.render(this.scene, this.activeCamera)
+    }
   }
 
   getCameraState() {
@@ -757,11 +790,18 @@ class Load3d {
     this.renderer.render(this.scene, this.activeCamera)
   }
 
-  captureScene(width: number, height: number): Promise<string> {
-    return new Promise((resolve, reject) => {
+  captureScene(
+    width: number,
+    height: number
+  ): Promise<{ scene: string; mask: string }> {
+    return new Promise(async (resolve, reject) => {
       try {
         const originalWidth = this.renderer.domElement.width
         const originalHeight = this.renderer.domElement.height
+        const originalClearColor = this.renderer.getClearColor(
+          new THREE.Color()
+        )
+        const originalClearAlpha = this.renderer.getClearAlpha()
 
         this.renderer.setSize(width, height)
 
@@ -779,13 +819,17 @@ class Load3d {
         }
 
         this.renderer.render(this.scene, this.activeCamera)
+        const sceneData = this.renderer.domElement.toDataURL('image/png')
 
-        const imageData = this.renderer.domElement.toDataURL('image/png')
+        this.renderer.setClearColor(0x000000, 0)
+        this.renderer.render(this.scene, this.activeCamera)
+        const maskData = this.renderer.domElement.toDataURL('image/png')
 
+        this.renderer.setClearColor(originalClearColor, originalClearAlpha)
         this.renderer.setSize(originalWidth, originalHeight)
         this.handleResize()
 
-        resolve(imageData)
+        resolve({ scene: sceneData, mask: maskData })
       } catch (error) {
         reject(error)
       }
@@ -1039,6 +1083,7 @@ function configureLoad3D(
   bgColor: IWidget,
   lightIntensity: IWidget,
   upDirection: IWidget,
+  fov: IWidget,
   cameraState?: any,
   postModelUpdateFunc?: (load3d: Load3d) => void
 ) {
@@ -1136,6 +1181,12 @@ function configureLoad3D(
   load3d.setUpDirection(
     upDirection.value as 'original' | '-x' | '+x' | '-y' | '+y' | '-z' | '+z'
   )
+
+  fov.callback = (value: number) => {
+    load3d.setFOV(value)
+  }
+
+  load3d.setFOV(fov.value as number)
 }
 
 app.registerExtension({
@@ -1281,6 +1332,8 @@ app.registerExtension({
       (w: IWidget) => w.name === 'up_direction'
     )
 
+    const fov = node.widgets.find((w: IWidget) => w.name === 'fov')
+
     let cameraState
     try {
       const cameraInfo = node.properties['Camera Info']
@@ -1307,6 +1360,7 @@ app.registerExtension({
       bgColor,
       lightIntensity,
       upDirection,
+      fov,
       cameraState
     )
 
@@ -1317,30 +1371,20 @@ app.registerExtension({
     sceneWidget.serializeValue = async () => {
       node.properties['Camera Info'] = JSON.stringify(load3d.getCameraState())
 
-      const imageData = await load3d.captureScene(w.value, h.value)
+      const { scene: imageData, mask: maskData } = await load3d.captureScene(
+        w.value,
+        h.value
+      )
 
-      const blob = await fetch(imageData).then((r) => r.blob())
-      const name = `scene_${Date.now()}.png`
-      const file = new File([blob], name)
+      const [data, dataMask] = await Promise.all([
+        uploadTempImage(imageData, 'scene'),
+        uploadTempImage(maskData, 'scene_mask')
+      ])
 
-      const body = new FormData()
-      body.append('image', file)
-      body.append('subfolder', 'threed')
-      body.append('type', 'temp')
-
-      const resp = await api.fetchApi('/upload/image', {
-        method: 'POST',
-        body
-      })
-
-      if (resp.status !== 200) {
-        const err = `Error uploading scene capture: ${resp.status} - ${resp.statusText}`
-        useToastStore().addAlert(err)
-        throw new Error(err)
+      return {
+        image: `threed/${data.name} [temp]`,
+        mask: `threed/${dataMask.name} [temp]`
       }
-
-      const data = await resp.json()
-      return `threed/${data.name} [temp]`
     }
   }
 })
@@ -1556,6 +1600,8 @@ app.registerExtension({
       }
     }
 
+    const fov = node.widgets.find((w: IWidget) => w.name === 'fov')
+
     let cameraState
     try {
       const cameraInfo = node.properties['Camera Info']
@@ -1582,6 +1628,7 @@ app.registerExtension({
       bgColor,
       lightIntensity,
       upDirection,
+      fov,
       cameraState,
       (load3d: Load3d) => {
         const animationLoad3d = load3d as Load3dAnimation
@@ -1605,32 +1652,20 @@ app.registerExtension({
     sceneWidget.serializeValue = async () => {
       node.properties['Camera Info'] = JSON.stringify(load3d.getCameraState())
 
-      load3d.toggleAnimation(false)
+      const { scene: imageData, mask: maskData } = await load3d.captureScene(
+        w.value,
+        h.value
+      )
 
-      const imageData = await load3d.captureScene(w.value, h.value)
+      const [data, dataMask] = await Promise.all([
+        uploadTempImage(imageData, 'scene'),
+        uploadTempImage(maskData, 'scene_mask')
+      ])
 
-      const blob = await fetch(imageData).then((r) => r.blob())
-      const name = `scene_${Date.now()}.png`
-      const file = new File([blob], name)
-
-      const body = new FormData()
-      body.append('image', file)
-      body.append('subfolder', 'threed')
-      body.append('type', 'temp')
-
-      const resp = await api.fetchApi('/upload/image', {
-        method: 'POST',
-        body
-      })
-
-      if (resp.status !== 200) {
-        const err = `Error uploading scene capture: ${resp.status} - ${resp.statusText}`
-        useToastStore().addAlert(err)
-        throw new Error(err)
+      return {
+        image: `threed/${data.name} [temp]`,
+        mask: `threed/${dataMask.name} [temp]`
       }
-
-      const data = await resp.json()
-      return `threed/${data.name} [temp]`
     }
   }
 })
@@ -1743,6 +1778,8 @@ app.registerExtension({
       (w: IWidget) => w.name === 'up_direction'
     )
 
+    const fov = node.widgets.find((w: IWidget) => w.name === 'fov')
+
     const onExecuted = node.onExecuted
 
     node.onExecuted = function (message: any) {
@@ -1770,7 +1807,8 @@ app.registerExtension({
         material,
         bgColor,
         lightIntensity,
-        upDirection
+        upDirection,
+        fov
       )
     }
   }

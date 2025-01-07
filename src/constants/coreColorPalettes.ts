@@ -1,12 +1,11 @@
-import dark from '@/assets/palettes/dark.json'
-import light from '@/assets/palettes/light.json'
-import solarized from '@/assets/palettes/solarized.json'
 import arc from '@/assets/palettes/arc.json'
-import nord from '@/assets/palettes/nord.json'
+import dark from '@/assets/palettes/dark.json'
 import github from '@/assets/palettes/github.json'
-import type { ColorPalettes } from '@/types/colorPaletteTypes'
-
+import light from '@/assets/palettes/light.json'
+import nord from '@/assets/palettes/nord.json'
+import solarized from '@/assets/palettes/solarized.json'
 import { DATATYPE_COLOR } from '@/constants/pmtCore'
+import type { ColorPalettes, CompletedPalette } from '@/types/colorPaletteTypes'
 
 export const CORE_COLOR_PALETTES: ColorPalettes = {
   dark,
@@ -17,10 +16,11 @@ export const CORE_COLOR_PALETTES: ColorPalettes = {
   github
 } as const
 
-Object.keys(CORE_COLOR_PALETTES).forEach((key) => {
-  const colorPalette = CORE_COLOR_PALETTES[key]
-  colorPalette.colors.node_slot = {
-    ...colorPalette.colors.node_slot,
-    ...DATATYPE_COLOR
-  }
-})
+export const DEFAULT_COLOR_PALETTE: CompletedPalette = dark
+export const DEFAULT_DARK_COLOR_PALETTE: CompletedPalette = dark
+export const DEFAULT_LIGHT_COLOR_PALETTE: CompletedPalette = light
+
+DEFAULT_COLOR_PALETTE.colors.node_slot = {
+  ...DEFAULT_COLOR_PALETTE.colors.node_slot,
+  ...DATATYPE_COLOR
+}

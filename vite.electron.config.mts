@@ -1,6 +1,7 @@
-import { defineConfig, Plugin } from 'vite'
+import { Plugin, defineConfig } from 'vite'
 import { mergeConfig } from 'vite'
 import type { UserConfig } from 'vitest/config'
+
 import baseConfig from './vite.config.mts'
 
 const mockElectronAPI: Plugin = {
@@ -51,7 +52,8 @@ const mockElectronAPI: Plugin = {
             onDownloadProgress: () => {}
           },
           getElectronVersion: () => Promise.resolve('1.0.0'),
-          getComfyUIVersion: () => '9.9.9'
+          getComfyUIVersion: () => '9.9.9',
+          getPlatform: () => 'win32'
         };`
       }
     ]

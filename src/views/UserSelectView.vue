@@ -1,10 +1,8 @@
 <template>
-  <div
-    id="comfy-user-selection"
-    class="font-sans flex flex-col items-center h-screen m-0 text-neutral-300 bg-neutral-900 dark-theme pointer-events-auto"
-  >
+  <BaseViewTemplate dark>
     <main
-      class="mt-[5vh] 2xl:mt-[20vh] min-w-84 relative rounded-lg bg-[var(--comfy-menu-bg)] p-5 px-10 shadow-lg"
+      id="comfy-user-selection"
+      class="min-w-84 relative rounded-lg bg-[var(--comfy-menu-bg)] p-5 px-10 shadow-lg"
     >
       <h1 class="my-2.5 mb-7 font-normal">ComfyUI</h1>
       <div class="flex w-full flex-col items-center">
@@ -38,18 +36,20 @@
         </footer>
       </div>
     </main>
-  </div>
+  </BaseViewTemplate>
 </template>
 
 <script setup lang="ts">
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import InputText from 'primevue/inputtext'
-import Select from 'primevue/select'
 import Message from 'primevue/message'
-import { User, useUserStore } from '@/stores/userStore'
-import { useRouter } from 'vue-router'
+import Select from 'primevue/select'
 import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+import { User, useUserStore } from '@/stores/userStore'
+import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
 const userStore = useUserStore()
 const router = useRouter()

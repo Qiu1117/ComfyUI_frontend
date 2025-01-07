@@ -1,5 +1,7 @@
-import type { ComfyCommand } from '@/stores/commandStore'
 import { Component } from 'vue'
+
+import type { useDialogService } from '@/services/dialogService'
+import type { ComfyCommand } from '@/stores/commandStore'
 
 export interface BaseSidebarTabExtension {
   id: string
@@ -101,6 +103,7 @@ export interface ExtensionManager {
   getSidebarTabs(): SidebarTabExtension[]
 
   toast: ToastManager
+  dialog: ReturnType<typeof useDialogService>
   command: CommandManager
   setting: {
     get: (id: string) => any

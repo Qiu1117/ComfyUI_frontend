@@ -1,14 +1,15 @@
 // @ts-strict-ignore
-import { api } from './api'
-import { ComfyDialog as _ComfyDialog } from './ui/dialog'
-import { toggleSwitch } from './ui/toggleSwitch'
-import { ComfySettingsDialog } from './ui/settings'
-import { ComfyApp, app } from './app'
-import { TaskItem, type StatusWsMessageStatus } from '@/types/apiTypes'
-import { showSettingsDialog } from '@/services/dialogService'
-import { useSettingStore } from '@/stores/settingStore'
+import { useDialogService } from '@/services/dialogService'
 import { useCommandStore } from '@/stores/commandStore'
+import { useSettingStore } from '@/stores/settingStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { type StatusWsMessageStatus, TaskItem } from '@/types/apiTypes'
+
+import { api } from './api'
+import { ComfyApp, app } from './app'
+import { ComfyDialog as _ComfyDialog } from './ui/dialog'
+import { ComfySettingsDialog } from './ui/settings'
+import { toggleSwitch } from './ui/toggleSwitch'
 
 export const ComfyDialog = _ComfyDialog
 
@@ -169,19 +170,8 @@ function dragElement(dragEl, settings): () => void {
   }
 
   let savePos = undefined
-  settings.addSetting({
-    id: 'Comfy.MenuPosition',
-    category: ['Comfy', 'Menu', 'MenuPosition'],
-    name: "Save legacy menu's position",
-    type: 'boolean',
-    defaultValue: savePos,
-    onChange(value) {
-      if (savePos === undefined && value) {
-        restorePos()
-      }
-      savePos = value
-    }
-  })
+  restorePos()
+  savePos = true
 
   function dragMouseDown(e) {
     e = e || window.event
@@ -438,7 +428,9 @@ export class ComfyUI {
           $el('div.comfy-menu-actions', [
             $el('button.comfy-settings-btn', {
               textContent: '⚙️',
-              onclick: showSettingsDialog
+              onclick: () => {
+                useDialogService().showSettingsDialog()
+              }
             }),
             $el('button.comfy-close-menu-btn', {
               textContent: '\u00d7',

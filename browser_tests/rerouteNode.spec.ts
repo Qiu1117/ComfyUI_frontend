@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+
 import { comfyPageFixture as test } from './fixtures/ComfyPage'
 
 test.describe('Reroute Node', () => {
@@ -30,6 +31,7 @@ test.describe('Reroute Node', () => {
     // Close the sidebar tab
     await workflowsTab.tabButton.click()
     await workflowsTab.root.waitFor({ state: 'hidden' })
+    await comfyPage.setFocusMode(true)
 
     await expect(comfyPage.canvas).toHaveScreenshot('reroute_inserted.png')
   })

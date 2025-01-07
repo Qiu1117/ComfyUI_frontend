@@ -1,30 +1,31 @@
-import type { ComfyWorkflowJSON, NodeId } from '@/types/comfyWorkflow'
+import axios from 'axios'
+
 import type {
-  HistoryTaskItem,
-  PendingTaskItem,
-  RunningTaskItem,
   ComfyNodeDef,
   EmbeddingsResponse,
-  ExtensionsResponse,
-  PromptResponse,
-  SystemStats,
-  User,
-  Settings,
-  UserDataFullInfo,
-  LogsRawResponse,
-  ExecutingWsMessage,
   ExecutedWsMessage,
-  ProgressWsMessage,
-  ExecutionStartWsMessage,
+  ExecutingWsMessage,
+  ExecutionCachedWsMessage,
   ExecutionErrorWsMessage,
+  ExecutionStartWsMessage,
+  ExecutionSuccessWsMessage,
+  ExtensionsResponse,
+  HistoryTaskItem,
+  LogsRawResponse,
+  LogsWsMessage,
+  PendingTaskItem,
+  ProgressWsMessage,
+  PromptResponse,
+  RunningTaskItem,
+  Settings,
   StatusWsMessage,
   StatusWsMessageStatus,
-  ExecutionCachedWsMessage,
-  ExecutionSuccessWsMessage,
-  LogsWsMessage
+  SystemStats,
+  User,
+  UserDataFullInfo
 } from '@/types/apiTypes'
 import { validateComfyNodeDef } from '@/types/apiTypes'
-import axios from 'axios'
+import type { ComfyWorkflowJSON, NodeId } from '@/types/comfyWorkflow'
 
 interface QueuePromptRequestBody {
   client_id: string
@@ -408,6 +409,17 @@ export class ComfyApi extends EventTarget {
   async getExtensions(): Promise<ExtensionsResponse> {
     const resp = await this.fetchApi('/extensions', { cache: 'no-store' })
     return await resp.json()
+  }
+
+  /**
+   * Gets the available workflow templates from custom nodes.
+   * @returns A map of custom_node names and associated template workflow names.
+   */
+  async getWorkflowTemplates(): Promise<{
+    [customNodesName: string]: string[]
+  }> {
+    const res = await this.fetchApi('/workflow_templates')
+    return await res.json()
   }
 
   /**

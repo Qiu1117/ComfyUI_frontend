@@ -29,13 +29,14 @@
 </template>
 
 <script setup lang="ts">
-import { ComfyWorkflow } from '@/stores/workflowStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
 import Button from 'primevue/button'
 import { ref } from 'vue'
-import { workflowService } from '@/services/workflowService'
-import { useWorkspaceStore } from '@/stores/workspaceStore'
+
 import { usePragmaticDraggable, usePragmaticDroppable } from '@/hooks/dndHooks'
+import { useWorkflowService } from '@/services/workflowService'
+import { ComfyWorkflow } from '@/stores/workflowStore'
+import { useWorkflowStore } from '@/stores/workflowStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 interface WorkflowOption {
   value: string
@@ -54,7 +55,7 @@ const workflowTabRef = ref<HTMLElement | null>(null)
 const closeWorkflows = async (options: WorkflowOption[]) => {
   for (const opt of options) {
     if (
-      !(await workflowService.closeWorkflow(opt.workflow, {
+      !(await useWorkflowService().closeWorkflow(opt.workflow, {
         warnIfUnsaved: !workspaceStore.shiftDown
       }))
     ) {

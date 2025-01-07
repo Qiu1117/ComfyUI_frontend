@@ -1,12 +1,16 @@
-import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
+import { computed, ref } from 'vue'
+
+import { useColorPaletteService } from '@/services/colorPaletteService'
+import { useDialogService } from '@/services/dialogService'
 import type { SidebarTabExtension, ToastManager } from '@/types/extensionTypes'
-import { useToastStore } from './toastStore'
-import { useQueueSettingsStore } from './queueStore'
+
 import { useCommandStore } from './commandStore'
-import { useSidebarTabStore } from './workspace/sidebarTabStore'
+import { useQueueSettingsStore } from './queueStore'
 import { useSettingStore } from './settingStore'
+import { useToastStore } from './toastStore'
 import { useWorkflowStore } from './workflowStore'
+import { useSidebarTabStore } from './workspace/sidebarTabStore'
 
 export const useWorkspaceStore = defineStore('workspace', () => {
   const spinner = ref(false)
@@ -25,11 +29,13 @@ export const useWorkspaceStore = defineStore('workspace', () => {
   }))
   const sidebarTab = computed(() => useSidebarTabStore())
   const setting = computed(() => ({
-    settings: useSettingStore().settings,
+    settings: useSettingStore().settingsById,
     get: useSettingStore().get,
     set: useSettingStore().set
   }))
   const workflow = computed(() => useWorkflowStore())
+  const colorPalette = useColorPaletteService()
+  const dialog = useDialogService()
 
   /**
    * Registers a sidebar tab.
@@ -71,6 +77,8 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     sidebarTab,
     setting,
     workflow,
+    colorPalette,
+    dialog,
 
     registerSidebarTab,
     unregisterSidebarTab,

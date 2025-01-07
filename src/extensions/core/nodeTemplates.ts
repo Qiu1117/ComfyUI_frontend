@@ -1,13 +1,15 @@
 // @ts-strict-ignore
-import { app } from '../../scripts/app'
-import { api } from '../../scripts/api'
-import { ComfyDialog, $el } from '../../scripts/ui'
-import { GroupNodeConfig, GroupNodeHandler } from './groupNode'
 import { LGraphCanvas } from '@comfyorg/litegraph'
-import { useToastStore } from '@/stores/toastStore'
-import { deserialiseAndCreate } from '@/extensions/core/vintageClipboard'
-import { showPromptDialog } from '@/services/dialogService'
+
 import { t } from '@/i18n'
+import { useDialogService } from '@/services/dialogService'
+import { useToastStore } from '@/stores/toastStore'
+import { deserialiseAndCreate } from '@/utils/vintageClipboard'
+
+import { api } from '../../scripts/api'
+import { app } from '../../scripts/app'
+import { $el, ComfyDialog } from '../../scripts/ui'
+import { GroupNodeConfig, GroupNodeHandler } from './groupNode'
 
 // Adds the ability to save and add multiple nodes as a template
 // To save:
@@ -353,7 +355,7 @@ app.registerExtension({
         content: `Save Selected as Template`,
         disabled: !Object.keys(app.canvas.selected_nodes || {}).length,
         callback: async () => {
-          const name = await showPromptDialog({
+          const name = await useDialogService().prompt({
             title: t('nodeTemplates.saveAsTemplate'),
             message: t('nodeTemplates.enterName'),
             defaultValue: ''

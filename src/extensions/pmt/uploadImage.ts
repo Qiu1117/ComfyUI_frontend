@@ -1,10 +1,9 @@
 // @ts-strict-ignore
-import { app } from '../../scripts/app'
-import { ComfyNodeDef } from '@/types/apiTypes'
+import { useExtensionService } from '@/services/extensionService'
 
-app.registerExtension({
-  name: 'Comfy.UploadImage2',
-  beforeRegisterNodeDef(nodeType, nodeData: ComfyNodeDef) {
+useExtensionService().registerExtension({
+  name: 'PMT.UploadImage2',
+  beforeRegisterNodeDef(nodeType, nodeData) {
     Object.keys(nodeData?.input || {}).forEach((t) => {
       Object.keys(nodeData.input[t]).forEach((inputName) => {
         const input = nodeData.input[t][inputName]
@@ -15,6 +14,13 @@ app.registerExtension({
         }
       })
     })
+  },
+  nodeCreated(node) {
+    if (node?.comfyClass !== 'input.load_image') {
+      return
+    }
+
+    // ...
   },
   getCustomWidgets(app) {
     return {

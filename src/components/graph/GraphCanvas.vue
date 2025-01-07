@@ -27,49 +27,56 @@
 </template>
 
 <script setup lang="ts">
-import TitleEditor from '@/components/graph/TitleEditor.vue'
-import SideToolbar from '@/components/sidebar/SideToolbar.vue'
-import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
-import ActionPanel from '@/components/pmtOverride/ActionPanel.vue'
-import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
-import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
-import NodeTooltip from '@/components/graph/NodeTooltip.vue'
-import NodeBadge from '@/components/graph/NodeBadge.vue'
-import { ref, computed, onMounted, watchEffect, watch } from 'vue'
-import { app as comfyApp } from '@/scripts/app'
-import { useSettingStore } from '@/stores/settingStore'
-import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
-import { useWorkspaceStore } from '@/stores/workspaceStore'
 import {
-  LiteGraph,
-  LGraph,
-  LLink,
-  LGraphNode,
-  LGraphGroup,
-  DragAndScale,
-  LGraphCanvas,
+  CanvasPointer,
   ContextMenu,
+  DragAndScale,
+  LGraph,
   LGraphBadge,
-  CanvasPointer
+  LGraphCanvas,
+  LGraphGroup,
+  LGraphNode,
+  LLink,
+  LiteGraph
 } from '@comfyorg/litegraph'
-import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
+import { computed, onMounted, ref, watch, watchEffect } from 'vue'
+
+import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
+import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
+import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
+import NodeBadge from '@/components/graph/NodeBadge.vue'
+import NodeTooltip from '@/components/graph/NodeTooltip.vue'
+import TitleEditor from '@/components/graph/TitleEditor.vue'
+import ActionPanel from '@/components/pmtOverride/ActionPanel.vue'
+import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
+import SideToolbar from '@/components/sidebar/SideToolbar.vue'
+import { CORE_SETTINGS } from '@/constants/coreSettings'
+import { usePragmaticDroppable } from '@/hooks/dndHooks'
+import { api } from '@/scripts/api'
+import { app as comfyApp } from '@/scripts/app'
+import { ChangeTracker } from '@/scripts/changeTracker'
+import { setStorageValue } from '@/scripts/utils'
+import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
+import { useColorPaletteService } from '@/services/colorPaletteService'
+import { useLitegraphService } from '@/services/litegraphService'
+import { useWorkflowService } from '@/services/workflowService'
+import { useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
 import { ComfyModelDef } from '@/stores/modelStore'
 import {
   ModelNodeProvider,
   useModelToNodeStore
 } from '@/stores/modelToNodeStore'
-import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
-import { usePragmaticDroppable } from '@/hooks/dndHooks'
+import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
+import { useSettingStore } from '@/stores/settingStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
-import { setStorageValue } from '@/scripts/utils'
-import { ChangeTracker } from '@/scripts/changeTracker'
-import { api } from '@/scripts/api'
-import { useCommandStore } from '@/stores/commandStore'
-import { workflowService } from '@/services/workflowService'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
+import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 
 const emit = defineEmits(['ready'])
 const canvasRef = ref<HTMLCanvasElement | null>(null)
+const litegraphService = useLitegraphService()
 const settingStore = useSettingStore()
 const nodeDefStore = useNodeDefStore()
 const workspaceStore = useWorkspaceStore()
@@ -195,21 +202,44 @@ watchEffect(() => {
   LiteGraph.alwaysSnapToGrid = settingStore.get('pysssss.SnapToGrid')
 })
 
-watchEffect(() => {
-  if (!canvasStore.canvas) return
+watch(
+  () => settingStore.get('Comfy.WidgetControlMode'),
+  () => {
+    if (!canvasStore.canvas) return
 
-  if (canvasStore.canvas.state.draggingCanvas) {
-    canvasStore.canvas.canvas.style.cursor = 'grabbing'
-    return
+    for (const n of comfyApp.graph.nodes) {
+      if (!n.widgets) continue
+      for (const w of n.widgets) {
+        if (w[IS_CONTROL_WIDGET]) {
+          updateControlWidgetLabel(w)
+          if (w.linkedWidgets) {
+            for (const l of w.linkedWidgets) {
+              updateControlWidgetLabel(l)
+            }
+          }
+        }
+      }
+    }
+    comfyApp.graph.setDirtyCanvas(true)
   }
+)
 
-  if (canvasStore.canvas.state.readOnly) {
-    canvasStore.canvas.canvas.style.cursor = 'grab'
-    return
+const colorPaletteService = useColorPaletteService()
+const colorPaletteStore = useColorPaletteStore()
+watch(
+  [() => canvasStore.canvas, () => settingStore.get('Comfy.ColorPalette')],
+  ([canvas, currentPaletteId]) => {
+    if (!canvas) return
+
+    colorPaletteService.loadColorPalette(currentPaletteId)
   }
-
-  canvasStore.canvas.canvas.style.cursor = 'default'
-})
+)
+watch(
+  () => colorPaletteStore.activePaletteId,
+  (newValue) => {
+    settingStore.set('Comfy.ColorPalette', newValue)
+  }
+)
 
 const workflowStore = useWorkflowStore()
 const persistCurrentWorkflow = () => {
@@ -247,7 +277,7 @@ usePragmaticDroppable(() => canvasRef.value, {
           loc.clientX - 20,
           loc.clientY
         ])
-        comfyApp.addNodeOnGraph(nodeDef, { pos })
+        litegraphService.addNodeOnGraph(nodeDef, { pos })
       } else if (node.data instanceof ComfyModelDef) {
         const model = node.data
         const pos = comfyApp.clientPosToCanvasPos([loc.clientX, loc.clientY])
@@ -268,9 +298,12 @@ usePragmaticDroppable(() => canvasRef.value, {
         if (!targetGraphNode) {
           const provider = modelToNodeStore.getNodeProvider(model.directory)
           if (provider) {
-            targetGraphNode = comfyApp.addNodeOnGraph(provider.nodeDef, {
-              pos
-            })
+            targetGraphNode = litegraphService.addNodeOnGraph(
+              provider.nodeDef,
+              {
+                pos
+              }
+            )
             targetProvider = provider
           }
         }
@@ -307,6 +340,10 @@ onMounted(async () => {
   // ChangeTracker needs to be initialized before setup, as it will overwrite
   // some listeners of litegraph canvas.
   ChangeTracker.init(comfyApp)
+  await settingStore.loadSettingValues()
+  CORE_SETTINGS.forEach((setting) => {
+    settingStore.addSetting(setting)
+  })
   await comfyApp.setup(canvasRef.value)
   canvasStore.canvas = comfyApp.canvas
   canvasStore.canvas.render_canvas_border = false
@@ -314,16 +351,20 @@ onMounted(async () => {
 
   window['app'] = comfyApp
   window['graph'] = comfyApp.graph
-  window['graphcanvas'] = comfyApp.canvas
 
   comfyAppReady.value = true
+
+  // Load color palette
+  colorPaletteStore.customPalettes = settingStore.get(
+    'Comfy.CustomColorPalettes'
+  )
 
   // Start watching for locale change after the initial value is loaded.
   watch(
     () => settingStore.get('Comfy.Locale'),
     async () => {
       await useCommandStore().execute('Comfy.RefreshNodeDefinitions')
-      workflowService.reloadCurrentWorkflow()
+      useWorkflowService().reloadCurrentWorkflow()
     }
   )
 

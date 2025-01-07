@@ -1,9 +1,11 @@
+import { LinkMarkerShape } from '@comfyorg/litegraph'
+import { LiteGraph } from '@comfyorg/litegraph'
+
+import type { ColorPalettes } from '@/types/colorPaletteTypes'
 import type { Keybinding } from '@/types/keyBindingTypes'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 import type { SettingParams } from '@/types/settingTypes'
-import { LinkMarkerShape } from '@comfyorg/litegraph'
-import { LiteGraph } from '@comfyorg/litegraph'
 
 export const CORE_SETTINGS: SettingParams[] = [
   {
@@ -267,7 +269,8 @@ export const CORE_SETTINGS: SettingParams[] = [
       { value: 'zh', text: '中文' },
       { value: 'ru', text: 'Русский' },
       { value: 'ja', text: '日本語' },
-      { value: 'ko', text: '한국어' }
+      { value: 'ko', text: '한국어' },
+      { value: 'fr', text: 'Français' }
     ],
     defaultValue: () => navigator.language.split('-')[0] || 'en'
   },
@@ -663,5 +666,34 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     defaultValue: true,
     versionAdded: '1.5.6'
+  },
+  {
+    id: 'Comfy.ColorPalette',
+    name: 'The active color palette id',
+    type: 'hidden',
+    defaultValue: 'dark',
+    versionModified: '1.6.7',
+    migrateDeprecatedValue(value: string) {
+      // Legacy custom palettes were prefixed with 'custom_'
+      return value.startsWith('custom_') ? value.replace('custom_', '') : value
+    }
+  },
+  {
+    id: 'Comfy.CustomColorPalettes',
+    name: 'Custom color palettes',
+    type: 'hidden',
+    defaultValue: {} as ColorPalettes,
+    versionModified: '1.6.7'
+  },
+  {
+    id: 'Comfy.WidgetControlMode',
+    category: ['Comfy', 'Node Widget', 'WidgetControlMode'],
+    name: 'Widget control mode',
+    tooltip:
+      'Controls when widget values are updated (randomize/increment/decrement), either before the prompt is queued or after.',
+    type: 'combo',
+    defaultValue: 'after',
+    options: ['before', 'after'],
+    versionModified: '1.6.10'
   }
 ]

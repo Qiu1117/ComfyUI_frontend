@@ -1,13 +1,15 @@
 import {
+  NavigationGuardNext,
+  RouteLocationNormalized,
   createRouter,
   createWebHashHistory,
-  createWebHistory,
-  NavigationGuardNext,
-  RouteLocationNormalized
+  createWebHistory
 } from 'vue-router'
+
 import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
-import { isElectron } from './utils/envUtil'
+
 import { useUserStore } from './stores/userStore'
+import { isElectron } from './utils/envUtil'
 
 const isFileProtocol = window.location.protocol === 'file:'
 const basePath = isElectron() ? '/' : window.location.pathname
@@ -83,6 +85,12 @@ const router = createRouter({
           path: 'download-git',
           name: 'DownloadGitView',
           component: () => import('@/views/DownloadGitView.vue'),
+          beforeEnter: guardElectronAccess
+        },
+        {
+          path: 'manual-configuration',
+          name: 'ManualConfigurationView',
+          component: () => import('@/views/ManualConfigurationView.vue'),
           beforeEnter: guardElectronAccess
         }
       ]

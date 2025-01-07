@@ -61,10 +61,10 @@ Stable releases are published bi-weekly in the ComfyUI main repository.
 <details>
   <summary>v1.5: Native translation (i18n)</summary>
 
-  ComfyUI now includes built-in translation support, replacing the need for third-party translation extensions. Select your language 
-  in `Comfy > Locale > Language` to translate the interface into English, Chinese (Simplified), Russian, Japanese, or Korean. This native 
+  ComfyUI now includes built-in translation support, replacing the need for third-party translation extensions. Select your language
+  in `Comfy > Locale > Language` to translate the interface into English, Chinese (Simplified), Russian, Japanese, or Korean. This native
   implementation offers better performance, reliability, and maintainability compared to previous solutions.<br>
-  
+
   More details available here: https://blog.comfy.org/p/native-localization-support-i18n
 </details>
 
@@ -228,6 +228,55 @@ https://github.com/user-attachments/assets/c142c43f-2fe9-4030-8196-b3bfd4c6977d
 </details>
 
 ### Developer APIs
+
+<details>
+  <summary>v1.6.13: prompt/confirm/alert replacements for ComfyUI desktop</summary>
+
+Several browser-only APIs are not available in ComfyUI desktop's electron environment.
+
+- `window.prompt`
+- `window.confirm`
+- `window.alert`
+
+Please use the following APIs as replacements.
+
+```js
+// window.prompt
+window['app'].extensionManager.dialog
+  .prompt({
+    title: 'Test Prompt',
+    message: 'Test Prompt Message'
+  })
+  .then((value: string) => {
+    // Do something with the value user entered
+  })
+```
+
+![image](https://github.com/user-attachments/assets/c73f74d0-9bb4-4555-8d56-83f1be4a1d7e)
+
+```js
+// window.confirm
+window['app'].extensionManager.dialog
+  .confirm({
+    title: 'Test Confirm',
+    message: 'Test Confirm Message'
+  })
+  .then((value: boolean) => {
+    // Do something with the value user entered
+  })
+```
+
+![image](https://github.com/user-attachments/assets/8dec7a42-7443-4245-85be-ceefb1116e96)
+
+```js
+// window.alert
+window['app'].extensionManager.toast
+  .addAlert("Test Alert")
+```
+
+![image](https://github.com/user-attachments/assets/9b18bdca-76ef-4432-95de-5cd2369684f2)
+
+</details>
 
 <details>
   <summary>v1.3.34: Register about panel badges</summary>
@@ -471,8 +520,7 @@ navigate to `http://<server_ip>:5173` (e.g. `http://192.168.2.20:5173` here), to
 - `git clone https://github.com/comfyanonymous/ComfyUI_examples.git` to `tests-ui/ComfyUI_examples` or the EXAMPLE_REPO_PATH location specified in .env
 - `npm i` to install all dependencies
 - `npm run test:generate` to fetch `tests-ui/data/object_info.json`
-- `npm run test:generate:examples` to extract the example workflows
-- `npm run test` to execute all unit tests.
+- `npm run test:jest` to execute all unit tests.
 
 ### Component Test
 
@@ -506,6 +554,7 @@ Our project supports multiple languages using `vue-i18n`. This allows users arou
  - ru (Русский)
  - ja (日本語)
  - ko (한국어)
+ - fr (Français)
 
 ### How to Add a New Language
 
@@ -577,10 +626,3 @@ You can switch languages by opening the ComfyUI Settings and selecting from the 
 
 - Option 1: Set `DEPLOY_COMFYUI_DIR` in `.env` and run `npm run deploy`.
 - Option 2: Copy everything under `dist/` to `ComfyUI/web/` in your ComfyUI checkout manually.
-
-## Publish release to ComfyUI main repo
-
-Run following command to publish a release to ComfyUI main repo. The script will create a new branch and do a commit to `web/` folder by checkout `dist.zip`
-from GitHub release.
-
-- `python scripts/main_repo_release.py <path_to_comfyui_main_repo> <version>`

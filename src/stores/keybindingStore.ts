@@ -1,19 +1,18 @@
+import _ from 'lodash'
 import { defineStore } from 'pinia'
-import { computed, Ref, ref, toRaw } from 'vue'
-import { Keybinding, KeyCombo } from '@/types/keyBindingTypes'
-import { useSettingStore } from './settingStore'
-import { CORE_KEYBINDINGS } from '@/constants/coreKeybindings'
-import type { ComfyExtension } from '@/types/comfy'
+import { Ref, computed, ref, toRaw } from 'vue'
+
+import { KeyCombo, Keybinding } from '@/types/keyBindingTypes'
 
 export class KeybindingImpl implements Keybinding {
   commandId: string
   combo: KeyComboImpl
-  targetSelector?: string
+  targetElementId?: string
 
   constructor(obj: Keybinding) {
     this.commandId = obj.commandId
     this.combo = new KeyComboImpl(obj.combo)
-    this.targetSelector = obj.targetSelector
+    this.targetElementId = obj.targetElementId
   }
 
   equals(other: unknown): boolean {
@@ -22,7 +21,7 @@ export class KeybindingImpl implements Keybinding {
     return raw instanceof KeybindingImpl
       ? this.commandId === raw.commandId &&
           this.combo.equals(raw.combo) &&
-          this.targetSelector === raw.targetSelector
+          this.targetElementId === raw.targetElementId
       : false
   }
 }
@@ -107,6 +106,20 @@ export const useKeybindingStore = defineStore('keybinding', () => {
    */
   const userUnsetKeybindings = ref<Record<string, KeybindingImpl>>({})
 
+  /**
+   * Get user-defined keybindings.
+   */
+  function getUserKeybindings() {
+    return userKeybindings.value
+  }
+
+  /**
+   * Get user-defined keybindings that unset default keybindings.
+   */
+  function getUserUnsetKeybindings() {
+    return userUnsetKeybindings.value
+  }
+
   const keybindingByKeyCombo = computed<Record<string, KeybindingImpl>>(() => {
     const result: Record<string, KeybindingImpl> = {
       ...defaultKeybindings.value
@@ -133,20 +146,9 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     return keybindingByKeyCombo.value[combo.serialize()]
   }
 
-  function createKeybindingsByCommandId(keybindings: KeybindingImpl[]) {
-    const result: Record<string, KeybindingImpl[]> = {}
-    for (const keybinding of keybindings) {
-      if (!(keybinding.commandId in result)) {
-        result[keybinding.commandId] = []
-      }
-      result[keybinding.commandId].push(keybinding)
-    }
-    return result
-  }
-
   const keybindingsByCommandId = computed<Record<string, KeybindingImpl[]>>(
     () => {
-      return createKeybindingsByCommandId(keybindings.value)
+      return _.groupBy(keybindings.value, 'commandId')
     }
   )
 
@@ -157,7 +159,7 @@ export const useKeybindingStore = defineStore('keybinding', () => {
   const defaultKeybindingsByCommandId = computed<
     Record<string, KeybindingImpl[]>
   >(() => {
-    return createKeybindingsByCommandId(Object.values(defaultKeybindings.value))
+    return _.groupBy(Object.values(defaultKeybindings.value), 'commandId')
   })
 
   function getKeybindingByCommandId(commandId: string) {
@@ -245,54 +247,6 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     return true
   }
 
-  function loadUserKeybindings() {
-    const settingStore = useSettingStore()
-    // Unset bindings first as new bindings might conflict with default bindings.
-    const unsetBindings = settingStore.get('Comfy.Keybinding.UnsetBindings')
-    for (const keybinding of unsetBindings) {
-      unsetKeybinding(new KeybindingImpl(keybinding))
-    }
-    const newBindings = settingStore.get('Comfy.Keybinding.NewBindings')
-    for (const keybinding of newBindings) {
-      addUserKeybinding(new KeybindingImpl(keybinding))
-    }
-  }
-
-  function loadCoreKeybindings() {
-    for (const keybinding of CORE_KEYBINDINGS) {
-      addDefaultKeybinding(new KeybindingImpl(keybinding))
-    }
-  }
-
-  function loadExtensionKeybindings(extension: ComfyExtension) {
-    if (extension.keybindings) {
-      for (const keybinding of extension.keybindings) {
-        try {
-          addDefaultKeybinding(new KeybindingImpl(keybinding))
-        } catch (error) {
-          console.warn(
-            `Failed to load keybinding for extension ${extension.name}`,
-            error
-          )
-        }
-      }
-    }
-  }
-
-  async function persistUserKeybindings() {
-    const settingStore = useSettingStore()
-    // TODO(https://github.com/Comfy-Org/ComfyUI_frontend/issues/1079):
-    // Allow setting multiple values at once in settingStore
-    await settingStore.set(
-      'Comfy.Keybinding.NewBindings',
-      Object.values(userKeybindings.value)
-    )
-    await settingStore.set(
-      'Comfy.Keybinding.UnsetBindings',
-      Object.values(userUnsetKeybindings.value)
-    )
-  }
-
   function resetKeybindings() {
     userKeybindings.value = {}
     userUnsetKeybindings.value = {}
@@ -312,6 +266,8 @@ export const useKeybindingStore = defineStore('keybinding', () => {
 
   return {
     keybindings,
+    getUserKeybindings,
+    getUserUnsetKeybindings,
     getKeybinding,
     getKeybindingsByCommandId,
     getKeybindingByCommandId,
@@ -319,10 +275,6 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     addUserKeybinding,
     unsetKeybinding,
     updateKeybindingOnCommand,
-    loadUserKeybindings,
-    loadCoreKeybindings,
-    loadExtensionKeybindings,
-    persistUserKeybindings,
     resetKeybindings,
     isCommandKeybindingModified
   }

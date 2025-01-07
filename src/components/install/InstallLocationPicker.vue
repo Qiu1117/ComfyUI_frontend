@@ -26,8 +26,11 @@
         <Button icon="pi pi-folder" @click="browsePath" class="w-12" />
       </div>
 
-      <Message v-if="pathError" severity="error">
+      <Message v-if="pathError" severity="error" class="whitespace-pre-line">
         {{ pathError }}
+      </Message>
+      <Message v-if="pathExists" severity="warn">
+        {{ $t('install.pathExists') }}
       </Message>
     </div>
 
@@ -61,19 +64,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { electronAPI } from '@/utils/envUtil'
-import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import IconField from 'primevue/iconfield'
 import InputIcon from 'primevue/inputicon'
+import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
+import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { electronAPI } from '@/utils/envUtil'
 
 const { t } = useI18n()
 
 const installPath = defineModel<string>('installPath', { required: true })
 const pathError = defineModel<string>('pathError', { required: true })
+const pathExists = ref(false)
 const appData = ref('')
 const appPath = ref('')
 
@@ -92,11 +97,25 @@ onMounted(async () => {
 const validatePath = async (path: string) => {
   try {
     pathError.value = ''
+    pathExists.value = false
     const validation = await electron.validateInstallPath(path)
 
+    // Create a pre-formatted list of errors
     if (!validation.isValid) {
-      pathError.value = validation.error
+      const errors: string[] = []
+      if (validation.cannotWrite) errors.push(t('install.cannotWrite'))
+      if (validation.freeSpace < validation.requiredSpace) {
+        const requiredGB = validation.requiredSpace / 1024 / 1024 / 1024
+        errors.push(`${t('install.insufficientFreeSpace')}: ${requiredGB} GB`)
+      }
+      if (validation.parentMissing) errors.push(t('install.parentMissing'))
+      if (validation.error)
+        errors.push(`${t('install.unhandledError')}: ${validation.error}`)
+      pathError.value = errors.join('\n')
     }
+
+    // Display the path exists warning
+    if (validation.exists) pathExists.value = true
   } catch (error) {
     pathError.value = t('install.pathValidationFailed')
   }

@@ -1,4 +1,5 @@
-import { expect, Locator } from '@playwright/test'
+import { expect } from '@playwright/test'
+
 import { comfyPageFixture as test } from './fixtures/ComfyPage'
 
 test.describe('Topbar commands', () => {
@@ -155,6 +156,44 @@ test.describe('Topbar commands', () => {
       const badge = comfyPage.page.locator('.about-badge').last()
       expect(badge).toBeDefined()
       expect(await badge.textContent()).toContain('Test Badge')
+    })
+  })
+
+  test.describe('Dialog', () => {
+    test('Should allow showing a prompt dialog', async ({ comfyPage }) => {
+      await comfyPage.page.evaluate(() => {
+        window['app'].extensionManager.dialog
+          .prompt({
+            title: 'Test Prompt',
+            message: 'Test Prompt Message'
+          })
+          .then((value: string) => {
+            window['value'] = value
+          })
+      })
+
+      await comfyPage.fillPromptDialog('Hello, world!')
+      expect(await comfyPage.page.evaluate(() => window['value'])).toBe(
+        'Hello, world!'
+      )
+    })
+
+    test('Should allow showing a confirmation dialog', async ({
+      comfyPage
+    }) => {
+      await comfyPage.page.evaluate(() => {
+        window['app'].extensionManager.dialog
+          .confirm({
+            title: 'Test Confirm',
+            message: 'Test Confirm Message'
+          })
+          .then((value: boolean) => {
+            window['value'] = value
+          })
+      })
+
+      await comfyPage.confirmDialog.click('confirm')
+      expect(await comfyPage.page.evaluate(() => window['value'])).toBe(true)
     })
   })
 })

@@ -1,21 +1,20 @@
 // @ts-strict-ignore
-import { app } from '../../scripts/app'
-import { api } from '../../scripts/api'
-import { mergeIfValid } from './widgetInputs'
-import { ManageGroupDialog } from './groupNodeManage'
-import { LGraphCanvas, LiteGraph, type LGraph } from '@comfyorg/litegraph'
+import { type LGraph, LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
 import { LGraphNode, type NodeId } from '@comfyorg/litegraph/dist/LGraphNode'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { ComfyLink, ComfyNode, ComfyWorkflowJSON } from '@/types/comfyWorkflow'
-import { useToastStore } from '@/stores/toastStore'
-import { ComfyExtension } from '@/types/comfy'
-import {
-  deserialiseAndCreate,
-  serialise
-} from '@/extensions/core/vintageClipboard'
-import type { ComfyNodeDef } from '@/types/apiTypes'
-import { showPromptDialog } from '@/services/dialogService'
+
 import { t } from '@/i18n'
+import { useDialogService } from '@/services/dialogService'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useToastStore } from '@/stores/toastStore'
+import type { ComfyNodeDef } from '@/types/apiTypes'
+import { ComfyExtension } from '@/types/comfy'
+import { ComfyLink, ComfyNode, ComfyWorkflowJSON } from '@/types/comfyWorkflow'
+import { deserialiseAndCreate, serialise } from '@/utils/vintageClipboard'
+
+import { api } from '../../scripts/api'
+import { app } from '../../scripts/app'
+import { ManageGroupDialog } from './groupNodeManage'
+import { mergeIfValid } from './widgetInputs'
 
 type GroupNodeWorkflowData = {
   external: ComfyLink[]
@@ -80,7 +79,7 @@ class GroupNodeBuilder {
   }
 
   async getName() {
-    const name = await showPromptDialog({
+    const name = await useDialogService().prompt({
       title: t('groupNode.create'),
       message: t('groupNode.enterName'),
       defaultValue: ''

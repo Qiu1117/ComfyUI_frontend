@@ -1,5 +1,9 @@
-import { expect } from '@playwright/test'
-import { comfyPageFixture as test } from './fixtures/ComfyPage'
+import { expect, mergeTests } from '@playwright/test'
+
+import { comfyPageFixture } from './fixtures/ComfyPage'
+import { webSocketFixture } from './fixtures/ws'
+
+const test = mergeTests(comfyPageFixture, webSocketFixture)
 
 test.describe('Menu', () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -288,6 +292,47 @@ test.describe('Menu', () => {
         }
       })
     })
+
+    test('Can customize bookmark color after interacting with color options', async ({
+      comfyPage
+    }) => {
+      // Open customization dialog
+      await comfyPage.setSetting('Comfy.NodeLibrary.Bookmarks.V2', ['foo/'])
+      const tab = comfyPage.menu.nodeLibraryTab
+      await tab.getFolder('foo').click({ button: 'right' })
+      await comfyPage.page.getByLabel('Customize').click()
+
+      // Click a color option multiple times
+      const customColorOption = comfyPage.page.locator(
+        '.p-togglebutton-content > .pi-palette'
+      )
+      await customColorOption.click()
+      await customColorOption.click()
+
+      // Use the color picker
+      await comfyPage.page
+        .getByLabel('Customize Folder')
+        .getByRole('textbox')
+        .click()
+      await comfyPage.page.locator('.p-colorpicker-color-background').click()
+
+      // Finalize the customization
+      await comfyPage.page
+        .locator('.icon-field .p-selectbutton > *:nth-child(2)')
+        .click()
+      await comfyPage.page.getByLabel('Confirm').click()
+      await comfyPage.nextFrame()
+
+      // Verify the color selection is saved
+      const setting = await comfyPage.getSetting(
+        'Comfy.NodeLibrary.BookmarksCustomization'
+      )
+      await expect(setting).toHaveProperty(['foo/', 'color'])
+      await expect(setting['foo/'].color).not.toBeNull()
+      await expect(setting['foo/'].color).not.toBeUndefined()
+      await expect(setting['foo/'].color).not.toBe('')
+    })
+
     test('Can rename customized bookmark folder', async ({ comfyPage }) => {
       await comfyPage.setSetting('Comfy.NodeLibrary.Bookmarks.V2', ['foo/'])
       await comfyPage.setSetting('Comfy.NodeLibrary.BookmarksCustomization', {
@@ -393,6 +438,56 @@ test.describe('Menu', () => {
       expect(await tab.getTopLevelSavedWorkflowNames()).toEqual(
         expect.arrayContaining(['workflow1.json', 'workflow2.json'])
       )
+    })
+
+    test('Can duplicate workflow', async ({ comfyPage }) => {
+      const tab = comfyPage.menu.workflowsTab
+      await comfyPage.menu.topbar.saveWorkflow('workflow1.json')
+
+      expect(await tab.getTopLevelSavedWorkflowNames()).toEqual(
+        expect.arrayContaining(['workflow1.json'])
+      )
+
+      await comfyPage.executeCommand('Comfy.DuplicateWorkflow')
+      expect(await tab.getOpenedWorkflowNames()).toEqual([
+        'workflow1.json',
+        '*workflow1 (Copy).json'
+      ])
+
+      await comfyPage.executeCommand('Comfy.DuplicateWorkflow')
+      expect(await tab.getOpenedWorkflowNames()).toEqual([
+        'workflow1.json',
+        '*workflow1 (Copy).json',
+        '*workflow1 (Copy) (2).json'
+      ])
+
+      await comfyPage.executeCommand('Comfy.DuplicateWorkflow')
+      expect(await tab.getOpenedWorkflowNames()).toEqual([
+        'workflow1.json',
+        '*workflow1 (Copy).json',
+        '*workflow1 (Copy) (2).json',
+        '*workflow1 (Copy) (3).json'
+      ])
+    })
+
+    test('Can open workflow after insert', async ({ comfyPage }) => {
+      await comfyPage.setupWorkflowsDirectory({
+        'workflow1.json': 'single_ksampler.json'
+      })
+      await comfyPage.setup()
+
+      const tab = comfyPage.menu.workflowsTab
+      await tab.open()
+      await comfyPage.executeCommand('Comfy.LoadDefaultWorkflow')
+      const originalNodeCount = (await comfyPage.getNodes()).length
+
+      await tab.insertWorkflow(tab.getPersistedItem('workflow1.json'))
+      await comfyPage.nextFrame()
+      expect((await comfyPage.getNodes()).length).toEqual(originalNodeCount + 1)
+
+      await tab.getPersistedItem('workflow1.json').click()
+      await comfyPage.nextFrame()
+      expect((await comfyPage.getNodes()).length).toEqual(1)
     })
 
     test('Can rename nested workflow from opened workflow item', async ({
@@ -570,6 +665,15 @@ test.describe('Menu', () => {
       ).toEqual(['*Unsaved Workflow.json'])
     })
 
+    test('Can close saved workflow with command', async ({ comfyPage }) => {
+      const tab = comfyPage.menu.workflowsTab
+      await comfyPage.menu.topbar.saveWorkflow('workflow1.json')
+      await comfyPage.executeCommand('Workspace.CloseWorkflow')
+      expect(await tab.getOpenedWorkflowNames()).toEqual([
+        '*Unsaved Workflow.json'
+      ])
+    })
+
     test('Can delete workflows (confirm disabled)', async ({ comfyPage }) => {
       await comfyPage.setSetting('Comfy.Workflow.ConfirmDelete', false)
 
@@ -700,6 +804,212 @@ test.describe('Menu', () => {
       await comfyPage.setSetting('Comfy.UseNewMenu', position)
       await comfyPage.setup()
       expect(await comfyPage.getSetting('Comfy.UseNewMenu')).toBe('Top')
+    })
+  })
+})
+
+test.describe.skip('Queue sidebar', () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+  })
+
+  test('can display tasks', async ({ comfyPage }) => {
+    await comfyPage.setupHistory().withTask(['example.webp']).setupRoutes()
+    await comfyPage.menu.queueTab.open()
+    await comfyPage.menu.queueTab.waitForTasks()
+    expect(await comfyPage.menu.queueTab.visibleTasks.count()).toBe(1)
+  })
+
+  test('can display tasks after closing then opening', async ({
+    comfyPage
+  }) => {
+    await comfyPage.setupHistory().withTask(['example.webp']).setupRoutes()
+    await comfyPage.menu.queueTab.open()
+    await comfyPage.menu.queueTab.close()
+    await comfyPage.menu.queueTab.open()
+    await comfyPage.menu.queueTab.waitForTasks()
+    expect(await comfyPage.menu.queueTab.visibleTasks.count()).toBe(1)
+  })
+
+  test.describe('Virtual scroll', () => {
+    const layouts = [
+      { description: 'Five columns layout', width: 95, rows: 3, cols: 5 },
+      { description: 'Three columns layout', width: 55, rows: 3, cols: 3 },
+      { description: 'Two columns layout', width: 40, rows: 3, cols: 2 }
+    ]
+
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage
+        .setupHistory()
+        .withTask(['example.webp'])
+        .repeat(50)
+        .setupRoutes()
+    })
+
+    layouts.forEach(({ description, width, rows, cols }) => {
+      const preRenderedRows = 1
+      const preRenderedTasks = preRenderedRows * cols * 2
+      const visibleTasks = rows * cols
+      const expectRenderLimit = visibleTasks + preRenderedTasks
+
+      test.describe(description, () => {
+        test.beforeEach(async ({ comfyPage }) => {
+          await comfyPage.menu.queueTab.setTabWidth(width)
+          await comfyPage.menu.queueTab.open()
+          await comfyPage.menu.queueTab.waitForTasks()
+        })
+
+        test('should not render items outside of view', async ({
+          comfyPage
+        }) => {
+          const renderedCount =
+            await comfyPage.menu.queueTab.visibleTasks.count()
+          expect(renderedCount).toBeLessThanOrEqual(expectRenderLimit)
+        })
+
+        test('should teardown items after scrolling away', async ({
+          comfyPage
+        }) => {
+          await comfyPage.menu.queueTab.scrollTasks('down')
+          const renderedCount =
+            await comfyPage.menu.queueTab.visibleTasks.count()
+          expect(renderedCount).toBeLessThanOrEqual(expectRenderLimit)
+        })
+
+        test('should re-render items after scrolling away then back', async ({
+          comfyPage
+        }) => {
+          await comfyPage.menu.queueTab.scrollTasks('down')
+          await comfyPage.menu.queueTab.scrollTasks('up')
+          const renderedCount =
+            await comfyPage.menu.queueTab.visibleTasks.count()
+          expect(renderedCount).toBeLessThanOrEqual(expectRenderLimit)
+        })
+      })
+    })
+  })
+
+  test.describe('Expand tasks', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      // 2-item batch and 3-item batch -> 3 additional items when expanded
+      await comfyPage
+        .setupHistory()
+        .withTask(['example.webp', 'example.webp', 'example.webp'])
+        .withTask(['example.webp', 'example.webp'])
+        .setupRoutes()
+      await comfyPage.menu.queueTab.open()
+      await comfyPage.menu.queueTab.waitForTasks()
+    })
+
+    test('can expand tasks with multiple outputs', async ({ comfyPage }) => {
+      const initialCount = await comfyPage.menu.queueTab.visibleTasks.count()
+      await comfyPage.menu.queueTab.expandTasks()
+      expect(await comfyPage.menu.queueTab.visibleTasks.count()).toBe(
+        initialCount + 3
+      )
+    })
+
+    test('can collapse flat tasks', async ({ comfyPage }) => {
+      const initialCount = await comfyPage.menu.queueTab.visibleTasks.count()
+      await comfyPage.menu.queueTab.expandTasks()
+      await comfyPage.menu.queueTab.collapseTasks()
+      expect(await comfyPage.menu.queueTab.visibleTasks.count()).toBe(
+        initialCount
+      )
+    })
+  })
+
+  test.describe('Clear tasks', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage
+        .setupHistory()
+        .withTask(['example.webp'])
+        .repeat(6)
+        .setupRoutes()
+      await comfyPage.menu.queueTab.open()
+    })
+
+    test('can clear all tasks', async ({ comfyPage }) => {
+      await comfyPage.menu.queueTab.clearTasks()
+      expect(await comfyPage.menu.queueTab.visibleTasks.count()).toBe(0)
+      expect(
+        await comfyPage.menu.queueTab.noResultsPlaceholder.isVisible()
+      ).toBe(true)
+    })
+
+    test('can load new tasks after clearing all', async ({ comfyPage }) => {
+      await comfyPage.menu.queueTab.clearTasks()
+      await comfyPage.menu.queueTab.close()
+      await comfyPage.setupHistory().withTask(['example.webp']).setupRoutes()
+      await comfyPage.menu.queueTab.open()
+      await comfyPage.menu.queueTab.waitForTasks()
+      expect(await comfyPage.menu.queueTab.visibleTasks.count()).toBe(1)
+    })
+  })
+
+  test.describe('Gallery', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage
+        .setupHistory()
+        .withTask(['example.webp'])
+        .repeat(1)
+        .setupRoutes()
+      await comfyPage.menu.queueTab.open()
+      await comfyPage.menu.queueTab.waitForTasks()
+    })
+
+    test('displays gallery image after opening task preview', async ({
+      comfyPage
+    }) => {
+      await comfyPage.menu.queueTab.openTaskPreview(0)
+      expect(comfyPage.menu.queueTab.getGalleryImage(0)).toBeVisible()
+    })
+
+    test('should maintain active gallery item when new tasks are added', async ({
+      comfyPage,
+      ws
+    }) => {
+      const initialIndex = 0
+      await comfyPage.menu.queueTab.openTaskPreview(initialIndex)
+
+      // Add a new task while the gallery is still open
+      comfyPage.setupHistory().withTask(['example.webp'])
+      await ws.trigger({
+        type: 'status',
+        data: {
+          status: { exec_info: { queue_remaining: 0 } }
+        }
+      })
+      await comfyPage.menu.queueTab.waitForTasks()
+
+      // The index of all tasks increments when a new task is prepended
+      const expectIndex = initialIndex + 1
+      expect(comfyPage.menu.queueTab.getGalleryImage(expectIndex)).toBeVisible()
+    })
+
+    test.describe('Gallery navigation', () => {
+      const paths: {
+        description: string
+        path: ('Right' | 'Left')[]
+        expectIndex: number
+      }[] = [
+        { description: 'Right', path: ['Right'], expectIndex: 1 },
+        { description: 'Left', path: ['Right', 'Left'], expectIndex: 0 },
+        { description: 'Right wrap', path: ['Right', 'Right'], expectIndex: 0 },
+        { description: 'Left wrap', path: ['Left'], expectIndex: 1 }
+      ]
+
+      paths.forEach(({ description, path, expectIndex }) => {
+        test(`can navigate gallery ${description}`, async ({ comfyPage }) => {
+          await comfyPage.menu.queueTab.openTaskPreview(0)
+          for (const direction of path)
+            await comfyPage.page.keyboard.press(`Arrow${direction}`)
+
+          expect(
+            comfyPage.menu.queueTab.getGalleryImage(expectIndex)
+          ).toBeVisible()
+        })
+      })
     })
   })
 })

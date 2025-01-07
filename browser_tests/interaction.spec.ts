@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+
 import { comfyPageFixture as test } from './fixtures/ComfyPage'
 
 test.describe('Item Interaction', () => {
@@ -452,6 +453,9 @@ test.describe('Canvas Interaction', () => {
     expect(await getCursorStyle()).toBe('default')
     await comfyPage.page.mouse.down()
     expect(await getCursorStyle()).toBe('grabbing')
+    // Move mouse should not alter cursor style.
+    await comfyPage.page.mouse.move(10, 20)
+    expect(await getCursorStyle()).toBe('grabbing')
     await comfyPage.page.mouse.up()
     expect(await getCursorStyle()).toBe('default')
 
@@ -462,6 +466,43 @@ test.describe('Canvas Interaction', () => {
     await comfyPage.page.mouse.up()
     expect(await getCursorStyle()).toBe('grab')
     await comfyPage.page.keyboard.up('Space')
+    expect(await getCursorStyle()).toBe('default')
+  })
+
+  // https://github.com/Comfy-Org/litegraph.js/pull/424
+  test('Properly resets dragging state after pan mode sequence', async ({
+    comfyPage
+  }) => {
+    const getCursorStyle = async () => {
+      return await comfyPage.page.evaluate(() => {
+        return (
+          document.getElementById('graph-canvas')!.style.cursor || 'default'
+        )
+      })
+    }
+
+    // Initial state check
+    await comfyPage.page.mouse.move(10, 10)
+    expect(await getCursorStyle()).toBe('default')
+
+    // Click and hold
+    await comfyPage.page.mouse.down()
+    expect(await getCursorStyle()).toBe('grabbing')
+
+    // Press space while holding click
+    await comfyPage.page.keyboard.down('Space')
+    expect(await getCursorStyle()).toBe('grabbing')
+
+    // Release click while space is still down
+    await comfyPage.page.mouse.up()
+    expect(await getCursorStyle()).toBe('grab')
+
+    // Release space
+    await comfyPage.page.keyboard.up('Space')
+    expect(await getCursorStyle()).toBe('default')
+
+    // Move mouse - cursor should remain default
+    await comfyPage.page.mouse.move(20, 20)
     expect(await getCursorStyle()).toBe('default')
   })
 

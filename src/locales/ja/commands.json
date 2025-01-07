@@ -74,6 +74,9 @@
   "Comfy_ClearWorkflow": {
     "label": "ワークフローをクリア"
   },
+  "Comfy_DuplicateWorkflow": {
+    "label": "現在のワークフローを複製"
+  },
   "Comfy_ExportWorkflow": {
     "label": "ワークフローをエクスポート"
   },
@@ -148,6 +151,9 @@
   },
   "Comfy_Undo": {
     "label": "元に戻す"
+  },
+  "Workspace_CloseWorkflow": {
+    "label": "現在のワークフローを閉じる"
   },
   "Workspace_NextOpenedWorkflow": {
     "label": "次の開いたワークフロー"

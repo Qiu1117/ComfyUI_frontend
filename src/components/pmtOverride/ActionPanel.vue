@@ -275,34 +275,35 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, shallowRef } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
 import {
-  useBrowserLocation,
-  useLocalStorage,
   useElementHover,
-  useThrottleFn
+  useLocalStorage,
+  useThrottleFn,
+  useWebSocket
 } from '@vueuse/core'
-import Panel from 'primevue/panel'
-import Menu from 'primevue/menu'
-import ButtonGroup from 'primevue/buttongroup'
+import { merge } from 'lodash'
 import Button from 'primevue/button'
-import Popover from 'primevue/popover'
+import ButtonGroup from 'primevue/buttongroup'
+import ConfirmDialog from 'primevue/confirmdialog'
+import ConfirmPopup from 'primevue/confirmpopup'
 import InputGroup from 'primevue/inputgroup'
 import InputGroupAddon from 'primevue/inputgroupaddon'
 import InputText from 'primevue/inputtext'
+import Menu from 'primevue/menu'
+import Panel from 'primevue/panel'
+import Popover from 'primevue/popover'
 import Textarea from 'primevue/textarea'
-import ConfirmDialog from 'primevue/confirmdialog'
-import ConfirmPopup from 'primevue/confirmpopup'
 import Toast from 'primevue/toast'
-import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
-import { LiteGraph, LGraphCanvas } from '@comfyorg/litegraph'
+import { useToast } from 'primevue/usetoast'
+import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+
 import { app as comfyApp } from '@/scripts/app'
-import { useNodeDefStore, SYSTEM_NODE_DEFS } from '@/stores/nodeDefStore'
+import { useWorkflowService } from '@/services/workflowService'
 import { useCommandStore } from '@/stores/commandStore'
-import { workflowService } from '@/services/workflowService'
-import { merge } from 'lodash'
+import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 
 let decodeMultiStream = (stream) => {
   console.warn('MessagePack not found')
@@ -341,47 +342,11 @@ const commitPipEdit = (e) => {
 
 const loading = ref(!!pipeline.value?.id)
 
-function addPipelineEventListeners() {
-  if (window.$electron) {
-    window.$electron.ipcRendererOn('got-pipeline', handleGetPipeline)
-    window.$electron.ipcRendererOn('created-pipeline', handleCreatePipeline)
-    window.$electron.ipcRendererOn('updated-pipeline', handleUpdatePipeline)
-    window.$electron.ipcRendererOn('deleted-pipeline', handleDeletePipeline)
-  }
-}
-
-function removePipelineEventListeners() {
-  if (window.$electron) {
-    window.$electron.ipcRendererOff('got-pipeline')
-    window.$electron.ipcRendererOff('created-pipeline')
-    window.$electron.ipcRendererOff('updated-pipeline')
-    window.$electron.ipcRendererOff('deleted-pipeline')
-  }
-}
-
 const nodesSelected = shallowRef([])
 const nodesSelectedCount = computed(() => nodesSelected.value.length)
 const updateNodesSelected = useThrottleFn(() => {
   nodesSelected.value = comfyApp.graph.nodes.filter((node) => node.selected)
 }, 100)
-
-const location = useBrowserLocation()
-const volViewUrl = computed(() => {
-  const search = `?uiMode=lite&layoutName=${'Axial Only'}`
-  // + `&names=[data.png]&urls=[connect-file://localhost/C:\\sample test data\\data.png]`
-  // + `&names=[test.zip]&urls=[connect-file://localhost/C:\\sample test data\\test2\\MRI-PROSTATEx-0004.zip]&uid=test2&slice=0`
-  let { port, origin, pathname } = location.value
-  if (origin === 'file://') {
-    pathname = pathname.replace('comfyui/', 'volview/')
-  } else {
-    if (port) {
-      origin = origin.replace(port, `${+port - 1}`)
-      // origin = origin.replace(port, `${+port - 3}`)
-    }
-    // pathname = pathname.replace('comfyui/', '') + 'volview/'
-  }
-  return origin + pathname + search
-})
 
 const driverObjs = []
 function highlight(element, popover = {}, config, step) {
@@ -943,15 +908,15 @@ const toggleTerminal = (val) => {
 }
 
 onMounted(() => {
-  addPipelineEventListeners()
-  if (loading.value) {
-    getPipeline({ ...pipeline.value })
-  }
-
-  Object.keys(SYSTEM_NODE_DEFS).forEach((type) => {
-    LiteGraph.unregisterNodeType(type)
+  ;[
+    'input.load_image',
+    // ...
+    ...Object.keys(SYSTEM_NODE_DEFS)
+  ].forEach((type) => {
+    if (LiteGraph.getNodeType(type)) {
+      LiteGraph.unregisterNodeType(type)
+    }
   })
-  // LiteGraph.unregisterNodeType('input.load_image')
 
   const getCanvasMenuOptions = LGraphCanvas.prototype.getCanvasMenuOptions
   LGraphCanvas.prototype.getCanvasMenuOptions = function () {
@@ -971,7 +936,7 @@ onMounted(() => {
           content: 'Refresh Node Definitions',
           callback: async () => {
             await useCommandStore().execute('Comfy.RefreshNodeDefinitions')
-            workflowService.reloadCurrentWorkflow()
+            useWorkflowService().reloadCurrentWorkflow()
           }
         },
         {
@@ -995,7 +960,6 @@ onMounted(() => {
       options.splice(resetOptionIndex, 0, {
         content: 'Reset',
         callback: async () => {
-          const nodeIds = []
           try {
             const { json } = exportJson(false)
             const formData = {
@@ -1014,18 +978,23 @@ onMounted(() => {
                 body: JSON.stringify(formData)
               }
             )
-            if (res?.nodeIds) {
-              nodeIds.push(...res.nodeIds)
+            if (res.ok) {
+              const { error, message, nodeIds } = await res.json()
+              if (error) {
+                console.error(error, message)
+              } else if (nodeIds) {
+                nodeIds.forEach((nodeId) => {
+                  const node = comfyApp.graph.getNodeById(nodeId)
+                  if (node) {
+                    console.log('reset', node)
+                    resetNodeStatus(node)
+                  }
+                })
+              }
             }
           } catch (err) {
             console.error(err)
           }
-          nodeIds.forEach((nodeId) => {
-            const node = comfyApp.graph.getNodeById(nodeId)
-            if (node) {
-              resetNodeStatus(node)
-            }
-          })
         }
       })
       return options
@@ -1105,20 +1074,7 @@ onMounted(() => {
           node.setDirtyCanvas(true)
         })
       }
-      /*
-      if (node?.comfyClass === 'preview.volview') {
-        const div = document.createElement('div')
-        div.classList.add('relative', 'overflow-hidden')
-        div.innerHTML = `
-          <div class="absolute inset-0 overflow-hidden">
-            <iframe src="${volViewUrl.value}" frameborder="0" width="100%" height="100%"></iframe>
-          </div>
-        `
-        const widget = node.addDOMWidget('preview_volview', 'preview-volview', div, {})
-        console.log(volViewUrl.value, widget)
-        console.log(node.widgets)
-      }
-      */
+
       if (node?.comfyClass.startsWith('rag_llm.prompt')) {
         const prompt_template_vars = {}
         const findVars = (text) => {
@@ -1324,8 +1280,6 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  removePipelineEventListeners()
-
   comfyApp.canvasEl.removeEventListener('drop', onDrop)
 
   if (window.driverObjs?.length) {
@@ -1389,7 +1343,7 @@ function resetNodeStatus(node) {
   if (node?.pmt_fields) {
     delete node.pmt_fields
     if (node.pmt_fields?.status) {
-      node.pmt_fields.status = 'pending'
+      node.pmt_fields.status = ''
     }
     node.setDirtyCanvas(true)
   }
@@ -1840,14 +1794,9 @@ async function save() {
   }
   saving.value = true
   if (pipelineId) {
-    let isValid = true
+    const { json } = exportJson(false, false)
+    let isValid = false
     try {
-      const { json } = exportJson(false, false)
-      const formData = {
-        id: pipeline.value.id,
-        workflow: JSON.stringify(json)
-      }
-      // console.log(formData)
       const res = await fetch(
         'connect://localhost/api/pipelines/validate-pipeline-graph-json',
         {
@@ -1855,18 +1804,55 @@ async function save() {
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(formData)
+          body: JSON.stringify({
+            id: pipeline.value.id,
+            workflow: JSON.stringify(json)
+          })
         }
       )
-      if (res?.result) {
-        console.log('validate result:', JSON.parse(res.result))
-        // ...
+      if (res.ok) {
+        const { error, message, result: data } = await res.json()
+        if (error) {
+          console.error(error, message)
+        } else if (data) {
+          const result = JSON.parse(data)
+          console.log('validation result:', result)
+          // ...
+          /*
+          let pTotal = 0
+          Object.keys(result).forEach((p) => {
+            pTotal++
+            const { nodes, has_output } = result[p]
+            console.log('pipeline:', p, { nodes, has_output })
+            if (pTotal > 1) {
+              // nodes.forEach...
+            }
+          })
+          if (pTotal <= 1) {
+            isValid = true
+          } else {
+            toast.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: `Only 1 pipeline per workflow, got ${pTotal}!`,
+              life: 5000
+            })
+          }
+          */
+          isValid = true
+        }
       }
     } catch (err) {
       console.error(err)
     }
-    if (!isValid) {
+    if (isValid) {
+      json.nodes = json.nodes.map((node) => {
+        delete node.pmt_fields
+        return node
+      })
+    } else {
       saving.value = false
+      console.error('validation failed')
       return
     }
     if (isNewPipeline.value) {
@@ -1875,12 +1861,12 @@ async function save() {
         name: pipelineName.value,
         description: pipelineDescription.value,
         color: pipelineColor.value,
-        workflow: getWorkflowJson(true, false)
+        workflow: JSON.stringify(json)
       })
     } else {
       updatePipeline({
         ...pipeline.value,
-        workflow: getWorkflowJson(true, false)
+        workflow: JSON.stringify(json)
       })
     }
     return
@@ -2030,78 +2016,69 @@ function getWorkflowJson(stringify = false, keepStatus = true) {
         status: ''
       }
       nodes[i].pmt_fields = pmt_fields
+      node.pmt_fields = nodes[i].pmt_fields
+      node.setDirtyCanvas(true)
       return nodes[i]
     }
     const [_, plugin_name, function_name] = nodeDef.python_module.split('.')
-    const pmt_fields = merge(node?.pmt_fields || {}, {
-      type,
-      plugin_name: plugin_name || null,
-      function_name: function_name || null,
-      inputs: (inputs || []).map((i) => {
-        let optional = false
-        const optionalInput = nodeDef.inputs.optional?.[i.name]
-        if (optionalInput && optionalInput.type === i.type) {
-          optional = true
-        }
-        return {
-          optional
-        }
-      }),
-      args: (node.widgets || []).reduce((args, { type, name, value }) => {
-        if (type !== 'converted-widget') {
-          args[name] = value
-        }
-        return args
-      }, {}),
-      outputs: (outputs || []).map((o) => {
-        return {
-          oid: [],
-          path: [],
-          value: []
-        }
-      }),
-      status: ''
-    })
+    const pmt_fields = merge(
+      {
+        type,
+        plugin_name: plugin_name || null,
+        function_name: function_name || null,
+        inputs: (inputs || []).map((i) => {
+          let optional = false
+          const optionalInput = nodeDef.inputs.optional?.[i.name]
+          if (optionalInput && optionalInput.type === i.type) {
+            optional = true
+          }
+          return {
+            optional
+          }
+        }),
+        args: (node.widgets || []).reduce((args, { type, name, value }) => {
+          if (type !== 'converted-widget') {
+            args[name] = value
+          }
+          return args
+        }, {}),
+        outputs: (outputs || []).map((o) => {
+          return {
+            oid: null,
+            path: null,
+            value: null
+          }
+        }),
+        status: ''
+      },
+      node?.pmt_fields || {}
+    )
     if (pmt_fields.type === 'input') {
       const oid = pmt_fields.args.oid || pmt_fields.args.source
       if (oid) {
-        if (pmt_fields.outputs[0]?.oid) {
-          pmt_fields.outputs[0].oid = [oid]
-        }
-        if (pmt_fields.outputs[0]?.path) {
-          pmt_fields.outputs[0].path = [...(pmt_fields.outputs[0].path || [])]
-          pmt_fields.outputs[0].value = [...(pmt_fields.outputs[0].value || [])]
-        }
+        pmt_fields.outputs[0].oid = oid
+        pmt_fields.outputs[0].path = pmt_fields.outputs[0].path || ''
+        pmt_fields.outputs[0].value = pmt_fields.outputs[0].value || ''
       }
       if (subtype === 'boolean') {
-        pmt_fields.outputs[0] = {
-          ...(pmt_fields.outputs[0] || {}),
-          value: pmt_fields.args.bool
-        }
+        pmt_fields.outputs[0].value =
+          pmt_fields.outputs[0].value || pmt_fields.args.bool
       }
       if (subtype === 'int') {
-        pmt_fields.outputs[0] = {
-          ...(pmt_fields.outputs[0] || {}),
-          value: pmt_fields.args.int
-        }
+        pmt_fields.outputs[0].value =
+          pmt_fields.outputs[0].value || pmt_fields.args.int
       }
       if (subtype === 'float') {
-        pmt_fields.outputs[0] = {
-          ...(pmt_fields.outputs[0] || {}),
-          value: pmt_fields.args.float
-        }
+        pmt_fields.outputs[0].value =
+          pmt_fields.outputs[0].value || pmt_fields.args.float
       }
       if (subtype === 'text') {
-        pmt_fields.outputs[0] = {
-          ...(pmt_fields.outputs[0] || {}),
-          value: pmt_fields.args.text
-        }
+        pmt_fields.outputs[0].value =
+          pmt_fields.outputs[0].value || pmt_fields.args.text
       }
       if (subtype === 'textarea') {
-        pmt_fields.outputs[0] = {
-          ...(pmt_fields.outputs[0] || {}),
-          value: pmt_fields.args.textarea
-        }
+        pmt_fields.outputs[0].value =
+          pmt_fields.outputs[0].value || pmt_fields.args.textarea
       }
     } else {
       if (node.pmt_fields?.status) {
@@ -2123,14 +2100,13 @@ function getWorkflowJson(stringify = false, keepStatus = true) {
       //
     }
     if (pmt_fields.type === 'output') {
-      //
+      pmt_fields.status = ''
     }
     if (keepStatus) {
       if (runningMode.value === 'to-node') {
         if (nodesSelectedCount.value === 1) {
           if (node === nodesSelected.value[0]) {
             pmt_fields.status = 'current'
-            node.setDirtyCanvas(true)
           }
         }
       }
@@ -2150,17 +2126,61 @@ function getWorkflowJson(stringify = false, keepStatus = true) {
 
 // ---
 
-function getPipeline(payload) {
-  if (window.$electron) {
-    window.$electron.ipcRendererSend('get-pipeline', payload)
+const _wsId = `comfyui-${pipelineId || '*'}`
+const _ws = ref(localStorage.getItem('_ws') || undefined)
+const ws = useWebSocket(_ws, { heartbeat: true })
+watch(ws.data, async (data) => {
+  let message = typeof data === 'string' ? data : await data.text()
+  if (message.startsWith('{')) message = JSON.parse(message)
+  if (message?.type === 'open') {
+    return ws.send(
+      JSON.stringify({
+        type: 'map',
+        payload: { peerUid: _wsId },
+        from: message.to,
+        to: message.from
+      })
+    )
   }
+  if (message?.type === 'mapped') {
+    if (loading.value) {
+      return getPipeline({ ...pipeline.value })
+    }
+  }
+  if (message?.to === _wsId) {
+    const { type, payload } = message
+    if (type === 'got-pipeline') {
+      return handleGetPipeline(payload)
+    }
+    if (type === 'created-pipeline') {
+      return handleCreatePipeline(payload)
+    }
+    if (type === 'updated-pipeline') {
+      return handleUpdatePipeline(payload)
+    }
+    if (type === 'deleted-pipeline') {
+      return handleDeletePipeline(payload)
+    }
+  }
+  // console.log('[ws] message', message);
+})
+
+function getPipeline(payload) {
+  ws.send(
+    JSON.stringify({
+      type: 'get-pipeline',
+      payload: { ...payload, ts: Date.now() },
+      from: _wsId,
+      to: 'mod-pipelines'
+    })
+  )
 }
-function handleGetPipeline(e, payload) {
+function handleGetPipeline(payload) {
   if (!loading.value) {
     return
   }
   if (payload.id === pipeline.value.id) {
-    // console.log('current pipeline:', payload)
+    console.log('current pipeline:', payload)
   } else {
     return
   }
@@ -2179,13 +2199,18 @@ function handleGetPipeline(e, payload) {
 }
 
 function createPipeline(payload) {
-  if (window.$electron) {
-    window.$electron.ipcRendererSend('create-pipeline', payload)
-  }
+  ws.send(
+    JSON.stringify({
+      type: 'create-pipeline',
+      payload: { ...payload, ts: Date.now() },
+      from: _wsId,
+      to: 'mod-pipelines'
+    })
+  )
 }
-function handleCreatePipeline(e, payload) {
+function handleCreatePipeline(payload) {
   if (payload.id === pipeline.value.id) {
-    // console.log('created pipeline:', payload)
+    console.log('created pipeline:', payload)
   } else {
     return
   }
@@ -2201,13 +2226,18 @@ function handleCreatePipeline(e, payload) {
 }
 
 function updatePipeline(payload) {
-  if (window.$electron) {
-    window.$electron.ipcRendererSend('update-pipeline', payload)
-  }
+  ws.send(
+    JSON.stringify({
+      type: 'update-pipeline',
+      payload: { ...payload, ts: Date.now() },
+      from: _wsId,
+      to: 'mod-pipelines'
+    })
+  )
 }
-function handleUpdatePipeline(e, payload) {
+function handleUpdatePipeline(payload) {
   if (payload.id === pipeline.value.id) {
-    // console.log('updated pipeline:', payload)
+    console.log('updated pipeline:', payload)
   } else {
     return
   }
@@ -2223,13 +2253,18 @@ function handleUpdatePipeline(e, payload) {
 }
 
 function deletePipeline(payload) {
-  if (window.$electron) {
-    window.$electron.ipcRendererSend('delete-pipeline', payload)
-  }
+  ws.send(
+    JSON.stringify({
+      type: 'delete-pipeline',
+      payload: { ...payload, ts: Date.now() },
+      from: _wsId,
+      to: 'mod-pipelines'
+    })
+  )
 }
-function handleDeletePipeline(e, payload) {
+function handleDeletePipeline(payload) {
   if (payload.id === pipeline.value.id) {
-    // console.log('deleted pipeline:', payload)
+    console.log('deleted pipeline:', payload)
   } else {
     return
   }

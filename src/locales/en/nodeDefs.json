@@ -184,6 +184,9 @@
       },
       "type": {
         "name": "type"
+      },
+      "device": {
+        "name": "device"
       }
     }
   },
@@ -1100,6 +1103,15 @@
       }
     }
   },
+  "DevToolsNodeWithSeedInput": {
+    "display_name": "Node With Seed Input",
+    "description": "A node with a seed input",
+    "inputs": {
+      "seed": {
+        "name": "seed"
+      }
+    }
+  },
   "DevToolsNodeWithStringInput": {
     "display_name": "Node With String Input",
     "description": "A node with a string input",
@@ -1121,6 +1133,21 @@
       },
       "int_input": {
         "name": "int_input"
+      }
+    }
+  },
+  "DevToolsObjectPatchNode": {
+    "display_name": "Object Patch Node",
+    "description": "A node that applies an object patch",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "target_module": {
+        "name": "target_module"
+      },
+      "dummy_float": {
+        "name": "dummy_float"
       }
     }
   },
@@ -1197,6 +1224,9 @@
       },
       "type": {
         "name": "type"
+      },
+      "device": {
+        "name": "device"
       }
     }
   },
@@ -2293,6 +2323,9 @@
       },
       "up_direction": {
         "name": "up_direction"
+      },
+      "fov": {
+        "name": "fov"
       }
     },
     "outputs": {
@@ -2345,6 +2378,9 @@
       },
       "animation_speed": {
         "name": "animation_speed"
+      },
+      "fov": {
+        "name": "fov"
       }
     },
     "outputs": {
@@ -4249,6 +4285,9 @@
       },
       "up_direction": {
         "name": "up_direction"
+      },
+      "fov": {
+        "name": "fov"
       }
     }
   },

@@ -10,38 +10,41 @@
 </template>
 
 <script setup lang="ts">
-import GraphCanvas from '@/components/graph/GraphCanvas.vue'
-import MenuHamburger from '@/components/MenuHamburger.vue'
-import { computed, onMounted, onBeforeUnmount, watch, watchEffect } from 'vue'
-import { app } from '@/scripts/app'
-import { useSettingStore } from '@/stores/settingStore'
+import { useEventListener } from '@vueuse/core'
+import type { ToastMessageOptions } from 'primevue/toast'
+import { useToast } from 'primevue/usetoast'
+import { onBeforeUnmount, onMounted, watch, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useWorkspaceStore } from '@/stores/workspaceStore'
+
+import BrowserTabTitle from '@/components/BrowserTabTitle.vue'
+import MenuHamburger from '@/components/MenuHamburger.vue'
+import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
+import GraphCanvas from '@/components/graph/GraphCanvas.vue'
+import GlobalToast from '@/components/toast/GlobalToast.vue'
+import TopMenubar from '@/components/topbar/TopMenubar.vue'
+import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
+import { useCoreCommands } from '@/hooks/coreCommandHooks'
+import { i18n } from '@/i18n'
 import { api } from '@/scripts/api'
-import { StatusWsMessageStatus } from '@/types/apiTypes'
+import { app } from '@/scripts/app'
+import { setupAutoQueueHandler } from '@/services/autoQueueService'
+import { useKeybindingService } from '@/services/keybindingService'
+import { useCommandStore } from '@/stores/commandStore'
+import { useExecutionStore } from '@/stores/executionStore'
+import { useMenuItemStore } from '@/stores/menuItemStore'
+import { useModelStore } from '@/stores/modelStore'
+import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import {
   useQueuePendingTaskCountStore,
   useQueueStore
 } from '@/stores/queueStore'
-import type { ToastMessageOptions } from 'primevue/toast'
-import { useToast } from 'primevue/usetoast'
-import { i18n } from '@/i18n'
-import { useExecutionStore } from '@/stores/executionStore'
-import GlobalToast from '@/components/toast/GlobalToast.vue'
-import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
-import BrowserTabTitle from '@/components/BrowserTabTitle.vue'
-import TopMenubar from '@/components/topbar/TopMenubar.vue'
-import { setupAutoQueueHandler } from '@/services/autoQueueService'
-import { useKeybindingStore } from '@/stores/keybindingStore'
-import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
-import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
-import { useModelStore } from '@/stores/modelStore'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
-import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
-import { useMenuItemStore } from '@/stores/menuItemStore'
-import { useCommandStore } from '@/stores/commandStore'
-import { useCoreCommands } from '@/hooks/coreCommandHooks'
+import { useSettingStore } from '@/stores/settingStore'
+import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { StatusWsMessageStatus } from '@/types/apiTypes'
 
 setupAutoQueueHandler()
 
@@ -49,18 +52,16 @@ const { t } = useI18n()
 const toast = useToast()
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
-
-const theme = computed<string>(() => settingStore.get('Comfy.ColorPalette'))
+const colorPaletteStore = useColorPaletteStore()
 
 watch(
-  theme,
+  () => colorPaletteStore.completedActivePalette,
   (newTheme) => {
     const DARK_THEME_CLASS = 'dark-theme'
-    const isDarkTheme = newTheme !== 'light'
-    if (isDarkTheme) {
-      document.body.classList.add(DARK_THEME_CLASS)
-    } else {
+    if (newTheme.light_theme) {
       document.body.classList.remove(DARK_THEME_CLASS)
+    } else {
+      document.body.classList.add(DARK_THEME_CLASS)
     }
   },
   { immediate: true }
@@ -92,7 +93,7 @@ watchEffect(() => {
 watchEffect(() => {
   const useNewMenu = settingStore.get('Comfy.UseNewMenu')
   if (useNewMenu === 'Disabled') {
-    app.ui.menuContainer.style.removeProperty('display')
+    app.ui.menuContainer.style.setProperty('display', 'block')
     app.ui.restoreMenuPosition()
   } else {
     app.ui.menuContainer.style.setProperty('display', 'none')
@@ -106,11 +107,10 @@ watchEffect(() => {
 })
 
 const init = () => {
-  settingStore.addSettings(app.ui.settings)
   const coreCommands = useCoreCommands()
   useCommandStore().registerCommands(coreCommands)
   useMenuItemStore().registerCoreMenuCommands()
-  useKeybindingStore().loadCoreKeybindings()
+  useKeybindingService().registerCoreKeybindings()
   useSidebarTabStore().registerCoreSidebarTabs()
   useBottomPanelStore().registerCoreBottomPanelTabs()
   app.extensionManager = useWorkspaceStore()
@@ -160,12 +160,14 @@ onBeforeUnmount(() => {
   executionStore.unbindExecutionEvents()
 })
 
+useEventListener(window, 'keydown', useKeybindingService().keybindHandler)
+
 const onGraphReady = () => {
   requestIdleCallback(
     () => {
       // Setting values now available after comfyApp.setup.
       // Load keybindings.
-      useKeybindingStore().loadUserKeybindings()
+      useKeybindingService().registerUserKeybindings()
 
       // Load server config
       useServerConfigStore().loadServerConfig(
