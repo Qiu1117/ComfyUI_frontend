@@ -186,7 +186,7 @@ useExtensionService().registerExtension({
           let imageUrl = `${VOLVIEW_URL}&layoutName=${'Axial Only'}`
           imageUrl = new URL(imageUrl).href
           if (iframe.src !== imageUrl) {
-            if (pmt_fields.status === 'done') {
+            if (pmt_fields?.status === 'done') {
               pmt_fields.status = ''
             }
             widget.element.style.setProperty('visibility', 'hidden')
