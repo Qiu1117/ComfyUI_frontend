@@ -21,7 +21,7 @@ useExtensionService().registerExtension({
         // pathname = pathname.replace('comfyui/', '') + 'volview/'
       }
       // eslint-disable-next-line prefer-const
-      let search = `?uiMode=lite&layoutName=${'Axial Only'}`
+      let search = `?uiMode=lite`
       // serach += `&names=[data.png]&urls=[connect-file://localhost/C:\\sample test data\\data.png]`
       // search += `&names=[file.dcm]&urls=[connect-file://localhost/C:\\sample test data\\test2\\IM_0036.dcm]&uid=test2`
       // search += `&names=[test.zip]&urls=[connect-file://localhost/C:\\sample test data\\test2\\MRI-PROSTATEx-0004.zip]&uid=test&slice=0`
@@ -116,7 +116,7 @@ useExtensionService().registerExtension({
           } else if (imagePath.endsWith('.jpeg')) {
             ext = 'jpeg'
           }
-          let imageUrl = `${VOLVIEW_URL}&names=[file.${ext}]&urls=[connect-file://localhost/${imagePath}]`
+          let imageUrl = `${VOLVIEW_URL}&layoutName=${'Axial Only'}&names=[file.${ext}]&urls=[connect-file://localhost/${imagePath}]`
           imageUrl = new URL(imageUrl).href
           if (iframe.src !== imageUrl) {
             node.setSize([400, 400])
@@ -133,9 +133,9 @@ useExtensionService().registerExtension({
           const decode = false
           let imageUrl = dicomOid
             ? decode
-              ? `${VOLVIEW_URL}&names=[preview.png]&urls=[connect://localhost/orthanc/instances/${dicomOid}/preview]`
-              : `${VOLVIEW_URL}&names=[file.dcm]&urls=[connect://localhost/orthanc/instances/${dicomOid}/file]`
-            : `${VOLVIEW_URL}&names=[file.dcm]&urls=[connect-file://localhost/${dicomPath}]`
+              ? `${VOLVIEW_URL}&layoutName=${'Axial Only'}&names=[preview.png]&urls=[connect://localhost/orthanc/instances/${dicomOid}/preview]`
+              : `${VOLVIEW_URL}&layoutName=${'Axial Only'}&names=[file.dcm]&urls=[connect://localhost/orthanc/instances/${dicomOid}/file]`
+            : `${VOLVIEW_URL}&layoutName=${'Axial Only'}&names=[file.dcm]&urls=[connect-file://localhost/${dicomPath}]`
           imageUrl = new URL(imageUrl).href
           if (iframe.src !== imageUrl) {
             node.setSize([400, 400])
@@ -146,7 +146,25 @@ useExtensionService().registerExtension({
           }
         }
       } else if (niftiPath) {
-        // ...
+        const widget = getiFrameWidget()
+        const iframe = widget?.element?.querySelector('iframe')
+        if (iframe) {
+          let ext = 'nii.gz'
+          if (imagePath.endsWith('.nii')) {
+            ext = 'nii'
+          } else if (imagePath.endsWith('.nii.gz')) {
+            ext = 'nii.gz'
+          }
+          let imageUrl = `${VOLVIEW_URL}&layoutName=${'Quad View'}&names=[file.${ext}]&urls=[connect-file://localhost/${niftiPath}]`
+          imageUrl = new URL(imageUrl).href
+          if (iframe.src !== imageUrl) {
+            node.setSize([512, 512])
+            node.setDirtyCanvas(true)
+            widget.element.style.removeProperty('visibility')
+            iframe.src = imageUrl
+            console.log('[volview] link:', imageUrl)
+          }
+        }
       } else {
         const widget = node.widgets?.[0]
         const iframe =
@@ -154,7 +172,8 @@ useExtensionService().registerExtension({
             ? widget.element?.querySelector('iframe')
             : null
         if (iframe) {
-          const imageUrl = new URL(VOLVIEW_URL).href
+          let imageUrl = `${VOLVIEW_URL}&layoutName=${'Axial Only'}`
+          imageUrl = new URL(imageUrl).href
           if (iframe.src !== imageUrl) {
             widget.element.style.setProperty('visibility', 'hidden')
             node.setSize([300, 100])
