@@ -3,22 +3,333 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>test embedded page</title>
+  <title>Histogram with Normal Distribution Fitting</title>
+  <script src="https://cdn.plot.ly/plotly-3.0.0.min.js" charset="utf-8"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jstat@latest/dist/jstat.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    button {
+      padding: 8px 16px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-bottom: 10px;
+      margin-right: 10px;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    #histogram {
+      width: 100%;
+      height: 500px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+  </style>
 </head>
 <body>
-  <button>click</button>
+  <div class="container">
+    <h2>ROI Histogram</h2>
+    <div>
+      <button id="generateButton">Generate New Data</button>
+      <button id="sendButton">Send Message to Parent</button>
+    </div>
+    <div id="histogram"></div>
+  </div>
+  
   <script>
     (function () {
+      // Generate random data with specified distribution
+      function generateRandomData(n = 500, mean = 50, std = 10, skewAmount = 0.5) {
+        const data = [];
+        
+        // Generate normally distributed data
+        for (let i = 0; i < n; i++) {
+          // Box-Muller transform for normal distribution
+          let u1 = Math.random();
+          let u2 = Math.random();
+          let z0 = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
+          
+          // Add skewness
+          if (skewAmount !== 0) {
+            const sign = Math.random() > 0.5 ? 1 : -1;
+            z0 += sign * Math.abs(z0) * skewAmount;
+          }
+          
+          data.push(mean + z0 * std);
+        }
+        
+        return data;
+      }
+      
+      // Calculate statistics
+      function calculateStatistics(data) {
+        // Sort data for calculations
+        const sortedData = [...data].sort((a, b) => a - b);
+        
+        // Basic statistics
+        const mean = data.reduce((sum, value) => sum + value, 0) / data.length;
+        const variance = data.reduce((sum, value) => sum + Math.pow(value - mean, 2), 0) / data.length;
+        const std = Math.sqrt(variance);
+        
+        // Median
+        const median = sortedData.length % 2 === 0 
+          ? (sortedData[sortedData.length / 2 - 1] + sortedData[sortedData.length / 2]) / 2 
+          : sortedData[Math.floor(sortedData.length / 2)];
+        
+        // Min/Max
+        const min = sortedData[0];
+        const max = sortedData[sortedData.length - 1];
+        
+        // Calculate skewness
+        const skewness = data.reduce((sum, value) => {
+          return sum + Math.pow((value - mean) / std, 3);
+        }, 0) / data.length;
+        
+        // Calculate kurtosis
+        const kurtosis = data.reduce((sum, value) => {
+          return sum + Math.pow((value - mean) / std, 4);
+        }, 0) / data.length - 3; 
+        
+        // Evaluate normality
+        let similarity;
+        if (Math.abs(skewness) <= 0.5 && Math.abs(kurtosis) <= 0.5) {
+          similarity = 'Excellent';
+        } else if (Math.abs(skewness) <= 1.0 && Math.abs(kurtosis) <= 1.0) {
+          similarity = 'Good';
+        } else if (Math.abs(skewness) <= 1.5 && Math.abs(kurtosis) <= 1.5) {
+          similarity = 'Fair';
+        } else {
+          similarity = 'Poor';
+        }
+        
+        return {
+          data,
+          mean,
+          std,
+          median,
+          min,
+          max,
+          skewness,
+          kurtosis,
+          similarity
+        };
+      }
+      
+      // Create histogram with normal distribution fit
+      function createHistogramWithNormalFit(stats) {
+        const data = stats.data;
+        const { mean, std, similarity, skewness, kurtosis } = stats;
+        
+        // Create points for normal distribution curve
+        const normalX = [];
+        const normalY = [];
+        const min = stats.min - 2 * std;
+        const max = stats.max + 2 * std;
+        const step = (max - min) / 100;
+        
+        for (let x = min; x <= max; x += step) {
+          normalX.push(x);
+          // Normal distribution formula: f(x) = (1 / (std * sqrt(2 * pi))) * e^(-(x - mean)^2 / (2 * std^2))
+          const normalPdf = (1 / (std * Math.sqrt(2 * Math.PI))) * 
+                           Math.exp(-(Math.pow(x - mean, 2) / (2 * Math.pow(std, 2))));
+          normalY.push(normalPdf);
+        }
+        
+        // Create histogram trace
+        const histogramTrace = {
+          x: data,
+          type: 'histogram',
+          histnorm: 'probability density',
+          name: 'Histogram',
+          marker: {
+            color: 'rgba(75, 192, 192, 0.7)',
+            line: {
+              color: 'rgba(75, 192, 192, 1)',
+              width: 1
+            }
+          },
+          nbinsx: 30
+        };
+        
+        // Create normal distribution fit trace
+        const normalFitTrace = {
+          x: normalX,
+          y: normalY,
+          type: 'scatter',
+          mode: 'lines',
+          name: 'Normal Distribution Fit',
+          line: {
+            color: 'rgb(255, 0, 0)',
+            width: 2
+          }
+        };
+        
+        // Create normality assessment text
+        let normalityColor;
+        switch(similarity) {
+          case 'Excellent': normalityColor = 'rgba(0, 128, 0, 0.9)'; break; // Green
+          case 'Good': normalityColor = 'rgba(0, 0, 255, 0.9)'; break; // Blue
+          case 'Fair': normalityColor = 'rgba(255, 165, 0, 0.9)'; break; // Orange
+          case 'Poor': normalityColor = 'rgba(255, 0, 0, 0.9)'; break; // Red
+          default: normalityColor = 'rgba(0, 0, 0, 0.9)';
+        }
+        
+        // Maximum value for y-axis (used for vertical lines)
+        const yMax = Math.max(...normalY);
+        
+        // Set layout
+        const layout = {
+          title: 'ROI Histogram',
+          xaxis: { 
+            title: 'Intensity Value',
+            range: [stats.min - std, stats.max + std]
+          },
+          yaxis: { title: 'Probability Density' },
+          bargap: 0.05,
+          legend: { x: 0.74, y: 1 },
+          annotations: [
+            // Normality Assessment box with requested format
+            {
+              x: 0.02,  // Position at left side
+              y: 0.98,  // Position near top
+              xref: 'paper',
+              yref: 'paper',
+              text: `Normality: ${similarity}<br>Skewness: ${skewness.toFixed(3)}<br>Kurtosis: ${kurtosis.toFixed(3)}`,
+              showarrow: false,
+              font: {
+                size: 12,
+                color: 'white'
+              },
+              align: 'left',
+              bgcolor: normalityColor,
+              bordercolor: 'rgba(0,0,0,0.3)',
+              borderwidth: 1,
+              borderpad: 4,
+              width: 170
+            }
+          ],
+          shapes: [
+            // Standard deviation line (left)
+            {
+              type: 'line',
+              x0: mean - std,
+              y0: 0,
+              x1: mean - std,
+              y1: yMax,
+              line: {
+                color: 'rgba(255, 0, 0, 0.5)',
+                width: 2,
+                dash: 'dot'
+              }
+            }, 
+            // Standard deviation line (right)
+            {
+              type: 'line',
+              x0: mean + std,
+              y0: 0,
+              x1: mean + std,
+              y1: yMax,
+              line: {
+                color: 'rgba(255, 0, 0, 0.5)',
+                width: 2,
+                dash: 'dot'
+              }
+            },
+            // Median line
+            {
+              type: 'line',
+              x0: stats.median,
+              y0: 0,
+              x1: stats.median,
+              y1: yMax,
+              line: {
+                color: 'black',
+                width: 2,
+                dash: 'solid'
+              }
+            }
+          ],
+          margin: {
+            t: 80,  // Top margin
+            l: 70,  // Left margin
+            r: 70,  // Right margin
+            b: 70   // Bottom margin
+          }
+        };
+        
+        // Plot chart with responsive setting
+        Plotly.newPlot('histogram', [histogramTrace, normalFitTrace], layout, {
+          responsive: true,
+          displaylogo: false
+        });
+      }
+      
+      // Generate and analyze new data
+      function generateAndAnalyzeData() {
+        // Randomly choose a skewness value for different distributions
+        const skewAmount = (Math.random() - 0.5) * 3;
+        const data = generateRandomData(500, 50, 10, skewAmount);
+        const stats = calculateStatistics(data);
+        createHistogramWithNormalFit(stats);
+        
+        // Send message to parent window
+        window.parent.postMessage({ 
+          from: 'test-id', 
+          msg: 'histogram created',
+          stats: {
+            mean: stats.mean.toFixed(3),
+            std: stats.std.toFixed(3),
+            skewness: stats.skewness.toFixed(3),
+            kurtosis: stats.kurtosis.toFixed(3),
+            similarity: stats.similarity
+          }
+        }, '*');
+      }
+
+      // Listen for messages from parent window
       window.addEventListener('message', (e) => {
         if (e.data?.from === 'test-id-parent') {
-          console.log('msg from parent:', e.data.msg)
+          console.log('msg from parent:', e.data.msg);
+          
+          // Update chart if requested
+          if (e.data.msg === 'update_histogram') {
+            generateAndAnalyzeData();
+          }
         }
-      })
+      });
 
-      document.querySelector('button').addEventListener('click', function (e) {
-        window.parent.postMessage({ from: 'test-id', msg: 'button clicked' }, '*')
-      })
-    })()
+      // Button click events
+      document.getElementById('sendButton').addEventListener('click', function (e) {
+        window.parent.postMessage({ 
+          from: 'test-id', 
+          msg: 'button clicked',
+          timestamp: new Date().toISOString()
+        }, '*');
+      });
+      
+      // Generate new data button
+      document.getElementById('generateButton').addEventListener('click', generateAndAnalyzeData);
+      
+      // Generate histogram on page load
+      window.addEventListener('load', generateAndAnalyzeData);
+      
+      // Add resize handler for responsiveness
+      window.addEventListener('resize', function() {
+        Plotly.relayout('histogram', {
+          'autosize': true
+        });
+      });
+    })();
   </script>
 </body>
 </html>
