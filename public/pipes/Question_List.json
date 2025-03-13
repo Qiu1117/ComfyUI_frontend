@@ -1,0 +1,101 @@
+{
+    "title": "Professional Evaluation Form",
+    "description": "Please conduct a professional evaluation for the following criteria:",
+    "sections": [
+      {
+        "id": "section1",
+        "title": "1. Artifact Assessment",
+        "questions": [
+          {
+            "id": "q1",
+            "type": "choice",
+            "selectionType": "multiple",
+            "text": "Select all artifact types observed:",
+            "options": [
+              {
+                "id": "opt1",
+                "text": "No Artifacts"
+              },
+              {
+                "id": "opt2",
+                "text": "Minor Artifacts"
+              },
+              {
+                "id": "opt3",
+                "text": "Severe Artifacts"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "section2",
+        "title": "2. Motion Artifact Assessment",
+        "questions": [
+          {
+            "id": "q2",
+            "type": "choice",
+            "selectionType": "single",
+            "text": "Select the level of motion artifacts:",
+            "options": [
+              {
+                "id": "opt4",
+                "text": "No Motion Artifacts"
+              },
+              {
+                "id": "opt5",
+                "text": "Minor Motion Artifacts"
+              },
+              {
+                "id": "opt6",
+                "text": "Severe Motion Artifacts"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "section3",
+        "title": "3. Liver Area Assessment",
+        "questions": [
+          {
+            "id": "q3",
+            "type": "choice",
+            "selectionType": "single",
+            "text": "Evaluate liver visualization:",
+            "options": [
+              {
+                "id": "opt7",
+                "text": "Complete Visualization Meeting Diagnostic Requirements"
+              },
+              {
+                "id": "opt8",
+                "text": "Insufficient Visualization For Diagnosis"
+              }
+            ]
+          },
+          {
+            "id": "q4",
+            "type": "text",
+            "inputType": "short",
+            "text": "Additional comments on liver visualization:",
+            "placeholder": "Enter your observations here..."
+          }
+        ]
+      },
+      {
+        "id": "section4",
+        "title": "4. Additional Information",
+        "questions": [
+          {
+            "id": "q5",
+            "type": "text",
+            "inputType": "long",
+            "text": "Please provide any additional observations or notes:",
+            "placeholder": "Enter detailed observations here..."
+          }
+        ]
+      }
+    ],
+    "submitButtonText": "SAVE"
+  }

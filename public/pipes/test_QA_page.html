@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Survey Form</title>
+  <style>
+    :root {
+      --background-color: #191b2a;
+      --card-background: #1e2030;
+      --text-color: #e0e0e0;
+      --accent-color: #2ecc71;
+      --secondary-accent: #3498db;
+      --border-color: #3e4059;
+      --hover-color: #3e4059;
+      --section-title-color: #e0e0e0;
+      --checkbox-border: #3e4059;
+      --checkbox-checked-bg: #2ecc71;
+      --button-bg: #2ecc71;
+      --button-hover-bg: #27ae60;
+      --input-bg: #2c2e3e;
+      --input-focus-border: #3498db;
+      --placeholder-color: #7f8c8d;
+      --error-color: #e74c3c;
+    }
+    
+    body {
+      font-family: Arial, sans-serif;
+      background-color: var(--background-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+    
+    .container {
+      max-width: 800px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 0 15px;
+      box-sizing: border-box;
+    }
+    
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+      
+      .container {
+        padding: 0 10px;
+      }
+    }
+    
+    .survey-header {
+      margin-bottom: 20px;
+    }
+    
+    .survey-title {
+      font-size: 1.5em;
+      margin-bottom: 5px;
+    }
+    
+    .survey-description {
+      opacity: 0.8;
+      margin-bottom: 20px;
+    }
+    
+    .survey-form {
+      background-color: var(--card-background);
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    @media (max-width: 480px) {
+      .survey-form {
+        padding: 15px;
+      }
+    }
+    
+    .section {
+      margin-bottom: 25px;
+    }
+    
+    .section-title {
+      font-size: 1.1em;
+      color: var(--section-title-color);
+      margin-bottom: 15px;
+      font-weight: bold;
+    }
+    
+    .question {
+      margin-bottom: 20px;
+    }
+    
+    .question-text {
+      margin-bottom: 10px;
+      font-weight: 500;
+    }
+    
+    .options {
+      margin-left: 10px;
+    }
+    
+    @media (max-width: 480px) {
+      .options {
+        margin-left: 5px;
+      }
+    }
+    
+    .option {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+      cursor: pointer;
+    }
+    
+    .option:hover {
+      opacity: 0.9;
+    }
+    
+    .checkbox-container, .radio-container {
+      display: block;
+      position: relative;
+      padding-left: 30px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      user-select: none;
+    }
+    
+    .checkbox-container input, .radio-container input {
+      position: absolute;
+      opacity: 0;
+      cursor: pointer;
+      height: 0;
+      width: 0;
+    }
+    
+    .checkmark, .radiomark {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 20px;
+      width: 20px;
+      background-color: transparent;
+      border: 2px solid var(--checkbox-border);
+    }
+    
+    .checkmark {
+      border-radius: 4px;
+    }
+    
+    .radiomark {
+      border-radius: 50%;
+    }
+    
+    .checkbox-container:hover input ~ .checkmark,
+    .radio-container:hover input ~ .radiomark {
+      background-color: var(--hover-color);
+    }
+    
+    .checkbox-container input:checked ~ .checkmark,
+    .radio-container input:checked ~ .radiomark {
+      background-color: var(--checkbox-checked-bg);
+      border-color: var(--checkbox-checked-bg);
+    }
+    
+    .checkmark:after, .radiomark:after {
+      content: "";
+      position: absolute;
+      display: none;
+    }
+    
+    .checkbox-container input:checked ~ .checkmark:after,
+    .radio-container input:checked ~ .radiomark:after {
+      display: block;
+    }
+    
+    .checkbox-container .checkmark:after {
+      left: 6px;
+      top: 2px;
+      width: 5px;
+      height: 10px;
+      border: solid white;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }
+    
+    .radio-container .radiomark:after {
+      top: 6px;
+      left: 6px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: white;
+    }
+    
+    .text-input {
+      width: 100%;
+      padding: 10px;
+      background-color: var(--input-bg);
+      color: var(--text-color);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    
+    .text-input:focus {
+      outline: none;
+      border-color: var(--input-focus-border);
+    }
+    
+    .text-input::placeholder {
+      color: var(--placeholder-color);
+    }
+    
+    .textarea-input {
+      width: 100%;
+      padding: 10px;
+      background-color: var(--input-bg);
+      color: var(--text-color);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      font-size: 14px;
+      min-height: 100px;
+      resize: vertical;
+      box-sizing: border-box;
+    }
+    
+    .textarea-input:focus {
+      outline: none;
+      border-color: var(--input-focus-border);
+    }
+    
+    .textarea-input::placeholder {
+      color: var(--placeholder-color);
+    }
+    
+    .button-container {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+    
+    button {
+      padding: 12px 24px;
+      background-color: var(--button-bg);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      text-transform: uppercase;
+      font-size: 14px;
+      transition: background-color 0.3s;
+    }
+    
+    @media (max-width: 480px) {
+      button {
+        padding: 10px 20px;
+        font-size: 13px;
+        width: 100%;
+      }
+      
+      .button-container {
+        flex-direction: column;
+        gap: 10px;
+      }
+    }
+    
+    button:hover {
+      background-color: var(--button-hover-bg);
+    }
+    
+    .secondary-button {
+      background-color: var(--secondary-accent);
+    }
+    
+    .secondary-button:hover {
+      background-color: #2980b9;
+    }
+    
+    .gray-button {
+      background-color: #7f8c8d;
+    }
+    
+    .gray-button:hover {
+      background-color: #95a5a6;
+    }
+    
+    .error-message {
+      color: var(--error-color);
+      background-color: rgba(231, 76, 60, 0.1);
+      border-left: 3px solid var(--error-color);
+      padding: 12px;
+      margin: 15px 0;
+      border-radius: 0 4px 4px 0;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+    
+    .error-message pre {
+      margin: 10px 0 0;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      font-family: monospace;
+      background-color: rgba(0, 0, 0, 0.1);
+      padding: 8px;
+      border-radius: 4px;
+    }
+    
+    .welcome-screen {
+      text-align: center;
+      padding: 40px 20px;
+      background-color: var(--card-background);
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    @media (max-width: 480px) {
+      .welcome-screen {
+        padding: 25px 15px;
+      }
+    }
+    
+    .welcome-screen h2 {
+      margin-bottom: 20px;
+      color: var(--accent-color);
+    }
+    
+    .welcome-screen p {
+      margin-bottom: 30px;
+      line-height: 1.6;
+      opacity: 0.9;
+    }
+    
+    .welcome-icon {
+      font-size: 48px;
+      margin-bottom: 20px;
+      color: var(--accent-color);
+    }
+    
+    @media (max-width: 480px) {
+      .welcome-icon {
+        font-size: 36px;
+        margin-bottom: 15px;
+      }
+    }
+    
+    .welcome-actions {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+    
+    @media (max-width: 480px) {
+      .welcome-actions {
+        flex-direction: column;
+        gap: 10px;
+      }
+    }
+    
+    .drag-area {
+      border: 2px dashed var(--border-color);
+      border-radius: 4px;
+      padding: 35px;
+      text-align: center;
+      margin-bottom: 30px;
+      transition: border-color 0.3s, background-color 0.3s;
+      cursor: pointer;
+    }
+    
+    @media (max-width: 480px) {
+      .drag-area {
+        padding: 20px 15px;
+      }
+    }
+    
+    .drag-area.active {
+      border-color: var(--accent-color);
+      background-color: rgba(46, 204, 113, 0.05);
+    }
+    
+    .drag-area .icon {
+      font-size: 36px;
+      margin-bottom: 15px;
+      color: var(--border-color);
+    }
+    
+    @media (max-width: 480px) {
+      .drag-area .icon {
+        font-size: 28px;
+        margin-bottom: 10px;
+      }
+    }
+    
+    .drag-area h3 {
+      margin: 0;
+      margin-bottom: 8px;
+      font-size: 18px;
+    }
+    
+    .drag-area p {
+      margin: 0;
+      opacity: 0.7;
+      font-size: 14px;
+    }
+    
+    .hidden-input {
+      display: none;
+    }
+    
+    .question-type {
+      margin-left: 5px;
+      font-size: 12px;
+      background-color: var(--input-bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: normal;
+      opacity: 0.8;
+    }
+    
+    @media (max-width: 480px) {
+      .question-type {
+        display: block;
+        margin-left: 0;
+        margin-top: 5px;
+        font-size: 11px;
+        display: inline-block;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="contentArea">
+      <!-- Initial welcome screen - will be replaced with survey when JSON is loaded -->
+      <div class="welcome-screen" id="welcomeScreen">
+        <div class="welcome-icon">📋</div>
+        <h2>Welcome to the Survey</h2>
+        <p>Please provide a JSON file to generate your survey.</p>
+        
+        <div class="drag-area" id="dragArea">
+          <div class="icon">📄</div>
+          <h3>Drag & Drop JSON File Here</h3>
+          <p id="fileStatus">or click to browse files</p>
+          <input type="file" id="jsonFileInput" class="hidden-input" accept=".json">
+        </div>
+        
+        <div id="errorContainer" class="error-message" style="display: none;">
+          <strong>JSON Error:</strong> <span id="errorMessage"></span>
+          <pre id="errorDetails"></pre>
+        </div>
+        
+        <div class="welcome-actions">
+          <button id="generateSurveyButton">Generate Survey</button>
+        </div>
+      </div>
+      
+      <!-- This will be shown after JSON is loaded -->
+      <div id="surveyArea" style="display: none;">
+        <div class="survey-container" id="surveyContainer">
+          <!-- Survey will be rendered here -->
+        </div>
+        
+        <div class="editor-buttons" style="margin-top: 20px;">
+          <button id="exportResultsButton">Export Results</button>
+          <button id="resetButton" class="gray-button">Reset Answers</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Current survey state
+    let currentSurveyJson = null;
+    let surveyResults = {};
+    let loadedJsonString = '';
+    
+    // Function to render the survey from JSON
+    function renderSurvey(surveyJson) {
+      const surveyContainer = document.getElementById('surveyContainer');
+      surveyContainer.innerHTML = '';
+      
+      // Create survey header
+      const header = document.createElement('div');
+      header.className = 'survey-header';
+      
+      const title = document.createElement('h2');
+      title.className = 'survey-title';
+      title.textContent = surveyJson.title;
+      header.appendChild(title);
+      
+      const description = document.createElement('div');
+      description.className = 'survey-description';
+      description.textContent = surveyJson.description;
+      header.appendChild(description);
+      
+      surveyContainer.appendChild(header);
+      
+      // Create form
+      const form = document.createElement('form');
+      form.className = 'survey-form';
+      form.id = 'surveyForm';
+      
+      // Create sections and questions
+      surveyJson.sections.forEach(section => {
+        const sectionElement = document.createElement('div');
+        sectionElement.className = 'section';
+        sectionElement.id = section.id;
+        
+        const sectionTitle = document.createElement('div');
+        sectionTitle.className = 'section-title';
+        sectionTitle.textContent = section.title;
+        sectionElement.appendChild(sectionTitle);
+        
+        section.questions.forEach(question => {
+          const questionElement = document.createElement('div');
+          questionElement.className = 'question';
+          questionElement.id = question.id;
+          
+          // Add question text if available
+          if (question.text) {
+            const questionText = document.createElement('div');
+            questionText.className = 'question-text';
+            questionText.textContent = question.text;
+            
+            // Add question type indicator
+            const questionType = document.createElement('span');
+            questionType.className = 'question-type';
+            
+            if (question.type === 'choice') {
+              if (question.selectionType === 'multiple') {
+                questionType.textContent = '[Multiple Choice]';
+              } else {
+                questionType.textContent = '[Single Choice]';
+              }
+            } else if (question.type === 'text') {
+              if (question.inputType === 'short') {
+                questionType.textContent = '[Short Text]';
+              } else {
+                questionType.textContent = '[Long Text]';
+              }
+            }
+            
+            questionText.appendChild(questionType);
+            questionElement.appendChild(questionText);
+          }
+          
+          // Initialize the results for this question
+          if (question.type === 'choice' && question.selectionType === 'multiple') {
+            surveyResults[question.id] = [];
+          } else {
+            surveyResults[question.id] = '';
+          }
+          
+          // Render different question types
+          if (question.type === 'choice') {
+            const options = document.createElement('div');
+            options.className = 'options';
+            
+            question.options.forEach(option => {
+              const inputType = question.selectionType === 'multiple' ? 'checkbox' : 'radio';
+              const containerClass = inputType === 'checkbox' ? 'checkbox-container' : 'radio-container';
+              const markClass = inputType === 'checkbox' ? 'checkmark' : 'radiomark';
+              
+              const optionContainer = document.createElement('label');
+              optionContainer.className = containerClass;
+              optionContainer.textContent = option.text;
+              
+              const input = document.createElement('input');
+              input.type = inputType;
+              input.name = question.id;
+              input.value = option.id;
+              input.id = option.id;
+              
+              // Add event listener to update results
+              input.addEventListener('change', function() {
+                if (inputType === 'checkbox') {
+                  // For checkbox, maintain an array of selected options
+                  if (this.checked) {
+                    if (!surveyResults[question.id].includes(option.id)) {
+                      surveyResults[question.id].push(option.id);
+                    }
+                  } else {
+                    surveyResults[question.id] = surveyResults[question.id].filter(id => id !== option.id);
+                  }
+                } else {
+                  // For radio, just set the value
+                  surveyResults[question.id] = option.id;
+                }
+                console.log('Updated results:', surveyResults);
+              });
+              
+              optionContainer.appendChild(input);
+              
+              const mark = document.createElement('span');
+              mark.className = markClass;
+              optionContainer.appendChild(mark);
+              
+              options.appendChild(optionContainer);
+            });
+            
+            questionElement.appendChild(options);
+            
+          } else if (question.type === 'text') {
+            // Text input field
+            if (question.inputType === 'short') {
+              const input = document.createElement('input');
+              input.type = 'text';
+              input.className = 'text-input';
+              input.id = question.id + '_input';
+              input.name = question.id;
+              
+              if (question.placeholder) {
+                input.placeholder = question.placeholder;
+              }
+              
+              input.addEventListener('input', function() {
+                surveyResults[question.id] = this.value;
+                console.log('Updated results:', surveyResults);
+              });
+              
+              questionElement.appendChild(input);
+              
+            } else if (question.inputType === 'long') {
+              // Textarea for long text
+              const textarea = document.createElement('textarea');
+              textarea.className = 'textarea-input';
+              textarea.id = question.id + '_input';
+              textarea.name = question.id;
+              
+              if (question.placeholder) {
+                textarea.placeholder = question.placeholder;
+              }
+              
+              textarea.addEventListener('input', function() {
+                surveyResults[question.id] = this.value;
+                console.log('Updated results:', surveyResults);
+              });
+              
+              questionElement.appendChild(textarea);
+            }
+          }
+          
+          sectionElement.appendChild(questionElement);
+        });
+        
+        form.appendChild(sectionElement);
+      });
+      
+      // Add submit button
+      const buttonContainer = document.createElement('div');
+      buttonContainer.className = 'button-container';
+      
+      const submitButton = document.createElement('button');
+      submitButton.type = 'button';
+      submitButton.textContent = surveyJson.submitButtonText || 'Submit';
+      submitButton.id = 'submitButton';
+      
+      submitButton.addEventListener('click', function() {
+        // Handle form submission
+        console.log('Survey submitted with results:', surveyResults);
+        alert('Survey submitted successfully');
+      });
+      
+      buttonContainer.appendChild(submitButton);
+      form.appendChild(buttonContainer);
+      
+      surveyContainer.appendChild(form);
+    }
+    
+    // Function to validate JSON structure
+    function validateSurveyJson(jsonObject) {
+      // Check basic structure
+      if (!jsonObject.title) {
+        throw new Error("Missing 'title' property in survey JSON");
+      }
+      
+      if (!jsonObject.sections || !Array.isArray(jsonObject.sections) || jsonObject.sections.length === 0) {
+        throw new Error("Survey must have at least one section in 'sections' array");
+      }
+      
+      // Validate each section
+      jsonObject.sections.forEach((section, sectionIndex) => {
+        if (!section.id) {
+          throw new Error(`Section at index ${sectionIndex} is missing 'id' property`);
+        }
+        
+        if (!section.title) {
+          throw new Error(`Section '${section.id}' is missing 'title' property`);
+        }
+        
+        if (!section.questions || !Array.isArray(section.questions) || section.questions.length === 0) {
+          throw new Error(`Section '${section.id}' must have at least one question in 'questions' array`);
+        }
+        
+        // Validate each question
+        section.questions.forEach((question, questionIndex) => {
+          if (!question.id) {
+            throw new Error(`Question at index ${questionIndex} in section '${section.id}' is missing 'id' property`);
+          }
+          
+          if (!question.type) {
+            throw new Error(`Question '${question.id}' is missing 'type' property`);
+          }
+          
+          if (!['choice', 'text'].includes(question.type)) {
+            throw new Error(`Question '${question.id}' has invalid 'type'. Must be 'choice' or 'text'`);
+          }
+          
+          if (question.type === 'choice') {
+            if (!question.selectionType) {
+              throw new Error(`Choice question '${question.id}' is missing 'selectionType' property`);
+            }
+            
+            if (!['single', 'multiple'].includes(question.selectionType)) {
+              throw new Error(`Choice question '${question.id}' has invalid 'selectionType'. Must be 'single' or 'multiple'`);
+            }
+            
+            if (!question.options || !Array.isArray(question.options) || question.options.length === 0) {
+              throw new Error(`Choice question '${question.id}' must have at least one option in 'options' array`);
+            }
+            
+            // Validate options
+            question.options.forEach((option, optionIndex) => {
+              if (!option.id) {
+                throw new Error(`Option at index ${optionIndex} in question '${question.id}' is missing 'id' property`);
+              }
+              
+              if (!option.text && option.text !== '') {
+                throw new Error(`Option '${option.id}' in question '${question.id}' is missing 'text' property`);
+              }
+            });
+          } else if (question.type === 'text') {
+            if (!question.inputType) {
+              throw new Error(`Text question '${question.id}' is missing 'inputType' property`);
+            }
+            
+            if (!['short', 'long'].includes(question.inputType)) {
+              throw new Error(`Text question '${question.id}' has invalid 'inputType'. Must be 'short' or 'long'`);
+            }
+          }
+        });
+      });
+      
+      // If we got here, validation passed
+      return true;
+    }
+    
+    // Function to create survey from JSON
+    function createSurvey(jsonString) {
+      try {
+        // Hide any previous error
+        document.getElementById('errorContainer').style.display = 'none';
+        
+        // Parse JSON
+        const surveyJson = JSON.parse(jsonString);
+        
+        // Validate the JSON structure
+        validateSurveyJson(surveyJson);
+        
+        // Hide welcome screen and show survey
+        document.getElementById('welcomeScreen').style.display = 'none';
+        document.getElementById('surveyArea').style.display = 'block';
+        
+        // Reset results
+        surveyResults = {};
+        
+        // Store current JSON
+        currentSurveyJson = surveyJson;
+        
+        // Render the survey
+        renderSurvey(surveyJson);
+      } catch (e) {
+        console.error('Error creating survey:', e);
+        
+        // Show error message
+        const errorContainer = document.getElementById('errorContainer');
+        const errorMessage = document.getElementById('errorMessage');
+        const errorDetails = document.getElementById('errorDetails');
+        
+        errorMessage.textContent = e.message;
+        
+        // For JSON parse errors, add a snippet of the problematic JSON
+        if (e instanceof SyntaxError) {
+          const position = parseInt(e.message.match(/position (\d+)/)?.[1]);
+          if (!isNaN(position)) {
+            const start = Math.max(0, position - 30);
+            const end = Math.min(jsonString.length, position + 30);
+            const snippet = jsonString.substring(start, end);
+            const formattedSnippet = snippet.replace(/[^\n]{1,30}/g, '$&\n');
+            
+            errorDetails.textContent = `Error near: ...\n${formattedSnippet}\n...`;
+          } else {
+            errorDetails.textContent = 'Please check your JSON syntax.';
+          }
+        } else {
+          // For validation errors, show the field that's causing problems
+          errorDetails.textContent = e.message;
+        }
+        
+        errorContainer.style.display = 'block';
+      }
+    }
+    
+    // Function to read JSON file
+    function readJsonFile(file) {
+      const reader = new FileReader();
+      
+      reader.onload = function(e) {
+        loadedJsonString = e.target.result;
+        document.getElementById('fileStatus').textContent = `File loaded: ${file.name}`;
+        document.getElementById('fileStatus').style.color = 'var(--accent-color)';
+      };
+      
+      reader.readAsText(file);
+    }
+    
+    // Export results
+    function exportResults() {
+      const resultsJson = JSON.stringify(surveyResults, null, 2);
+      
+      // Create a blob and download link
+      const blob = new Blob([resultsJson], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'survey_results_' + new Date().toISOString().split('T')[0] + '.json';
+      document.body.appendChild(a);
+      a.click();
+      
+      // Clean up
+      setTimeout(function() {
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      }, 0);
+    }
+    
+    // Reset all answers but keep the survey
+    function resetAnswers() {
+      // Keep the current survey but reset all answers
+      surveyResults = {};
+      
+      // Re-render the survey with empty answers
+      renderSurvey(currentSurveyJson);
+      
+      console.log('Form reset. All answers cleared.');
+    }
+    
+    // Initialize drag and drop
+    function initDragAndDrop() {
+      const dragArea = document.getElementById('dragArea');
+      const fileInput = document.getElementById('jsonFileInput');
+      
+      // When file is over drag area
+      dragArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        this.classList.add('active');
+      });
+      
+      // When file leaves drag area
+      dragArea.addEventListener('dragleave', function() {
+        this.classList.remove('active');
+      });
+      
+      // When file is dropped
+      dragArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.classList.remove('active');
+        
+        const file = e.dataTransfer.files[0];
+        if (file) {
+          if (file.type === 'application/json' || file.name.endsWith('.json')) {
+            readJsonFile(file);
+          } else {
+            alert('Please drop a valid JSON file.');
+          }
+        }
+      });
+      
+      // Click to browse files
+      dragArea.addEventListener('click', function() {
+        fileInput.click();
+      });
+      
+      // File input change
+      fileInput.addEventListener('change', function(e) {
+        if (this.files && this.files[0]) {
+          readJsonFile(this.files[0]);
+          // Show the file name
+          dragArea.querySelector('p').textContent = 'Selected file: ' + this.files[0].name;
+        }
+      });
+    }
+    
+    // Initialize the app
+    document.addEventListener('DOMContentLoaded', function() {
+      // Initialize drag and drop
+      initDragAndDrop();
+      
+      // Generate Survey button
+      document.getElementById('generateSurveyButton').addEventListener('click', function() {
+        if (loadedJsonString) {
+          createSurvey(loadedJsonString);
+        } else {
+          alert('Please upload a JSON file first.');
+        }
+      });
+      
+      // Reset button - resets answers only
+      document.getElementById('resetButton').addEventListener('click', function() {
+        if (confirm('Are you sure you want to reset all answers? This will clear all your responses.')) {
+          resetAnswers();
+        }
+      });
+      
+      // Export results button
+      document.getElementById('exportResultsButton').addEventListener('click', function() {
+        exportResults();
+      });
+    });
+  </script>
+</body>
+</html>
