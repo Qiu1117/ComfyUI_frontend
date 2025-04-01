@@ -9,17 +9,17 @@
       --background-color: #191b2a;
       --card-background: #1e2030;
       --text-color: #e0e0e0;
-      --accent-color: #2ecc71;
-      --secondary-accent: #3498db;
+      --accent-color: #00a8ff; /* 替换为蓝色 */
+      --secondary-accent: #00a8ff; /* 替换为蓝色 */
       --border-color: #3e4059;
       --hover-color: #3e4059;
       --section-title-color: #e0e0e0;
       --checkbox-border: #3e4059;
-      --checkbox-checked-bg: #2ecc71;
-      --button-bg: #2ecc71;
-      --button-hover-bg: #27ae60;
+      --checkbox-checked-bg: #00a8ff; /* 替换为蓝色 */
+      --button-bg: #00a8ff; /* 替换为蓝色 */
+      --button-hover-bg: #0089d1; /* 替换为深蓝色 */
       --input-bg: #2c2e3e;
-      --input-focus-border: #3498db;
+      --input-focus-border: #00a8ff; /* 替换为蓝色 */
       --placeholder-color: #7f8c8d;
       --error-color: #e74c3c;
       --header-color: #2c2e3e;
@@ -197,7 +197,7 @@
     }
     
     .btn-secondary:hover {
-      background-color: #2980b9;
+      background-color: var(--button-hover-bg);
     }
     
     .btn-danger {
@@ -215,7 +215,7 @@
     }
     
     .btn-outline:hover {
-      background-color: rgba(46, 204, 113, 0.1);
+      background-color: rgba(0, 168, 255, 0.1);
     }
     
     .action-buttons {
@@ -392,7 +392,7 @@
     
     .drag-area.active {
       border-color: var(--accent-color);
-      background-color: rgba(46, 204, 113, 0.05);
+      background-color: rgba(0, 168, 255, 0.05);
     }
     
     .drag-area .icon {
@@ -609,6 +609,49 @@
       flex-wrap: wrap;
     }
     
+    /* 自定义弹窗样式 */
+    .custom-dialog {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 300px;
+      background: var(--card-background);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 20px;
+      z-index: 2000;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    }
+    
+    .dialog-title {
+      font-size: 18px;
+      margin-top: 0;
+      margin-bottom: 15px;
+      color: var(--text-color);
+    }
+    
+    .dialog-content {
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+    
+    .dialog-buttons {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    
+    .dialog-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 1999;
+    }
+    
     @media (max-width: 768px) {
       .action-buttons, .add-question-menu, .option-buttons {
         flex-direction: column;
@@ -632,6 +675,11 @@
         font-size: 28px;
         margin-bottom: 10px;
       }
+      
+      .custom-dialog {
+        width: 90%;
+        max-width: 300px;
+      }
     }
     
     .hidden {
@@ -649,7 +697,7 @@
         <p>Choose an option to get started:</p>
         
         <div class="option-buttons">
-          <button id="importJsonButton" class="btn btn-secondary">Import JSON</button>
+          <button id="importJsonButton" class="btn">Import JSON</button>
           <button id="createSurveyButton" class="btn">Create Survey</button>
         </div>
       </div>
@@ -727,7 +775,7 @@
         <div class="action-buttons">
           <button id="backToModeSelectionFromBuilder" class="btn btn-outline">Back</button>
           <button id="export-json-btn" class="btn">Export JSON</button>
-          <button id="confirm-survey-btn" class="btn btn-secondary">Confirm</button>
+          <button id="confirm-survey-btn" class="btn">Confirm</button>
         </div>
         <div class="action-buttons">
           <button id="clear-all-btn" class="btn btn-danger">Reset All</button>
@@ -744,7 +792,26 @@
       <div class="button-container">
         <button id="backToBuilderFromDisplay" class="btn btn-outline">Back to Editor</button>
         <button id="exportResultsButton" class="btn">Export Results</button>
-        <button id="resetButton" class="btn gray-button">Reset Answers</button>
+        <button id="resetButton" class="btn btn-danger">Reset Answers</button>
+      </div>
+    </div>
+    
+    <!-- Custom Dialog Templates -->
+    <div id="customDialog" class="custom-dialog hidden">
+      <h3 class="dialog-title" id="dialogTitle">Confirm</h3>
+      <div class="dialog-content" id="dialogContent">Are you sure?</div>
+      <div class="dialog-buttons">
+        <button id="dialogCancelBtn" class="btn btn-outline">Cancel</button>
+        <button id="dialogConfirmBtn" class="btn">Confirm</button>
+      </div>
+    </div>
+    <div id="dialogBackdrop" class="dialog-backdrop hidden"></div>
+    
+    <div id="alertDialog" class="custom-dialog hidden">
+      <h3 class="dialog-title" id="alertTitle">Alert</h3>
+      <div class="dialog-content" id="alertContent">Message</div>
+      <div class="dialog-buttons">
+        <button id="alertOkBtn" class="btn">OK</button>
       </div>
     </div>
   </div>
@@ -777,6 +844,64 @@
       submitButtonText: "Submit"
     };
     
+    // Custom dialog functions
+    function showConfirmDialog(title, message, onConfirm) {
+      const dialog = document.getElementById('customDialog');
+      const backdrop = document.getElementById('dialogBackdrop');
+      const titleEl = document.getElementById('dialogTitle');
+      const contentEl = document.getElementById('dialogContent');
+      const confirmBtn = document.getElementById('dialogConfirmBtn');
+      const cancelBtn = document.getElementById('dialogCancelBtn');
+      
+      titleEl.textContent = title;
+      contentEl.textContent = message;
+      
+      // Set up buttons
+      const confirmHandler = function() {
+        onConfirm();
+        dialog.classList.add('hidden');
+        backdrop.classList.add('hidden');
+        confirmBtn.removeEventListener('click', confirmHandler);
+      };
+      
+      confirmBtn.addEventListener('click', confirmHandler);
+      
+      cancelBtn.addEventListener('click', function() {
+        dialog.classList.add('hidden');
+        backdrop.classList.add('hidden');
+        confirmBtn.removeEventListener('click', confirmHandler);
+      });
+      
+      // Show dialog
+      dialog.classList.remove('hidden');
+      backdrop.classList.remove('hidden');
+    }
+    
+    function showAlertDialog(title, message, onOk) {
+      const dialog = document.getElementById('alertDialog');
+      const backdrop = document.getElementById('dialogBackdrop');
+      const titleEl = document.getElementById('alertTitle');
+      const contentEl = document.getElementById('alertContent');
+      const okBtn = document.getElementById('alertOkBtn');
+      
+      titleEl.textContent = title;
+      contentEl.textContent = message;
+      
+      // Set up button
+      const okHandler = function() {
+        if (onOk) onOk();
+        dialog.classList.add('hidden');
+        backdrop.classList.add('hidden');
+        okBtn.removeEventListener('click', okHandler);
+      };
+      
+      okBtn.addEventListener('click', okHandler);
+      
+      // Show dialog
+      dialog.classList.remove('hidden');
+      backdrop.classList.remove('hidden');
+    }
+    
     // Navigation functions
     function showScreen(screenId) {
       document.getElementById('modeSelectionScreen').classList.add('hidden');
@@ -804,12 +929,19 @@
       });
       
       document.getElementById('backToModeSelectionFromBuilder').addEventListener('click', function() {
-        if (confirm('Go back to main menu? Your changes will not be saved.')) {
-          showScreen('modeSelectionScreen');
-        }
+        showConfirmDialog(
+          "Confirm",
+          "Go back to main menu? Your changes will not be saved.",
+          function() {
+            showScreen('modeSelectionScreen');
+          }
+        );
       });
       
       document.getElementById('backToBuilderFromDisplay').addEventListener('click', function() {
+        // 把当前问卷内容加载到编辑器
+        loadSurveyToEditor(currentSurveyJson);
+        // 显示编辑器
         showScreen('surveyBuilderScreen');
       });
       
@@ -821,7 +953,7 @@
         if (loadedJsonString) {
           createSurveyFromJson(loadedJsonString);
         } else {
-          alert('Please upload a JSON file first.');
+          showAlertDialog("Warning", "Please upload a JSON file first.");
         }
       });
       
@@ -868,11 +1000,115 @@
       // Survey display screen buttons
       document.getElementById('exportResultsButton').addEventListener('click', exportResults);
       document.getElementById('resetButton').addEventListener('click', function() {
-        if (confirm('Are you sure you want to reset all answers? This will clear all your responses.')) {
-          resetAnswers();
-        }
+        showConfirmDialog(
+          "Reset Answers",
+          "Are you sure you want to reset all answers? This will clear all your responses.",
+          resetAnswers
+        );
       });
     });
+    
+    // 将问卷加载到编辑器中
+    function loadSurveyToEditor(surveyJson) {
+      if (!surveyJson) return;
+      
+      console.log("Loading survey to editor:", surveyJson);
+      
+      // 清空现有编辑器内容
+      clearEditorContent();
+      
+      // 设置基本信息
+      document.getElementById('survey-title').value = surveyJson.title || "";
+      document.getElementById('survey-description').value = surveyJson.description || "";
+      document.getElementById('submit-button-text').value = surveyJson.submitButtonText || "Submit";
+      
+      // 使用第一个section的标题，或默认标题
+      if (surveyJson.sections && surveyJson.sections.length > 0) {
+        document.getElementById('section-title').value = surveyJson.sections[0].title || "Questions";
+      } else {
+        document.getElementById('section-title').value = "Questions";
+      }
+      
+      // 复制基本信息到surveyData
+      surveyData.title = surveyJson.title || "";
+      surveyData.description = surveyJson.description || "";
+      surveyData.submitButtonText = surveyJson.submitButtonText || "Submit";
+      surveyData.sections[0].title = document.getElementById('section-title').value;
+      surveyData.sections[0].questions = [];
+      
+      // 从所有section收集问题
+      let allQuestions = [];
+      if (surveyJson.sections && surveyJson.sections.length > 0) {
+        // 收集所有section中的问题
+        surveyJson.sections.forEach((section, sectionIndex) => {
+          console.log(`Processing section ${sectionIndex+1}/${surveyJson.sections.length}: ${section.id} - ${section.title}`);
+          
+          if (section.questions && section.questions.length > 0) {
+            console.log(`Found ${section.questions.length} questions in section ${section.id}`);
+            // 将此section的问题添加到总问题列表
+            allQuestions = allQuestions.concat(section.questions);
+          }
+        });
+        
+        console.log(`Total questions collected from all sections: ${allQuestions.length}`);
+        
+        // 现在处理所有收集到的问题
+        allQuestions.forEach((question, index) => {
+          console.log(`Processing question ${index+1}/${allQuestions.length}: ${question.id} - ${question.text}`);
+          
+          // 创建新的问题数据（避免引用原始对象）
+          const questionData = {
+            id: question.id || generateId('q'),
+            type: question.type,
+            text: question.text || ""
+          };
+          
+          if (question.type === 'choice') {
+            questionData.selectionType = question.selectionType;
+            questionData.options = [];
+            
+            if (question.options && question.options.length > 0) {
+              console.log(`Question ${question.id} has ${question.options.length} options`);
+              
+              question.options.forEach((option, optIndex) => {
+                console.log(`Adding option ${optIndex+1}: ${option.id} - ${option.text}`);
+                questionData.options.push({
+                  id: option.id || generateId('opt'),
+                  text: option.text || ""
+                });
+              });
+            }
+          } else if (question.type === 'text') {
+            questionData.inputType = question.inputType;
+            questionData.placeholder = question.placeholder || "";
+          }
+          
+          // 添加到数据模型
+          surveyData.sections[0].questions.push(questionData);
+          
+          // 在界面上创建问题
+          addQuestionToUI(questionData);
+        });
+        
+        // 检查是否成功加载所有问题
+        console.log(`Successfully loaded ${surveyData.sections[0].questions.length} questions into editor`);
+      }
+    }
+
+    // 清空编辑器内容
+    function clearEditorContent() {
+      document.getElementById('survey-title').value = "";
+      document.getElementById('survey-description').value = "";
+      document.getElementById('submit-button-text').value = "Submit";
+      document.getElementById('section-title').value = "Questions";
+      document.getElementById('questions-container').innerHTML = "";
+      
+      surveyData.title = "";
+      surveyData.description = "";
+      surveyData.submitButtonText = "Submit";
+      surveyData.sections[0].title = "Questions";
+      surveyData.sections[0].questions = [];
+    }
     
     // Function to add a new question
     function addQuestion(type, subtype) {
@@ -900,18 +1136,23 @@
       // Add to survey data
       surveyData.sections[0].questions.push(questionData);
       
-      // Create question HTML
+      // 创建问题UI
+      addQuestionToUI(questionData);
+    }
+    
+    // 从问题数据创建界面元素
+    function addQuestionToUI(questionData) {
       const questionsContainer = document.getElementById('questions-container');
       const questionElement = document.createElement('div');
       questionElement.className = 'question-card';
-      questionElement.dataset.questionId = questionId;
+      questionElement.dataset.questionId = questionData.id;
       
       // Question header with type indicator
       let typeLabel = '';
-      if (type === 'choice') {
-        typeLabel = subtype === 'single' ? 'Single Choice' : 'Multiple Choice';
+      if (questionData.type === 'choice') {
+        typeLabel = questionData.selectionType === 'single' ? 'Single Choice' : 'Multiple Choice';
       } else {
-        typeLabel = subtype === 'short' ? 'Short Text' : 'Long Text';
+        typeLabel = questionData.inputType === 'short' ? 'Short Text' : 'Long Text';
       }
       
       let questionHTML = `
@@ -919,28 +1160,28 @@
           <div>
             <span class="question-type">${typeLabel}</span>
           </div>
-          <span class="delete-button question-delete" data-question-id="${questionId}">&times;</span>
+          <span class="delete-button question-delete" data-question-id="${questionData.id}">&times;</span>
         </div>
         <div class="form-group">
           <input type="text" class="form-control question-text" placeholder="Enter question text"
-            data-question-id="${questionId}">
+            data-question-id="${questionData.id}" value="${questionData.text || ''}">
         </div>
       `;
       
       // Add type-specific HTML
-      if (type === 'choice') {
+      if (questionData.type === 'choice') {
         questionHTML += `
-          <div class="options-container" data-question-id="${questionId}">
+          <div class="options-container" data-question-id="${questionData.id}">
             <!-- Options will be added here -->
           </div>
-          <button class="btn btn-small add-option-btn" data-question-id="${questionId}">+ Add Option</button>
+          <button class="btn btn-small add-option-btn" data-question-id="${questionData.id}">+ Add Option</button>
         `;
-      } else if (type === 'text') {
+      } else if (questionData.type === 'text') {
         questionHTML += `
           <div class="form-group">
-            <label for="placeholder-${questionId}">Placeholder Text:</label>
-            <input type="text" id="placeholder-${questionId}" class="form-control placeholder-text"
-              placeholder="Enter placeholder text" data-question-id="${questionId}">
+            <label for="placeholder-${questionData.id}">Placeholder Text:</label>
+            <input type="text" id="placeholder-${questionData.id}" class="form-control placeholder-text"
+              placeholder="Enter placeholder text" data-question-id="${questionData.id}" value="${questionData.placeholder || ''}">
           </div>
         `;
       }
@@ -949,27 +1190,27 @@
       questionsContainer.appendChild(questionElement);
       
       // Add options if this is a choice question
-      if (type === 'choice') {
-        const optionsContainer = questionElement.querySelector(`.options-container[data-question-id="${questionId}"]`);
+      if (questionData.type === 'choice' && questionData.options) {
+        const optionsContainer = questionElement.querySelector(`.options-container[data-question-id="${questionData.id}"]`);
         
         // Add initial options
         questionData.options.forEach(option => {
-          addOptionToQuestion(questionId, optionsContainer, option);
+          addOptionToQuestion(questionData.id, optionsContainer, option);
         });
         
         // Add option button listener
         questionElement.querySelector('.add-option-btn').addEventListener('click', function() {
           const questionId = this.dataset.questionId;
-          const questionIndex = surveyData.sections[0].questions.findIndex(q => q.id === questionId);
+          const question = findQuestionById(questionId);
           
-          if (questionIndex === -1) return;
+          if (!question) return;
           
           const newOption = {
             id: generateId('opt'),
-            text: `Option ${surveyData.sections[0].questions[questionIndex].options.length + 1}`
+            text: `Option ${question.options.length + 1}`
           };
           
-          surveyData.sections[0].questions[questionIndex].options.push(newOption);
+          question.options.push(newOption);
           
           const optionsContainer = document.querySelector(`.options-container[data-question-id="${questionId}"]`);
           addOptionToQuestion(questionId, optionsContainer, newOption);
@@ -986,7 +1227,7 @@
       });
       
       // Add placeholder text change listener for text questions
-      if (type === 'text') {
+      if (questionData.type === 'text') {
         questionElement.querySelector('.placeholder-text').addEventListener('input', function() {
           const questionId = this.dataset.questionId;
           const question = findQuestionById(questionId);
@@ -999,9 +1240,13 @@
       // Add question delete listener
       questionElement.querySelector('.question-delete').addEventListener('click', function() {
         const questionId = this.dataset.questionId;
-        if (confirm('Are you sure you want to delete this question?')) {
-          deleteQuestion(questionId);
-        }
+        showConfirmDialog(
+          "Delete Question",
+          "Are you sure you want to delete this question?",
+          function() {
+            deleteQuestion(questionId);
+          }
+        );
       });
     }
     
@@ -1012,7 +1257,7 @@
       optionElement.dataset.optionId = option.id;
       
       optionElement.innerHTML = `
-        <input type="text" class="form-control option-text" value="${option.text}"
+        <input type="text" class="form-control option-text" value="${option.text || ''}"
           placeholder="Option text" data-question-id="${questionId}" data-option-id="${option.id}">
         <span class="delete-button option-delete" data-question-id="${questionId}" data-option-id="${option.id}">&times;</span>
       `;
@@ -1042,7 +1287,7 @@
         if (question && question.options) {
           // Need at least 1 option
           if (question.options.length <= 1) {
-            alert('Choice questions must have at least one option');
+            showAlertDialog("Warning", "Choice questions must have at least one option");
             return;
           }
           
@@ -1108,22 +1353,13 @@
     
     // Clear all and start over
     function clearAll() {
-      if (confirm('Are you sure you want to clear all content and start over?')) {
-        // Reset survey data
-        surveyData.title = "";
-        surveyData.description = "";
-        surveyData.sections[0].questions = [];
-        surveyData.submitButtonText = "Submit";
-        
-        // Reset form inputs
-        document.getElementById('survey-title').value = "";
-        document.getElementById('survey-description').value = "";
-        document.getElementById('submit-button-text').value = "Submit";
-        document.getElementById('section-title').value = "Questions";
-        
-        // Clear questions container
-        document.getElementById('questions-container').innerHTML = "";
-      }
+      showConfirmDialog(
+        "Reset All",
+        "Are you sure you want to clear all content and start over?",
+        function() {
+          clearEditorContent();
+        }
+      );
     }
     
     // Confirm Survey (create survey view)
@@ -1131,7 +1367,7 @@
       updateSurveyData();
       
       if (surveyData.sections[0].questions.length === 0) {
-        alert('Please add at least one question to your survey.');
+        showAlertDialog("Warning", "Please add at least one question to your survey.");
         return;
       }
       
@@ -1174,7 +1410,7 @@
           if (file.type === 'application/json' || file.name.endsWith('.json')) {
             readJsonFile(file);
           } else {
-            alert('Please drop a valid JSON file.');
+            showAlertDialog("Error", "Please drop a valid JSON file.");
           }
         }
       });
@@ -1520,11 +1756,12 @@
       submitButton.type = 'button';
       submitButton.textContent = surveyJson.submitButtonText || 'Submit';
       submitButton.id = 'submitButton';
+      submitButton.className = 'btn';
       
       submitButton.addEventListener('click', function() {
         // Handle form submission
         console.log('Survey submitted with results:', surveyResults);
-        alert('Survey submitted successfully');
+        showAlertDialog("Success", "Survey submitted successfully");
       });
       
       buttonContainer.appendChild(submitButton);
@@ -1547,7 +1784,6 @@
       document.body.appendChild(a);
       a.click();
       
-      // Clean up
       setTimeout(function() {
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
