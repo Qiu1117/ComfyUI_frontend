@@ -1,0 +1,1569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Survey Builder</title>
+  <style>
+    :root {
+      --background-color: #191b2a;
+      --card-background: #1e2030;
+      --text-color: #e0e0e0;
+      --accent-color: #2ecc71;
+      --secondary-accent: #3498db;
+      --border-color: #3e4059;
+      --hover-color: #3e4059;
+      --section-title-color: #e0e0e0;
+      --checkbox-border: #3e4059;
+      --checkbox-checked-bg: #2ecc71;
+      --button-bg: #2ecc71;
+      --button-hover-bg: #27ae60;
+      --input-bg: #2c2e3e;
+      --input-focus-border: #3498db;
+      --placeholder-color: #7f8c8d;
+      --error-color: #e74c3c;
+      --header-color: #2c2e3e;
+      --delete-color: #e74c3c;
+      --drag-handle-color: #7f8c8d;
+    }
+    
+    body {
+      font-family: Arial, sans-serif;
+      background-color: var(--background-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+    
+    .container {
+      max-width: 800px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 0 15px;
+      box-sizing: border-box;
+    }
+    
+    .builder-header {
+      background-color: var(--header-color);
+      color: var(--text-color);
+      padding: 15px 20px;
+      border-radius: 8px 8px 0 0;
+      margin-bottom: 20px;
+      border: 1px solid var(--border-color);
+    }
+    
+    .builder-header h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+    
+    .builder-header p {
+      margin: 5px 0 0;
+      opacity: 0.9;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-control {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background-color: var(--input-bg);
+      color: var(--text-color);
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    
+    .form-control:focus {
+      outline: none;
+      border-color: var(--input-focus-border);
+    }
+    
+    .form-control::placeholder {
+      color: var(--placeholder-color);
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+      color: var(--section-title-color);
+    }
+    
+    .survey-info {
+      background-color: var(--card-background);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .section-container {
+      margin-bottom: 30px;
+    }
+    
+    .section-card {
+      background-color: var(--card-background);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      position: relative;
+    }
+    
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    
+    .section-title {
+      font-weight: bold;
+      font-size: 18px;
+      flex-grow: 1;
+    }
+    
+    .question-card {
+      background-color: var(--hover-color);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 15px;
+      position: relative;
+    }
+    
+    .question-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    
+    .question-type {
+      display: inline-block;
+      padding: 3px 8px;
+      background-color: var(--accent-color);
+      color: white;
+      border-radius: 4px;
+      font-size: 12px;
+      margin-right: 8px;
+    }
+    
+    .options-container {
+      margin-top: 15px;
+    }
+    
+    .option-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    
+    .option-item input {
+      flex-grow: 1;
+      margin-right: 10px;
+    }
+    
+    .btn {
+      padding: 8px 16px;
+      background-color: var(--button-bg);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    
+    .btn:hover {
+      background-color: var(--button-hover-bg);
+    }
+    
+    .btn-small {
+      padding: 5px 10px;
+      font-size: 12px;
+    }
+    
+    .btn-secondary {
+      background-color: var(--secondary-accent);
+    }
+    
+    .btn-secondary:hover {
+      background-color: #2980b9;
+    }
+    
+    .btn-danger {
+      background-color: var(--delete-color);
+    }
+    
+    .btn-danger:hover {
+      background-color: #c0392b;
+    }
+    
+    .btn-outline {
+      background-color: transparent;
+      color: var(--accent-color);
+      border: 1px solid var(--accent-color);
+    }
+    
+    .btn-outline:hover {
+      background-color: rgba(46, 204, 113, 0.1);
+    }
+    
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .action-group {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+    }
+    
+    .add-question-menu {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    
+    .delete-button {
+      color: var(--delete-color);
+      cursor: pointer;
+      font-size: 16px;
+      margin-left: 10px;
+    }
+    
+    .type-selector {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    
+    .type-option {
+      flex: 1;
+      padding: 10px;
+      text-align: center;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    
+    .type-option.active {
+      background-color: var(--accent-color);
+      color: white;
+      border-color: var(--accent-color);
+    }
+    
+    .preview-textarea {
+      width: 100%;
+      height: 200px;
+      font-family: monospace;
+      padding: 10px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      resize: vertical;
+      background-color: var(--input-bg);
+      color: var(--text-color);
+    }
+    
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .modal-content {
+      background-color: var(--card-background);
+      width: 80%;
+      max-width: 700px;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      max-height: 80vh;
+      overflow-y: auto;
+      color: var(--text-color);
+      border: 1px solid var(--border-color);
+    }
+    
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .modal-title {
+      font-size: 20px;
+      font-weight: bold;
+      margin: 0;
+    }
+    
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: var(--text-color);
+    }
+    
+    .button-block {
+      width: 100%;
+      margin-top: 10px;
+    }
+    
+    .footer-actions {
+      position: sticky;
+      bottom: 0;
+      background-color: var(--card-background);
+      padding: 15px 0;
+      margin-top: 30px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+    }
+    
+    textarea.form-control {
+      min-height: 80px;
+      resize: vertical;
+      background-color: var(--input-bg);
+      color: var(--text-color);
+    }
+    
+    .welcome-screen {
+      text-align: center;
+      padding: 40px 20px;
+      background-color: var(--card-background);
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .welcome-icon {
+      font-size: 48px;
+      margin-bottom: 20px;
+      color: var(--accent-color);
+    }
+    
+    .welcome-screen h2 {
+      margin-bottom: 20px;
+      color: var(--accent-color);
+    }
+    
+    .welcome-screen p {
+      margin-bottom: 30px;
+      line-height: 1.6;
+      opacity: 0.9;
+    }
+    
+    .option-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 30px;
+    }
+    
+    .drag-area {
+      border: 2px dashed var(--border-color);
+      border-radius: 4px;
+      padding: 35px;
+      text-align: center;
+      margin-bottom: 30px;
+      transition: border-color 0.3s, background-color 0.3s;
+      cursor: pointer;
+    }
+    
+    .drag-area.active {
+      border-color: var(--accent-color);
+      background-color: rgba(46, 204, 113, 0.05);
+    }
+    
+    .drag-area .icon {
+      font-size: 36px;
+      margin-bottom: 15px;
+      color: var(--border-color);
+    }
+    
+    .drag-area h3 {
+      margin: 0;
+      margin-bottom: 8px;
+      font-size: 18px;
+    }
+    
+    .drag-area p {
+      margin: 0;
+      opacity: 0.7;
+      font-size: 14px;
+    }
+    
+    .hidden-input {
+      display: none;
+    }
+    
+    .error-message {
+      color: var(--error-color);
+      background-color: rgba(231, 76, 60, 0.1);
+      border-left: 3px solid var(--error-color);
+      padding: 12px;
+      margin: 15px 0;
+      border-radius: 0 4px 4px 0;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+    
+    .error-message pre {
+      margin: 10px 0 0;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      font-family: monospace;
+      background-color: rgba(0, 0, 0, 0.1);
+      padding: 8px;
+      border-radius: 4px;
+    }
+    
+    .survey-header {
+      margin-bottom: 20px;
+    }
+    
+    .survey-title {
+      font-size: 1.5em;
+      margin-bottom: 5px;
+    }
+    
+    .survey-description {
+      opacity: 0.8;
+      margin-bottom: 20px;
+    }
+    
+    .survey-form {
+      background-color: var(--card-background);
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .section {
+      margin-bottom: 25px;
+    }
+    
+    .section-title {
+      font-size: 1.1em;
+      color: var(--section-title-color);
+      margin-bottom: 15px;
+      font-weight: bold;
+    }
+    
+    .question {
+      margin-bottom: 20px;
+    }
+    
+    .question-text {
+      margin-bottom: 10px;
+      font-weight: 500;
+    }
+    
+    .options {
+      margin-left: 10px;
+    }
+    
+    .checkbox-container, .radio-container {
+      display: block;
+      position: relative;
+      padding-left: 30px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      user-select: none;
+    }
+    
+    .checkbox-container input, .radio-container input {
+      position: absolute;
+      opacity: 0;
+      cursor: pointer;
+      height: 0;
+      width: 0;
+    }
+    
+    .checkmark, .radiomark {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 20px;
+      width: 20px;
+      background-color: transparent;
+      border: 2px solid var(--checkbox-border);
+    }
+    
+    .checkmark {
+      border-radius: 4px;
+    }
+    
+    .radiomark {
+      border-radius: 50%;
+    }
+    
+    .checkbox-container:hover input ~ .checkmark,
+    .radio-container:hover input ~ .radiomark {
+      background-color: var(--hover-color);
+    }
+    
+    .checkbox-container input:checked ~ .checkmark,
+    .radio-container input:checked ~ .radiomark {
+      background-color: var(--checkbox-checked-bg);
+      border-color: var(--checkbox-checked-bg);
+    }
+    
+    .checkmark:after, .radiomark:after {
+      content: "";
+      position: absolute;
+      display: none;
+    }
+    
+    .checkbox-container input:checked ~ .checkmark:after,
+    .radio-container input:checked ~ .radiomark:after {
+      display: block;
+    }
+    
+    .checkbox-container .checkmark:after {
+      left: 6px;
+      top: 2px;
+      width: 5px;
+      height: 10px;
+      border: solid white;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }
+    
+    .radio-container .radiomark:after {
+      top: 6px;
+      left: 6px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: white;
+    }
+    
+    .text-input {
+      width: 100%;
+      padding: 10px;
+      background-color: var(--input-bg);
+      color: var(--text-color);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    
+    .text-input:focus {
+      outline: none;
+      border-color: var(--input-focus-border);
+    }
+    
+    .text-input::placeholder {
+      color: var(--placeholder-color);
+    }
+    
+    .textarea-input {
+      width: 100%;
+      padding: 10px;
+      background-color: var(--input-bg);
+      color: var(--text-color);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      font-size: 14px;
+      min-height: 100px;
+      resize: vertical;
+      box-sizing: border-box;
+    }
+    
+    .textarea-input:focus {
+      outline: none;
+      border-color: var(--input-focus-border);
+    }
+    
+    .textarea-input::placeholder {
+      color: var(--placeholder-color);
+    }
+    
+    .button-container {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+    
+    @media (max-width: 768px) {
+      .action-buttons, .add-question-menu, .option-buttons {
+        flex-direction: column;
+      }
+      
+      .action-group {
+        flex-direction: column;
+        gap: 10px;
+      }
+      
+      .modal-content {
+        width: 95%;
+        max-height: 90vh;
+      }
+      
+      .drag-area {
+        padding: 20px 15px;
+      }
+      
+      .drag-area .icon {
+        font-size: 28px;
+        margin-bottom: 10px;
+      }
+    }
+    
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Initial Mode Selection Screen -->
+    <div id="modeSelectionScreen">
+      <div class="welcome-screen">
+        <div class="welcome-icon">📋</div>
+        <h2>Welcome to the Survey Tool</h2>
+        <p>Choose an option to get started:</p>
+        
+        <div class="option-buttons">
+          <button id="importJsonButton" class="btn btn-secondary">Import JSON</button>
+          <button id="createSurveyButton" class="btn">Create Survey</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Import JSON Screen -->
+    <div id="importJsonScreen" class="hidden">
+      <div class="builder-header">
+        <h1>Import Survey JSON</h1>
+        <p>Upload a JSON file to generate your survey</p>
+      </div>
+      
+      <div class="welcome-screen">
+        <div class="drag-area" id="dragArea">
+          <div class="icon">📄</div>
+          <h3>Drag & Drop JSON File Here</h3>
+          <p id="fileStatus">or click to browse files</p>
+          <input type="file" id="jsonFileInput" class="hidden-input" accept=".json">
+        </div>
+        
+        <div id="errorContainer" class="error-message" style="display: none;">
+          <strong>JSON Error:</strong> <span id="errorMessage"></span>
+          <pre id="errorDetails"></pre>
+        </div>
+        
+        <div class="button-container">
+          <button id="backToModeSelectionFromImport" class="btn btn-outline">Back</button>
+          <button id="generateSurveyButton" class="btn">Generate Survey</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Survey Builder Screen -->
+    <div id="surveyBuilderScreen" class="hidden">
+      <div class="builder-header">
+        <h1>Survey Builder</h1>
+        <p>Create custom surveys with single-choice, multiple-choice, short text, and long text questions</p>
+      </div>
+      
+      <!-- Survey Basic Info -->
+      <div class="survey-info">
+        <div class="form-group">
+          <label for="survey-title">Survey Title</label>
+          <input type="text" id="survey-title" class="form-control" placeholder="Enter survey title">
+        </div>
+        <div class="form-group">
+          <label for="survey-description">Survey Description</label>
+          <textarea id="survey-description" class="form-control" rows="3" placeholder="Enter survey description"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="submit-button-text">Submit Button Text</label>
+          <input type="text" id="submit-button-text" class="form-control" placeholder="Enter submit button text" value="Submit">
+        </div>
+      </div>
+      
+      <!-- Single Section -->
+      <div class="section-card">
+        <div class="section-header">
+          <input type="text" class="form-control section-title" value="Questions" 
+            placeholder="Section title" id="section-title">
+        </div>
+        <div class="questions-container" id="questions-container">
+          <!-- Questions will be added here -->
+        </div>
+        <div class="add-question-menu">
+          <button class="btn btn-small add-single-choice">+ Single Choice</button>
+          <button class="btn btn-small add-multiple-choice">+ Multiple Choice</button>
+          <button class="btn btn-small add-short-text">+ Short Text</button>
+          <button class="btn btn-small add-long-text">+ Long Text</button>
+        </div>
+      </div>
+      
+      <!-- Action Buttons -->
+      <div class="footer-actions">
+        <div class="action-buttons">
+          <button id="backToModeSelectionFromBuilder" class="btn btn-outline">Back</button>
+          <button id="export-json-btn" class="btn">Export JSON</button>
+          <button id="confirm-survey-btn" class="btn btn-secondary">Confirm</button>
+        </div>
+        <div class="action-buttons">
+          <button id="clear-all-btn" class="btn btn-danger">Reset All</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Survey Display Screen -->
+    <div id="surveyDisplayScreen" class="hidden">
+      <div class="survey-container" id="surveyContainer">
+        <!-- Survey will be rendered here -->
+      </div>
+      
+      <div class="button-container">
+        <button id="backToBuilderFromDisplay" class="btn btn-outline">Back to Editor</button>
+        <button id="exportResultsButton" class="btn">Export Results</button>
+        <button id="resetButton" class="btn gray-button">Reset Answers</button>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Initialize a unique identifier counter
+    let idCounter = 1;
+    
+    // Generate unique IDs
+    function generateId(prefix) {
+      return `${prefix}${idCounter++}`;
+    }
+    
+    // Current state variables
+    let loadedJsonString = '';
+    let currentSurveyJson = null;
+    let surveyResults = {};
+    
+    // Survey data structure with a single section
+    const surveyData = {
+      title: "",
+      description: "",
+      sections: [
+        {
+          id: "section1",
+          title: "Questions",
+          questions: []
+        }
+      ],
+      submitButtonText: "Submit"
+    };
+    
+    // Navigation functions
+    function showScreen(screenId) {
+      document.getElementById('modeSelectionScreen').classList.add('hidden');
+      document.getElementById('importJsonScreen').classList.add('hidden');
+      document.getElementById('surveyBuilderScreen').classList.add('hidden');
+      document.getElementById('surveyDisplayScreen').classList.add('hidden');
+      
+      document.getElementById(screenId).classList.remove('hidden');
+    }
+    
+    // Add event listeners when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+      // Mode selection screen buttons
+      document.getElementById('importJsonButton').addEventListener('click', function() {
+        showScreen('importJsonScreen');
+      });
+      
+      document.getElementById('createSurveyButton').addEventListener('click', function() {
+        showScreen('surveyBuilderScreen');
+      });
+      
+      // Back buttons
+      document.getElementById('backToModeSelectionFromImport').addEventListener('click', function() {
+        showScreen('modeSelectionScreen');
+      });
+      
+      document.getElementById('backToModeSelectionFromBuilder').addEventListener('click', function() {
+        if (confirm('Go back to main menu? Your changes will not be saved.')) {
+          showScreen('modeSelectionScreen');
+        }
+      });
+      
+      document.getElementById('backToBuilderFromDisplay').addEventListener('click', function() {
+        showScreen('surveyBuilderScreen');
+      });
+      
+      // Initialize drag and drop
+      initDragAndDrop();
+      
+      // Generate Survey button (from JSON import)
+      document.getElementById('generateSurveyButton').addEventListener('click', function() {
+        if (loadedJsonString) {
+          createSurveyFromJson(loadedJsonString);
+        } else {
+          alert('Please upload a JSON file first.');
+        }
+      });
+      
+      // Survey builder event listeners
+      document.getElementById('export-json-btn').addEventListener('click', exportJson);
+      document.getElementById('clear-all-btn').addEventListener('click', clearAll);
+      document.getElementById('confirm-survey-btn').addEventListener('click', confirmSurvey);
+      
+      // Survey title/description change listeners
+      document.getElementById('survey-title').addEventListener('input', function() {
+        surveyData.title = this.value;
+      });
+      
+      document.getElementById('survey-description').addEventListener('input', function() {
+        surveyData.description = this.value;
+      });
+      
+      document.getElementById('submit-button-text').addEventListener('input', function() {
+        surveyData.submitButtonText = this.value;
+      });
+      
+      // Section title change listener
+      document.getElementById('section-title').addEventListener('input', function() {
+        surveyData.sections[0].title = this.value;
+      });
+      
+      // Add question buttons
+      document.querySelector('.add-single-choice').addEventListener('click', function() {
+        addQuestion('choice', 'single');
+      });
+      
+      document.querySelector('.add-multiple-choice').addEventListener('click', function() {
+        addQuestion('choice', 'multiple');
+      });
+      
+      document.querySelector('.add-short-text').addEventListener('click', function() {
+        addQuestion('text', 'short');
+      });
+      
+      document.querySelector('.add-long-text').addEventListener('click', function() {
+        addQuestion('text', 'long');
+      });
+      
+      // Survey display screen buttons
+      document.getElementById('exportResultsButton').addEventListener('click', exportResults);
+      document.getElementById('resetButton').addEventListener('click', function() {
+        if (confirm('Are you sure you want to reset all answers? This will clear all your responses.')) {
+          resetAnswers();
+        }
+      });
+    });
+    
+    // Function to add a new question
+    function addQuestion(type, subtype) {
+      const questionId = generateId('q');
+      
+      // Create question data
+      const questionData = {
+        id: questionId,
+        type: type,
+        text: ""
+      };
+      
+      // Add type-specific properties
+      if (type === 'choice') {
+        questionData.selectionType = subtype;
+        questionData.options = [
+          { id: generateId('opt'), text: "Option 1" },
+          { id: generateId('opt'), text: "Option 2" }
+        ];
+      } else if (type === 'text') {
+        questionData.inputType = subtype;
+        questionData.placeholder = "";
+      }
+      
+      // Add to survey data
+      surveyData.sections[0].questions.push(questionData);
+      
+      // Create question HTML
+      const questionsContainer = document.getElementById('questions-container');
+      const questionElement = document.createElement('div');
+      questionElement.className = 'question-card';
+      questionElement.dataset.questionId = questionId;
+      
+      // Question header with type indicator
+      let typeLabel = '';
+      if (type === 'choice') {
+        typeLabel = subtype === 'single' ? 'Single Choice' : 'Multiple Choice';
+      } else {
+        typeLabel = subtype === 'short' ? 'Short Text' : 'Long Text';
+      }
+      
+      let questionHTML = `
+        <div class="question-header">
+          <div>
+            <span class="question-type">${typeLabel}</span>
+          </div>
+          <span class="delete-button question-delete" data-question-id="${questionId}">&times;</span>
+        </div>
+        <div class="form-group">
+          <input type="text" class="form-control question-text" placeholder="Enter question text"
+            data-question-id="${questionId}">
+        </div>
+      `;
+      
+      // Add type-specific HTML
+      if (type === 'choice') {
+        questionHTML += `
+          <div class="options-container" data-question-id="${questionId}">
+            <!-- Options will be added here -->
+          </div>
+          <button class="btn btn-small add-option-btn" data-question-id="${questionId}">+ Add Option</button>
+        `;
+      } else if (type === 'text') {
+        questionHTML += `
+          <div class="form-group">
+            <label for="placeholder-${questionId}">Placeholder Text:</label>
+            <input type="text" id="placeholder-${questionId}" class="form-control placeholder-text"
+              placeholder="Enter placeholder text" data-question-id="${questionId}">
+          </div>
+        `;
+      }
+      
+      questionElement.innerHTML = questionHTML;
+      questionsContainer.appendChild(questionElement);
+      
+      // Add options if this is a choice question
+      if (type === 'choice') {
+        const optionsContainer = questionElement.querySelector(`.options-container[data-question-id="${questionId}"]`);
+        
+        // Add initial options
+        questionData.options.forEach(option => {
+          addOptionToQuestion(questionId, optionsContainer, option);
+        });
+        
+        // Add option button listener
+        questionElement.querySelector('.add-option-btn').addEventListener('click', function() {
+          const questionId = this.dataset.questionId;
+          const questionIndex = surveyData.sections[0].questions.findIndex(q => q.id === questionId);
+          
+          if (questionIndex === -1) return;
+          
+          const newOption = {
+            id: generateId('opt'),
+            text: `Option ${surveyData.sections[0].questions[questionIndex].options.length + 1}`
+          };
+          
+          surveyData.sections[0].questions[questionIndex].options.push(newOption);
+          
+          const optionsContainer = document.querySelector(`.options-container[data-question-id="${questionId}"]`);
+          addOptionToQuestion(questionId, optionsContainer, newOption);
+        });
+      }
+      
+      // Add question text change listener
+      questionElement.querySelector('.question-text').addEventListener('input', function() {
+        const questionId = this.dataset.questionId;
+        const question = findQuestionById(questionId);
+        if (question) {
+          question.text = this.value;
+        }
+      });
+      
+      // Add placeholder text change listener for text questions
+      if (type === 'text') {
+        questionElement.querySelector('.placeholder-text').addEventListener('input', function() {
+          const questionId = this.dataset.questionId;
+          const question = findQuestionById(questionId);
+          if (question) {
+            question.placeholder = this.value;
+          }
+        });
+      }
+      
+      // Add question delete listener
+      questionElement.querySelector('.question-delete').addEventListener('click', function() {
+        const questionId = this.dataset.questionId;
+        if (confirm('Are you sure you want to delete this question?')) {
+          deleteQuestion(questionId);
+        }
+      });
+    }
+    
+    // Add option to a choice question
+    function addOptionToQuestion(questionId, optionsContainer, option) {
+      const optionElement = document.createElement('div');
+      optionElement.className = 'option-item';
+      optionElement.dataset.optionId = option.id;
+      
+      optionElement.innerHTML = `
+        <input type="text" class="form-control option-text" value="${option.text}"
+          placeholder="Option text" data-question-id="${questionId}" data-option-id="${option.id}">
+        <span class="delete-button option-delete" data-question-id="${questionId}" data-option-id="${option.id}">&times;</span>
+      `;
+      
+      optionsContainer.appendChild(optionElement);
+      
+      // Add option text change listener
+      optionElement.querySelector('.option-text').addEventListener('input', function() {
+        const questionId = this.dataset.questionId;
+        const optionId = this.dataset.optionId;
+        const question = findQuestionById(questionId);
+        
+        if (question && question.options) {
+          const optionIndex = question.options.findIndex(opt => opt.id === optionId);
+          if (optionIndex !== -1) {
+            question.options[optionIndex].text = this.value;
+          }
+        }
+      });
+      
+      // Add option delete listener
+      optionElement.querySelector('.option-delete').addEventListener('click', function() {
+        const questionId = this.dataset.questionId;
+        const optionId = this.dataset.optionId;
+        const question = findQuestionById(questionId);
+        
+        if (question && question.options) {
+          // Need at least 1 option
+          if (question.options.length <= 1) {
+            alert('Choice questions must have at least one option');
+            return;
+          }
+          
+          const optionIndex = question.options.findIndex(opt => opt.id === optionId);
+          if (optionIndex !== -1) {
+            // Remove from data
+            question.options.splice(optionIndex, 1);
+            
+            // Remove from DOM
+            optionElement.remove();
+          }
+        }
+      });
+    }
+    
+    // Function to delete a question
+    function deleteQuestion(questionId) {
+      const questionIndex = surveyData.sections[0].questions.findIndex(q => q.id === questionId);
+      if (questionIndex !== -1) {
+        // Remove from data
+        surveyData.sections[0].questions.splice(questionIndex, 1);
+        
+        // Remove from DOM
+        const questionElement = document.querySelector(`.question-card[data-question-id="${questionId}"]`);
+        if (questionElement) {
+          questionElement.remove();
+        }
+      }
+    }
+    
+    // Helper to find question by id
+    function findQuestionById(questionId) {
+      return surveyData.sections[0].questions.find(q => q.id === questionId);
+    }
+    
+    // Export JSON to file
+    function exportJson() {
+      updateSurveyData();
+      
+      const jsonString = JSON.stringify(surveyData, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'survey_' + new Date().toISOString().slice(0, 10) + '.json';
+      document.body.appendChild(a);
+      a.click();
+      
+      setTimeout(function() {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 0);
+    }
+    
+    // Update survey data from inputs
+    function updateSurveyData() {
+      surveyData.title = document.getElementById('survey-title').value || "Untitled Survey";
+      surveyData.description = document.getElementById('survey-description').value || "";
+      surveyData.submitButtonText = document.getElementById('submit-button-text').value || "Submit";
+      surveyData.sections[0].title = document.getElementById('section-title').value || "Questions";
+    }
+    
+    // Clear all and start over
+    function clearAll() {
+      if (confirm('Are you sure you want to clear all content and start over?')) {
+        // Reset survey data
+        surveyData.title = "";
+        surveyData.description = "";
+        surveyData.sections[0].questions = [];
+        surveyData.submitButtonText = "Submit";
+        
+        // Reset form inputs
+        document.getElementById('survey-title').value = "";
+        document.getElementById('survey-description').value = "";
+        document.getElementById('submit-button-text').value = "Submit";
+        document.getElementById('section-title').value = "Questions";
+        
+        // Clear questions container
+        document.getElementById('questions-container').innerHTML = "";
+      }
+    }
+    
+    // Confirm Survey (create survey view)
+    function confirmSurvey() {
+      updateSurveyData();
+      
+      if (surveyData.sections[0].questions.length === 0) {
+        alert('Please add at least one question to your survey.');
+        return;
+      }
+      
+      // Store current survey data as the active survey
+      currentSurveyJson = JSON.parse(JSON.stringify(surveyData));
+      
+      // Reset results
+      surveyResults = {};
+      
+      // Render the survey
+      renderSurvey(currentSurveyJson);
+      
+      // Show survey display screen
+      showScreen('surveyDisplayScreen');
+    }
+    
+    // Initialize drag and drop
+    function initDragAndDrop() {
+      const dragArea = document.getElementById('dragArea');
+      const fileInput = document.getElementById('jsonFileInput');
+      
+      // When file is over drag area
+      dragArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        this.classList.add('active');
+      });
+      
+      // When file leaves drag area
+      dragArea.addEventListener('dragleave', function() {
+        this.classList.remove('active');
+      });
+      
+      // When file is dropped
+      dragArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.classList.remove('active');
+        
+        const file = e.dataTransfer.files[0];
+        if (file) {
+          if (file.type === 'application/json' || file.name.endsWith('.json')) {
+            readJsonFile(file);
+          } else {
+            alert('Please drop a valid JSON file.');
+          }
+        }
+      });
+      
+      // Click to browse files
+      dragArea.addEventListener('click', function() {
+        fileInput.click();
+      });
+      
+      // File input change
+      fileInput.addEventListener('change', function(e) {
+        if (this.files && this.files[0]) {
+          readJsonFile(this.files[0]);
+          // Show the file name
+          dragArea.querySelector('p').textContent = 'Selected file: ' + this.files[0].name;
+        }
+      });
+    }
+    
+    // Function to read JSON file
+    function readJsonFile(file) {
+      const reader = new FileReader();
+      
+      reader.onload = function(e) {
+        loadedJsonString = e.target.result;
+        document.getElementById('fileStatus').textContent = `File loaded: ${file.name}`;
+        document.getElementById('fileStatus').style.color = 'var(--accent-color)';
+      };
+      
+      reader.readAsText(file);
+    }
+    
+    // Function to create survey from JSON
+    function createSurveyFromJson(jsonString) {
+      try {
+        // Hide any previous error
+        document.getElementById('errorContainer').style.display = 'none';
+        
+        // Parse JSON
+        const surveyJson = JSON.parse(jsonString);
+        
+        // Validate the JSON structure
+        validateSurveyJson(surveyJson);
+        
+        // Reset results
+        surveyResults = {};
+        
+        // Store current JSON
+        currentSurveyJson = surveyJson;
+        
+        // Render the survey
+        renderSurvey(surveyJson);
+        
+        // Show survey display screen
+        showScreen('surveyDisplayScreen');
+      } catch (e) {
+        console.error('Error creating survey:', e);
+        
+        // Show error message
+        const errorContainer = document.getElementById('errorContainer');
+        const errorMessage = document.getElementById('errorMessage');
+        const errorDetails = document.getElementById('errorDetails');
+        
+        errorMessage.textContent = e.message;
+        
+        // For JSON parse errors, add a snippet of the problematic JSON
+        if (e instanceof SyntaxError) {
+          const position = parseInt(e.message.match(/position (\d+)/)?.[1]);
+          if (!isNaN(position)) {
+            const start = Math.max(0, position - 30);
+            const end = Math.min(jsonString.length, position + 30);
+            const snippet = jsonString.substring(start, end);
+            const formattedSnippet = snippet.replace(/[^\n]{1,30}/g, '$&\n');
+            
+            errorDetails.textContent = `Error near: ...\n${formattedSnippet}\n...`;
+          } else {
+            errorDetails.textContent = 'Please check your JSON syntax.';
+          }
+        } else {
+          // For validation errors, show the field that's causing problems
+          errorDetails.textContent = e.message;
+        }
+        
+        errorContainer.style.display = 'block';
+      }
+    }
+    
+    // Function to validate JSON structure
+    function validateSurveyJson(jsonObject) {
+      // Check basic structure
+      if (!jsonObject.title) {
+        throw new Error("Missing 'title' property in survey JSON");
+      }
+      
+      if (!jsonObject.sections || !Array.isArray(jsonObject.sections) || jsonObject.sections.length === 0) {
+        throw new Error("Survey must have at least one section in 'sections' array");
+      }
+      
+      // Validate each section
+      jsonObject.sections.forEach((section, sectionIndex) => {
+        if (!section.id) {
+          throw new Error(`Section at index ${sectionIndex} is missing 'id' property`);
+        }
+        
+        if (!section.title) {
+          throw new Error(`Section '${section.id}' is missing 'title' property`);
+        }
+        
+        if (!section.questions || !Array.isArray(section.questions) || section.questions.length === 0) {
+          throw new Error(`Section '${section.id}' must have at least one question in 'questions' array`);
+        }
+        
+        // Validate each question
+        section.questions.forEach((question, questionIndex) => {
+          if (!question.id) {
+            throw new Error(`Question at index ${questionIndex} in section '${section.id}' is missing 'id' property`);
+          }
+          
+          if (!question.type) {
+            throw new Error(`Question '${question.id}' is missing 'type' property`);
+          }
+          
+          if (!['choice', 'text'].includes(question.type)) {
+            throw new Error(`Question '${question.id}' has invalid 'type'. Must be 'choice' or 'text'`);
+          }
+          
+          if (question.type === 'choice') {
+            if (!question.selectionType) {
+              throw new Error(`Choice question '${question.id}' is missing 'selectionType' property`);
+            }
+            
+            if (!['single', 'multiple'].includes(question.selectionType)) {
+              throw new Error(`Choice question '${question.id}' has invalid 'selectionType'. Must be 'single' or 'multiple'`);
+            }
+            
+            if (!question.options || !Array.isArray(question.options) || question.options.length === 0) {
+              throw new Error(`Choice question '${question.id}' must have at least one option in 'options' array`);
+            }
+            
+            // Validate options
+            question.options.forEach((option, optionIndex) => {
+              if (!option.id) {
+                throw new Error(`Option at index ${optionIndex} in question '${question.id}' is missing 'id' property`);
+              }
+              
+              if (!option.text && option.text !== '') {
+                throw new Error(`Option '${option.id}' in question '${question.id}' is missing 'text' property`);
+              }
+            });
+          } else if (question.type === 'text') {
+            if (!question.inputType) {
+              throw new Error(`Text question '${question.id}' is missing 'inputType' property`);
+            }
+            
+            if (!['short', 'long'].includes(question.inputType)) {
+              throw new Error(`Text question '${question.id}' has invalid 'inputType'. Must be 'short' or 'long'`);
+            }
+          }
+        });
+      });
+      
+      // If we got here, validation passed
+      return true;
+    }
+    
+    // Function to render the survey
+    function renderSurvey(surveyJson) {
+      const surveyContainer = document.getElementById('surveyContainer');
+      surveyContainer.innerHTML = '';
+      
+      // Create survey header
+      const header = document.createElement('div');
+      header.className = 'survey-header';
+      
+      const title = document.createElement('h2');
+      title.className = 'survey-title';
+      title.textContent = surveyJson.title;
+      header.appendChild(title);
+      
+      const description = document.createElement('div');
+      description.className = 'survey-description';
+      description.textContent = surveyJson.description;
+      header.appendChild(description);
+      
+      surveyContainer.appendChild(header);
+      
+      // Create form
+      const form = document.createElement('form');
+      form.className = 'survey-form';
+      form.id = 'surveyForm';
+      
+      // Create sections and questions
+      surveyJson.sections.forEach(section => {
+        const sectionElement = document.createElement('div');
+        sectionElement.className = 'section';
+        sectionElement.id = section.id;
+        
+        const sectionTitle = document.createElement('div');
+        sectionTitle.className = 'section-title';
+        sectionTitle.textContent = section.title;
+        sectionElement.appendChild(sectionTitle);
+        
+        section.questions.forEach(question => {
+          const questionElement = document.createElement('div');
+          questionElement.className = 'question';
+          questionElement.id = question.id;
+          
+          // Add question text if available
+          if (question.text) {
+            const questionText = document.createElement('div');
+            questionText.className = 'question-text';
+            questionText.textContent = question.text;
+            
+            // Add question type indicator
+            const questionType = document.createElement('span');
+            questionType.className = 'question-type';
+            
+            if (question.type === 'choice') {
+              if (question.selectionType === 'multiple') {
+                questionType.textContent = '[Multiple Choice]';
+              } else {
+                questionType.textContent = '[Single Choice]';
+              }
+            } else if (question.type === 'text') {
+              if (question.inputType === 'short') {
+                questionType.textContent = '[Short Text]';
+              } else {
+                questionType.textContent = '[Long Text]';
+              }
+            }
+            
+            questionText.appendChild(questionType);
+            questionElement.appendChild(questionText);
+          }
+          
+          // Initialize the results for this question
+          if (question.type === 'choice' && question.selectionType === 'multiple') {
+            surveyResults[question.id] = [];
+          } else {
+            surveyResults[question.id] = '';
+          }
+          
+          // Render different question types
+          if (question.type === 'choice') {
+            const options = document.createElement('div');
+            options.className = 'options';
+            
+            question.options.forEach(option => {
+              const inputType = question.selectionType === 'multiple' ? 'checkbox' : 'radio';
+              const containerClass = inputType === 'checkbox' ? 'checkbox-container' : 'radio-container';
+              const markClass = inputType === 'checkbox' ? 'checkmark' : 'radiomark';
+              
+              const optionContainer = document.createElement('label');
+              optionContainer.className = containerClass;
+              optionContainer.textContent = option.text;
+              
+              const input = document.createElement('input');
+              input.type = inputType;
+              input.name = question.id;
+              input.value = option.id;
+              input.id = option.id;
+              
+              // Add event listener to update results
+              input.addEventListener('change', function() {
+                if (inputType === 'checkbox') {
+                  // For checkbox, maintain an array of selected options
+                  if (this.checked) {
+                    if (!surveyResults[question.id].includes(option.id)) {
+                      surveyResults[question.id].push(option.id);
+                    }
+                  } else {
+                    surveyResults[question.id] = surveyResults[question.id].filter(id => id !== option.id);
+                  }
+                } else {
+                  // For radio, just set the value
+                  surveyResults[question.id] = option.id;
+                }
+                console.log('Updated results:', surveyResults);
+              });
+              
+              optionContainer.appendChild(input);
+              
+              const mark = document.createElement('span');
+              mark.className = markClass;
+              optionContainer.appendChild(mark);
+              
+              options.appendChild(optionContainer);
+            });
+            
+            questionElement.appendChild(options);
+            
+          } else if (question.type === 'text') {
+            // Text input field
+            if (question.inputType === 'short') {
+              const input = document.createElement('input');
+              input.type = 'text';
+              input.className = 'text-input';
+              input.id = question.id + '_input';
+              input.name = question.id;
+              
+              if (question.placeholder) {
+                input.placeholder = question.placeholder;
+              }
+              
+              input.addEventListener('input', function() {
+                surveyResults[question.id] = this.value;
+                console.log('Updated results:', surveyResults);
+              });
+              
+              questionElement.appendChild(input);
+              
+            } else if (question.inputType === 'long') {
+              // Textarea for long text
+              const textarea = document.createElement('textarea');
+              textarea.className = 'textarea-input';
+              textarea.id = question.id + '_input';
+              textarea.name = question.id;
+              
+              if (question.placeholder) {
+                textarea.placeholder = question.placeholder;
+              }
+              
+              textarea.addEventListener('input', function() {
+                surveyResults[question.id] = this.value;
+                console.log('Updated results:', surveyResults);
+              });
+              
+              questionElement.appendChild(textarea);
+            }
+          }
+          
+          sectionElement.appendChild(questionElement);
+        });
+        
+        form.appendChild(sectionElement);
+      });
+      
+      // Add submit button
+      const buttonContainer = document.createElement('div');
+      buttonContainer.className = 'button-container';
+      
+      const submitButton = document.createElement('button');
+      submitButton.type = 'button';
+      submitButton.textContent = surveyJson.submitButtonText || 'Submit';
+      submitButton.id = 'submitButton';
+      
+      submitButton.addEventListener('click', function() {
+        // Handle form submission
+        console.log('Survey submitted with results:', surveyResults);
+        alert('Survey submitted successfully');
+      });
+      
+      buttonContainer.appendChild(submitButton);
+      form.appendChild(buttonContainer);
+      
+      surveyContainer.appendChild(form);
+    }
+    
+    // Export survey results to JSON file
+    function exportResults() {
+      const resultsJson = JSON.stringify(surveyResults, null, 2);
+      
+      // Create a blob and download link
+      const blob = new Blob([resultsJson], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'survey_results_' + new Date().toISOString().split('T')[0] + '.json';
+      document.body.appendChild(a);
+      a.click();
+      
+      // Clean up
+      setTimeout(function() {
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      }, 0);
+    }
+    
+    // Reset all answers but keep the survey
+    function resetAnswers() {
+      // Keep the current survey but reset all answers
+      surveyResults = {};
+      
+      // Re-render the survey with empty answers
+      renderSurvey(currentSurveyJson);
+      
+      console.log('Form reset. All answers cleared.');
+    }
+  </script>
+</body>
+</html>
