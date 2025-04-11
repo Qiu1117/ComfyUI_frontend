@@ -15,7 +15,7 @@ class smooth:
     sigma_with_options = Annotated[float, FloatOptions(min=0, max=50, step=0.1)]
     
 
-    def smooth_2d(data: Matrix, sigma: sigma_with_options=0.3) -> Matrix:
+    def smooth_2d(data: Matrix, sigma: sigma_with_options=0.3) -> tuple[Matrix, str]:
         """
         Smooth 2D data
         
@@ -32,7 +32,7 @@ class smooth:
         return data, "this is a text output"
     
 
-    def smooth_3d(data: Volume, sigma: sigma_with_options=0.3) -> Volume:
+    def smooth_3d(data: Volume, sigma: sigma_with_options=0.3) -> tuple[Matrix, str]:
         """
         Smooth 3D data
         
