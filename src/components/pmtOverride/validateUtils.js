@@ -1,5 +1,3 @@
-// validateUtils.js
-
 class PythonValidator {
   constructor() {
     this.token =
@@ -646,11 +644,43 @@ class PythonValidator {
       const docMatch = funcBody.match(docstringRegex)
       const docstring = docMatch ? docMatch[1].trim() : ''
 
+      // 修改这里 - 先尝试查找Outputs部分，如果没有再尝试查找Returns部分
+      let outputsSection = docstring.match(
+        /Outputs:\s*\n([\s\S]*?)(?:\n\s*\n|$)/
+      )
+
+      // 如果没有找到Outputs部分，尝试查找Returns部分
+      if (!outputsSection) {
+        outputsSection = docstring.match(/Returns:\s*\n([\s\S]*?)(?:\n\s*\n|$)/)
+      }
+
+      const outputsInfo = outputsSection
+        ? outputsSection[1].trim().split('\n')
+        : []
+
+      // 创建一个变量名映射表，记录docstring中定义的输出变量名
+      const outputVarNames = {}
+
+      // 解析Outputs/Returns部分来找到变量名
+      outputsInfo.forEach((line, index) => {
+        const outputLine = line.trim()
+        const parts = outputLine.split(':')
+        if (parts.length > 0) {
+          const name = parts[0].trim()
+          // 将在docstring中找到的变量名按顺序存储
+          outputVarNames[index] = name
+          console.log(
+            `Found output variable from docs: ${name} at position ${index}`
+          )
+        }
+      })
+
       const descLines = docstring.split('\n')
       let functionDescription = descLines.length > 0 ? descLines[0].trim() : ''
 
-      const sourceRegex = /Source:\s*\n([\s\S]*?)(?:\n\s*Args:|\n\s*Returns:|$)/
-      const argsRegex = /Args:\s*\n([\s\S]*?)(?:\n\s*Returns:|$)/
+      const sourceRegex =
+        /Source:\s*\n([\s\S]*?)(?:\n\s*Args:|\n\s*Returns:|\n\s*Outputs:|$)/
+      const argsRegex = /Args:\s*\n([\s\S]*?)(?:\n\s*Returns:|\n\s*Outputs:|$)/
 
       const sourceMatch = docstring.match(sourceRegex)
       const argsMatch = docstring.match(argsRegex)
@@ -899,9 +929,21 @@ class PythonValidator {
 
       const outputs = []
 
-      const returnMatch = funcBody.match(/return\s+([^,\n]+)(?:,\s*([^\n]+))?/)
+      // 首先尝试查找返回语句
+      const returnLines = []
+      const returnRegex = /return\s+(.+?)(?:\n|$)/g
+      let returnLineMatch
+
+      while ((returnLineMatch = returnRegex.exec(funcBody)) !== null) {
+        returnLines.push(returnLineMatch[1].trim())
+      }
+
+      // 找出最后一个return语句（通常是函数的实际返回值）
+      const returnLine =
+        returnLines.length > 0 ? returnLines[returnLines.length - 1] : null
 
       if (returnType) {
+        // 使用类型注解来确定返回类型
         const returnTypes = returnType.split(',').map((t) => t.trim())
 
         returnTypes.forEach((type, index) => {
@@ -913,8 +955,24 @@ class PythonValidator {
             }
           }
 
+          // 尝试从Outputs/Returns文档部分获取变量名
+          let outputName = outputVarNames[index] || null
+
+          if (!outputName && returnLine) {
+            // 如果我们有return语句，尝试从中提取变量名
+            const returnValues = this.parseReturnStatement(returnLine)
+            if (returnValues.length > index) {
+              outputName = returnValues[index].varName
+            }
+          }
+
+          // 如果仍然没有找到名称，使用默认值
+          if (!outputName) {
+            outputName = index === 0 ? 'data' : `output_${index + 1}`
+          }
+
           outputs.push({
-            name: index === 0 ? 'data' : `output_${index + 1}`,
+            name: outputName,
             type: mappedType,
             description:
               index === 0
@@ -922,34 +980,51 @@ class PythonValidator {
                 : `Output ${index + 1} from ${funcName}`
           })
         })
-      } else if (returnMatch) {
-        const defaultType = funcName.includes('2d')
-          ? typeMapping['Matrix'] || '2D'
-          : funcName.includes('3d')
-            ? typeMapping['Volume'] || '3D'
-            : typeMapping['Array'] || '1D'
+      } else if (returnLine) {
+        // 没有类型注解，但有return语句
+        const returnValues = this.parseReturnStatement(returnLine)
 
-        outputs.push({
-          name: 'data',
-          type: defaultType,
-          description: `Output from ${funcName}`
-        })
+        console.log(`Parsed return values:`, returnValues)
 
-        if (returnMatch[2]) {
-          const secondOutput = returnMatch[2].trim()
-          const isString =
-            secondOutput.startsWith('"') || secondOutput.startsWith("'")
+        returnValues.forEach((returnValue, index) => {
+          // 尝试从Outputs/Returns文档部分获取更好的输出名称
+          const outputName = outputVarNames[index] || returnValue.varName
+
+          // 确定输出类型
+          let outputType
+          if (returnValue.isString) {
+            outputType = typeMapping['str'] || 'STRING'
+          } else if (index === 0) {
+            // 根据函数名推断第一个返回值的类型
+            outputType = funcName.includes('2d')
+              ? typeMapping['Matrix'] || '2D'
+              : funcName.includes('3d')
+                ? typeMapping['Volume'] || '3D'
+                : typeMapping['Array'] || '1D'
+          } else {
+            // 为其他返回值尝试更智能的类型推断
+            if (
+              returnValue.item.toLowerCase().includes('text') ||
+              returnValue.item.startsWith('f"') ||
+              returnValue.item.startsWith("f'")
+            ) {
+              outputType = typeMapping['str'] || 'STRING'
+            } else {
+              outputType = typeMapping['Array'] || '1D'
+            }
+          }
 
           outputs.push({
-            name: isString ? 'text_output' : 'output_2',
-            type: isString
-              ? typeMapping['str'] || 'STRING'
-              : typeMapping['Array'] || '1D',
-            description: isString
-              ? 'Text output'
-              : `Second output from ${funcName}`
+            name: outputName,
+            type: outputType,
+            description:
+              index === 0
+                ? `Output data from ${funcName}`
+                : returnValue.isString
+                  ? 'Text output'
+                  : `Output ${index + 1} from ${funcName}`
           })
-        }
+        })
       } else {
         const defaultType = funcName.includes('2d')
           ? typeMapping['Matrix'] || '2D'
@@ -981,6 +1056,68 @@ class PythonValidator {
     }
 
     return result
+  }
+
+  // 辅助方法来解析return语句
+  parseReturnStatement(returnStatement) {
+    const returnValues = []
+    let currentItem = ''
+    let bracketLevel = 0
+
+    // 首先分离返回值
+    for (let i = 0; i < returnStatement.length; i++) {
+      const char = returnStatement[i]
+
+      if (char === '(' || char === '[' || char === '{') {
+        bracketLevel++
+        currentItem += char
+      } else if (char === ')' || char === ']' || char === '}') {
+        bracketLevel--
+        currentItem += char
+      } else if (char === ',' && bracketLevel === 0) {
+        if (currentItem.trim()) {
+          returnValues.push(currentItem.trim())
+        }
+        currentItem = ''
+      } else {
+        currentItem += char
+      }
+    }
+
+    // 添加最后一项
+    if (currentItem.trim()) {
+      returnValues.push(currentItem.trim())
+    }
+
+    // 分析每个返回值
+    return returnValues.map((item, index) => {
+      const result = {
+        item: item,
+        varName: `output_${index + 1}`, // 默认名称
+        isString: item.startsWith('"') || item.startsWith("'")
+      }
+
+      // 检查是否为简单变量名
+      const varMatch = item.match(/^\s*(\w+)\s*$/)
+      if (varMatch) {
+        result.varName = varMatch[1]
+        console.log(
+          `Extracted variable name '${result.varName}' from return value: ${item}`
+        )
+      } else if (result.isString) {
+        result.varName = 'text_output'
+      } else if (item.includes('(') && item.includes(')')) {
+        // 可能是函数调用
+        const funcCallMatch = item.match(/^\s*(\w+)\(/)
+        if (funcCallMatch) {
+          result.varName = `${funcCallMatch[1]}_result`
+        }
+      } else if (index === 0) {
+        result.varName = 'data'
+      }
+
+      return result
+    })
   }
 
   getValidateData() {

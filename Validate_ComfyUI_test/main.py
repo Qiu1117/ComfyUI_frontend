@@ -24,12 +24,18 @@ class smooth:
             
         Args:
             sigma: hyperparameter of gaussian smooth
+
+        Outputs:
+            data: smooth data
+            test_txt: test text output
         """
         start = time.time()
         print(f"Smooth start with Sigma={sigma}")
         data = gaussian(data, sigma, preserve_range=True)
         print(f"It takes {time.time() - start} sec")
-        return data, "this is a text output"
+
+        test_txt = "this is a text output"
+        return data, test_txt
     
 
     def smooth_3d(data: Volume, sigma: sigma_with_options=0.3) -> tuple[Matrix, str]:
@@ -41,13 +47,19 @@ class smooth:
             
         Args:
             sigma: hyperparameter of gaussian smooth
+
+        Outputs:
+            data: smooth data
+            test_txt: test text output
         """
 
         start = time.time()
         print(f"Smooth start with Sigma={sigma}")
         data = gaussian(data, sigma, preserve_range=True)
         print(f"It takes {time.time() - start} sec")
-        return data, "this is a text output"
+
+        test_txt = "this is a text output"
+        return data, test_txt
 
 
 
