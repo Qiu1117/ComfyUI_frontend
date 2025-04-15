@@ -486,7 +486,7 @@ import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useToastStore } from '@/stores/toastStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 
-import pythonValidator from './validateUtils.js'
+import pythonValidator from './pythonClass.js'
 
 let decodeMultiStream = (stream) => {
   console.warn('MessagePack not found')
