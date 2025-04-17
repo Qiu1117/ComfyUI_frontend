@@ -1,8 +1,3 @@
-/**
- * 读取文件内容为文本
- * @param {File} file 文件对象
- * @returns {Promise<string>} 文件内容
- */
 export async function readFileAsText(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -12,11 +7,6 @@ export async function readFileAsText(file) {
   })
 }
 
-/**
- * 从Python代码中提取类型定义
- * @param {string} pythonCode Python代码
- * @returns {Object} 类型映射
- */
 export async function extractTypeDefinitions(pythonCode) {
   const classRegex = /class\s+(\w+)(?:\(([^)]+)\))?:/g
   const typeMapping = {}
@@ -46,11 +36,6 @@ export async function extractTypeDefinitions(pythonCode) {
   return typeMapping
 }
 
-/**
- * 从Python代码中提取选项定义
- * @param {string} pythonCode Python代码
- * @returns {Object} 选项映射
- */
 export async function extractOptionDefinitions(pythonCode) {
   const classRegex = /class\s+(\w+)Options:/g
   const optionsMapping = {}
@@ -84,17 +69,11 @@ export async function extractOptionDefinitions(pythonCode) {
   return optionsMapping
 }
 
-/**
- * 解析return语句，提取返回值和变量名
- * @param {string} returnStatement return语句
- * @returns {Array} 解析后的返回值数组
- */
 export function parseReturnStatement(returnStatement) {
   const returnValues = []
   let currentItem = ''
   let bracketLevel = 0
 
-  // 首先分离返回值
   for (let i = 0; i < returnStatement.length; i++) {
     const char = returnStatement[i]
 
@@ -114,20 +93,17 @@ export function parseReturnStatement(returnStatement) {
     }
   }
 
-  // 添加最后一项
   if (currentItem.trim()) {
     returnValues.push(currentItem.trim())
   }
 
-  // 分析每个返回值
   return returnValues.map((item, index) => {
     const result = {
       item: item,
-      varName: `output_${index + 1}`, // 默认名称
+      varName: `output_${index + 1}`,
       isString: item.startsWith('"') || item.startsWith("'")
     }
 
-    // 检查是否为简单变量名
     const varMatch = item.match(/^\s*(\w+)\s*$/)
     if (varMatch) {
       result.varName = varMatch[1]
@@ -137,7 +113,6 @@ export function parseReturnStatement(returnStatement) {
     } else if (result.isString) {
       result.varName = 'text_output'
     } else if (item.includes('(') && item.includes(')')) {
-      // 可能是函数调用
       const funcCallMatch = item.match(/^\s*(\w+)\(/)
       if (funcCallMatch) {
         result.varName = `${funcCallMatch[1]}_result`
@@ -150,12 +125,6 @@ export function parseReturnStatement(returnStatement) {
   })
 }
 
-/**
- * 验证类型定义文件
- * @param {File} typeFile 类型定义文件
- * @returns {Promise<Object>} 提取的类型映射
- * @throws {Error} 如果文件无效
- */
 export async function validateTypeFile(typeFile) {
   if (!typeFile) throw new Error('Type definition file is required')
 
@@ -174,13 +143,6 @@ export async function validateTypeFile(typeFile) {
   return await extractTypeDefinitions(pythonCode)
 }
 
-/**
- * 验证选项定义文件
- * @param {File} optionsFile 选项定义文件
- * @param {Object} typeMapping 类型映射
- * @returns {Promise<Object>} 提取的选项映射
- * @throws {Error} 如果文件无效
- */
 export async function validateOptionsFile(optionsFile, typeMapping) {
   if (!optionsFile) throw new Error('Options definition file is required')
 
@@ -203,20 +165,63 @@ export async function validateOptionsFile(optionsFile, typeMapping) {
   return await extractOptionDefinitions(pythonCode)
 }
 
-/**
- * 解析Python文件为JSON配置
- * @param {string} pythonCode Python代码
- * @param {string} fileName 文件名
- * @param {Object} typeMapping 类型映射
- * @param {Object} optionsMapping 选项映射
- * @returns {Object} 解析后的JSON配置
- */
 export async function parsePythonToJson(
   pythonCode,
   fileName,
   typeMapping,
   optionsMapping
 ) {
+  // 解析文档字符串中的部分（Source、Args、Outputs）
+  function parseDocSection(section) {
+    if (!section) return []
+
+    const lines = section.trim().split('\n')
+    const items = []
+
+    let currentItem = null
+
+    for (const line of lines) {
+      const trimmedLine = line.trim()
+      if (!trimmedLine) continue
+
+      // 处理以"-"开头的条目（Google风格）
+      if (trimmedLine.startsWith('-')) {
+        if (currentItem) {
+          items.push(currentItem)
+        }
+
+        const content = trimmedLine.substring(1).trim()
+        const parts = content.split(':')
+        const name = parts[0].trim()
+        const desc = parts.length > 1 ? parts.slice(1).join(':').trim() : name
+
+        currentItem = { name, description: desc }
+      }
+      // 处理直接以名称开头的条目（标准模式）
+      else if (trimmedLine.includes(':')) {
+        if (currentItem) {
+          items.push(currentItem)
+        }
+
+        const parts = trimmedLine.split(':')
+        const name = parts[0].trim()
+        const desc = parts.length > 1 ? parts.slice(1).join(':').trim() : name
+
+        currentItem = { name, description: desc }
+      }
+      // 处理当前条目的继续行
+      else if (currentItem) {
+        currentItem.description += ' ' + trimmedLine
+      }
+    }
+
+    if (currentItem) {
+      items.push(currentItem)
+    }
+
+    return items
+  }
+
   const classRegex = /class\s+(\w+)\s*:/
   const classMatch = pythonCode.match(classRegex)
   const pluginName = classMatch ? classMatch[1] : fileName.replace(/\.py$/, '')
@@ -335,26 +340,20 @@ export async function parsePythonToJson(
       outputsSection = docstring.match(/Returns:\s*\n([\s\S]*?)(?:\n\s*\n|$)/)
     }
 
-    const outputsInfo = outputsSection
-      ? outputsSection[1].trim().split('\n')
-      : []
-
     // 创建一个变量名映射表，记录docstring中定义的输出变量名
     const outputVarNames = {}
 
     // 解析Outputs/Returns部分来找到变量名
-    outputsInfo.forEach((line, index) => {
-      const outputLine = line.trim()
-      const parts = outputLine.split(':')
-      if (parts.length > 0) {
-        const name = parts[0].trim()
-        // 将在docstring中找到的变量名按顺序存储
-        outputVarNames[index] = name
+    if (outputsSection) {
+      const outputsItems = parseDocSection(outputsSection[1])
+
+      outputsItems.forEach((item, index) => {
+        outputVarNames[index] = item.name
         console.log(
-          `Found output variable from docs: ${name} at position ${index}`
+          `Found output variable from docs: ${item.name} at position ${index}`
         )
-      }
-    })
+      })
+    }
 
     const descLines = docstring.split('\n')
     let functionDescription = descLines.length > 0 ? descLines[0].trim() : ''
@@ -414,149 +413,137 @@ export async function parsePythonToJson(
     const sourceParams = new Set()
 
     if (sourceMatch) {
-      const sourceLines = sourceMatch[1].trim().split('\n')
-      for (const line of sourceLines) {
-        const sourceLine = line.trim()
-        if (sourceLine.startsWith('-')) {
-          const [nameRaw, ...descParts] = sourceLine.substring(1).split(':')
-          const name = nameRaw.trim()
-          const desc = descParts.join(':').trim()
+      const sourceSection = sourceMatch[1].trim()
+      const sourceItems = parseDocSection(sourceSection)
 
-          const type = paramMap[name]
-            ? paramMap[name].type
-            : typeMapping['Array'] || '1D'
+      for (const item of sourceItems) {
+        const { name, description } = item
+
+        if (name && paramMap[name]) {
+          const type = paramMap[name].type
 
           sources.push({
             name,
             type,
-            description: desc,
+            description,
             options: paramMap[name]?.options?.optionsArgs || {}
           })
 
           sourceParams.add(name)
+          console.log(`Found source parameter: ${name}`)
         }
       }
     }
 
+    // 源类型集合 - 用于通过类型识别源参数
+    const sourceTypes = new Set([
+      'DICOM_FILE',
+      'IMAGE_FILE',
+      'CSV_FILE',
+      'EXCEL_FILE',
+      'DATA_FILE',
+      'Matrix',
+      'Volume',
+      'Array',
+      'Image',
+      'Sequence',
+      'FILE',
+      'FILES'
+    ])
+
+    // 通过参数类型推断源参数
     Object.entries(paramMap).forEach(([name, info]) => {
-      if (
-        !sourceParams.has(name) &&
-        (name === 'data' ||
+      if (!sourceParams.has(name)) {
+        // 通过类型判断是否为源参数
+        if (sourceTypes.has(info.type)) {
+          sources.push({
+            name,
+            type: info.type,
+            description: `Input ${name}`,
+            options: info.options?.optionsArgs || {}
+          })
+          sourceParams.add(name)
+          console.log(
+            `Inferred source parameter from type: ${name} (${info.type})`
+          )
+        }
+        // 通过命名模式判断是否为源参数
+        else if (
+          name === 'data' ||
           name === 'input_data' ||
           name.endsWith('_data') ||
           name.startsWith('input_') ||
-          name.match(/data\d+/))
-      ) {
-        sources.push({
-          name,
-          type: info.type,
-          description: `Input ${name}`,
-          options: info.options?.optionsArgs || {}
-        })
-
-        sourceParams.add(name)
+          name.match(/data\d+/) ||
+          name.endsWith('_file') ||
+          name.endsWith('_files') ||
+          name.includes('series') ||
+          name.includes('image') ||
+          name.includes('volume')
+        ) {
+          sources.push({
+            name,
+            type: info.type,
+            description: `Input ${name}`,
+            options: info.options?.optionsArgs || {}
+          })
+          sourceParams.add(name)
+          console.log(`Inferred source parameter from name: ${name}`)
+        }
       }
     })
 
     if (argsMatch) {
-      const argsLines = argsMatch[1].trim().split('\n')
-      let currentArg = null
-      let inOptions = false
+      const argsSection = argsMatch[1].trim()
+      const argsItems = parseDocSection(argsSection)
 
-      for (const line of argsLines) {
-        const argLine = line.trim()
+      for (const item of argsItems) {
+        const { name, description } = item
 
-        if (argLine.startsWith('- ')) {
-          if (argLine.startsWith('- options:')) {
-            inOptions = true
-            if (currentArg && !currentArg.options) {
-              currentArg.options = {}
-            }
-          } else if (inOptions && currentArg) {
-            const optionMatch = argLine.substring(2).match(/^(\w+):\s*(.+)$/)
-            if (optionMatch) {
-              const key = optionMatch[1].trim()
-              const value = optionMatch[2].trim()
-
-              let parsedValue = value
-              if (
-                value.toLowerCase() === 'true' ||
-                value.toLowerCase() === 'false'
-              ) {
-                parsedValue = value.toLowerCase() === 'true'
-              } else if (!isNaN(value)) {
-                if (value.includes('.')) {
-                  parsedValue = parseFloat(value)
-                } else {
-                  parsedValue = parseInt(value)
-                }
-              } else if (value.startsWith('"') || value.startsWith("'")) {
-                parsedValue = value.substring(1, value.length - 1)
-              }
-
-              currentArg.options[key] = parsedValue
-            }
-          } else {
-            if (currentArg) {
-              args.push(currentArg)
-            }
-
-            inOptions = false
-            const nameMatch = argLine.substring(2).match(/^(\w+)(?::\s*(.+))?$/)
-
-            if (nameMatch) {
-              const name = nameMatch[1].trim()
-              const desc = nameMatch[2] ? nameMatch[2].trim() : name
-
-              if (sourceParams.has(name)) {
-                continue
-              }
-
-              const paramInfo = paramMap[name] || {
-                type: typeMapping['str'] || 'STRING',
-                default: null
-              }
-
-              currentArg = {
-                name,
-                type: paramInfo.type,
-                description: desc,
-                options: {}
-              }
-
-              if (paramInfo.options && paramInfo.options.optionsArgs) {
-                Object.assign(currentArg.options, paramInfo.options.optionsArgs)
-              }
-
-              if (paramInfo.default) {
-                let parsedValue = paramInfo.default
-                if (
-                  parsedValue.toLowerCase() === 'true' ||
-                  parsedValue.toLowerCase() === 'false'
-                ) {
-                  parsedValue = parsedValue.toLowerCase() === 'true'
-                } else if (!isNaN(parsedValue)) {
-                  if (parsedValue.includes('.')) {
-                    parsedValue = parseFloat(parsedValue)
-                  } else {
-                    parsedValue = parseInt(parsedValue)
-                  }
-                } else if (
-                  parsedValue.startsWith('"') ||
-                  parsedValue.startsWith("'")
-                ) {
-                  parsedValue = parsedValue.substring(1, parsedValue.length - 1)
-                }
-
-                currentArg.options.default = parsedValue
-              }
-            }
-          }
+        // 跳过已经标记为源参数的
+        if (sourceParams.has(name)) {
+          continue
         }
-      }
 
-      if (currentArg) {
-        args.push(currentArg)
+        if (name && paramMap[name]) {
+          const paramInfo = paramMap[name]
+
+          const argObj = {
+            name,
+            type: paramInfo.type,
+            description,
+            options: {}
+          }
+
+          if (paramInfo.options && paramInfo.options.optionsArgs) {
+            Object.assign(argObj.options, paramInfo.options.optionsArgs)
+          }
+
+          if (paramInfo.default) {
+            let parsedValue = paramInfo.default
+            if (
+              parsedValue.toLowerCase() === 'true' ||
+              parsedValue.toLowerCase() === 'false'
+            ) {
+              parsedValue = parsedValue.toLowerCase() === 'true'
+            } else if (!isNaN(parsedValue)) {
+              if (parsedValue.includes('.')) {
+                parsedValue = parseFloat(parsedValue)
+              } else {
+                parsedValue = parseInt(parsedValue)
+              }
+            } else if (
+              parsedValue.startsWith('"') ||
+              parsedValue.startsWith("'")
+            ) {
+              parsedValue = parsedValue.substring(1, parsedValue.length - 1)
+            }
+
+            argObj.options.default = parsedValue
+          }
+
+          args.push(argObj)
+          console.log(`Found args parameter: ${name}`)
+        }
       }
     }
 
@@ -731,14 +718,6 @@ export async function parsePythonToJson(
   return result
 }
 
-/**
- * 验证Python文件并生成JSON配置
- * @param {File} pythonFile Python文件
- * @param {Object} typeMapping 类型映射
- * @param {Object} optionsMapping 选项映射
- * @returns {Promise<Object>} 生成的JSON配置
- * @throws {Error} 如果文件无效
- */
 export async function validatePythonFile(
   pythonFile,
   typeMapping,
@@ -847,12 +826,6 @@ export async function validatePythonFile(
   )
 }
 
-/**
- * 将插件配置转换为ComfyUI节点定义
- * @param {Object} config 插件配置
- * @param {boolean} print 是否打印结果
- * @returns {Object} ComfyUI节点定义
- */
 export function pluginConfig2ComfyNodeDefs(config, print = true) {
   const defs = {}
 
@@ -930,29 +903,14 @@ export function pluginConfig2ComfyNodeDefs(config, print = true) {
   return JSON.parse(nodeDefs)
 }
 
-/**
- * 完整的Python文件验证流程，处理所有三个文件并返回结果
- * @param {File} typeFile 类型定义文件
- * @param {File} optionsFile 选项定义文件
- * @param {File} pythonFile Python文件
- * @returns {Promise<Object>} 解析后的配置结果和节点定义
- * @throws {Error} 如果任何验证步骤失败
- */
 export async function validatePythonPlugin(typeFile, optionsFile, pythonFile) {
-  // 验证类型定义文件
   const typeMapping = await validateTypeFile(typeFile)
-
-  // 验证选项定义文件
   const optionsMapping = await validateOptionsFile(optionsFile, typeMapping)
-
-  // 验证Python文件并生成JSON
   const jsonConfig = await validatePythonFile(
     pythonFile,
     typeMapping,
     optionsMapping
   )
-
-  // 生成ComfyUI节点定义
   const nodeDefs = pluginConfig2ComfyNodeDefs(jsonConfig, false)
 
   return {

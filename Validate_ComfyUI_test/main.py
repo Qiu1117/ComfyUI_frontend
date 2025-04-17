@@ -1,6 +1,6 @@
 from pmt_type import *
 from pmt_type_options import *
-from typing import Annotated
+from typing import Annotated, Tuple
 
 from skimage.filters import gaussian
 import time
@@ -15,7 +15,7 @@ class smooth:
     sigma_with_options = Annotated[float, FloatOptions(min=0, max=50, step=0.1)]
     
 
-    def smooth_2d(data: Matrix, sigma: sigma_with_options=0.3) -> tuple[Matrix, str]:
+    def smooth_2d(data: Matrix, sigma: sigma_with_options=0.3) -> Tuple[Matrix, str]:
         """
         Smooth 2D data
         
@@ -43,14 +43,14 @@ class smooth:
         Smooth 3D data
         
         Source:
-            data: input 3D data
+            -data: input 3D data
             
         Args:
-            sigma: hyperparameter of gaussian smooth
+            -sigma: hyperparameter of gaussian smooth
 
         Outputs:
-            data: smooth data
-            test_txt: test text output
+            -data: smooth data
+            -test_txt: test text output
         """
 
         start = time.time()

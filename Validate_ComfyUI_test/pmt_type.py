@@ -27,7 +27,6 @@ Type used in pipeline / Litegraph
 import numpy as np
 import pydicom
 import nibabel as nib
-import os
 import utils
 from pandas import DataFrame
 from pydicom.dataset import FileDataset as pydicom_dataset
@@ -107,7 +106,7 @@ class Matrix(np.ndarray):
         # This method is called when the object is created
         if obj is None: return
         # Ensure the array remains 2-dimensional after slicing, etc.
-        if self.ndim != 2:
+        if obj.ndim != 2:
             raise ValueError("Resulting array must be 2-dimensional.")
 
 
@@ -129,7 +128,30 @@ class Volume(np.ndarray):
         if self.ndim != 3:
             raise ValueError("Resulting array must be 3-dimensional.")
         
-
+class SERIES(list):
+     def __new__(cls, input_list):
+         # Convert input to a list
+         obj = list(input_list)
+         
+         # Check if the list contains only DICOM_FILE objects
+         if not all(utils.is_dicom(item) for item in obj):
+             raise ValueError("Input must be a list of path of DICOM files.")
+         
+         return obj
+     
+ 
+class DICOM_LIST(list):
+     def __new__(cls, input_list):
+         # Convert input to a list
+         obj = list(input_list)
+         
+         # Check if the list contains only DICOM_FILE objects
+         if not all(utils.is_dicom(item) for item in obj):
+             raise ValueError("Input must be a list of path of DICOM files.")
+         
+         return obj
+ 
+ 
 
 if __name__ == '__main__':
     path = 'G:\\code\\pmt-software\\Pipeline_Core\\test_data\\brain_seed002\\IMG-0003-00001.dcm'
