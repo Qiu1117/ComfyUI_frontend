@@ -426,7 +426,9 @@ export async function parsePythonToJson(
             name,
             type,
             description,
-            options: paramMap[name]?.options?.optionsArgs || {}
+            options: paramMap[name]?.options?.optionsArgs || {},
+            behavior: 'STATIC', // 添加behavior字段
+            optional: false
           })
 
           sourceParams.add(name)
@@ -460,7 +462,9 @@ export async function parsePythonToJson(
             name,
             type: info.type,
             description: `Input ${name}`,
-            options: info.options?.optionsArgs || {}
+            options: info.options?.optionsArgs || {},
+            behavior: 'STATIC', // 添加behavior字段
+            optional: false
           })
           sourceParams.add(name)
           console.log(
@@ -484,7 +488,9 @@ export async function parsePythonToJson(
             name,
             type: info.type,
             description: `Input ${name}`,
-            options: info.options?.optionsArgs || {}
+            options: info.options?.optionsArgs || {},
+            behavior: 'STATIC', // 添加behavior字段
+            optional: false
           })
           sourceParams.add(name)
           console.log(`Inferred source parameter from name: ${name}`)
@@ -511,7 +517,9 @@ export async function parsePythonToJson(
             name,
             type: paramInfo.type,
             description,
-            options: {}
+            options: {},
+            behavior: 'STATIC',
+            optional: true
           }
 
           if (paramInfo.options && paramInfo.options.optionsArgs) {
@@ -553,7 +561,9 @@ export async function parsePythonToJson(
           name,
           type: info.type,
           description: name,
-          options: {}
+          options: {},
+          behavior: 'STATIC',
+          optional: true
         }
 
         if (info.options && info.options.optionsArgs) {
@@ -637,7 +647,8 @@ export async function parsePythonToJson(
           description:
             index === 0
               ? `Output data from ${funcName}`
-              : `Output ${index + 1} from ${funcName}`
+              : `Output ${index + 1} from ${funcName}`,
+          behavior: 'STATIC'
         })
       })
     } else if (returnLine) {
@@ -682,7 +693,8 @@ export async function parsePythonToJson(
               ? `Output data from ${funcName}`
               : returnValue.isString
                 ? 'Text output'
-                : `Output ${index + 1} from ${funcName}`
+                : `Output ${index + 1} from ${funcName}`,
+          behavior: 'STATIC'
         })
       })
     } else {
@@ -695,7 +707,8 @@ export async function parsePythonToJson(
       outputs.push({
         name: 'data',
         type: defaultType,
-        description: `Output from ${funcName}`
+        description: `Output from ${funcName}`,
+        behavior: 'STATIC'
       })
     }
 
