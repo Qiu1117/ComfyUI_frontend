@@ -38,19 +38,19 @@ class smooth:
         return data, test_txt
     
 
-    def smooth_3d(data: Volume, sigma: sigma_with_options=0.3) -> tuple[Matrix, str]:
+    def smooth_3d(data: Volume, sigma: sigma_with_options=0.3) -> tuple[Volume, str]:
         """
         Smooth 3D data
         
         Source:
-            -data: input 3D data
+            data: input 3D data
             
         Args:
-            -sigma: hyperparameter of gaussian smooth
+            sigma: hyperparameter of gaussian smooth
 
         Outputs:
-            -data: smooth data
-            -test_txt: test text output
+            data: smooth data
+            test_txt: test text output
         """
 
         start = time.time()

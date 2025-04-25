@@ -1,5 +1,5 @@
+import { pluginConfig2ComfyNodeDefs } from './pluginConfig2ComfyNodeDefs.ts'
 import {
-  pluginConfig2ComfyNodeDefs,
   validateOptionsFile,
   validatePythonFile,
   validateTypeFile
