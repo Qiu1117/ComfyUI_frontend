@@ -548,7 +548,7 @@ class PythonValidator {
     )
 
     const description = descriptionMatch ? descriptionMatch[1] : ''
-    const version = versionMatch ? versionMatch[1] : '0.1.0'
+    const version = versionMatch ? versionMatch[1] : ''
     const author = authorMatch ? authorMatch[1] : ''
 
     let executableFunctions = []
