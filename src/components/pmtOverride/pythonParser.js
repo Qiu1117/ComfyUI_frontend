@@ -1,49 +1,137 @@
+import { pluginConfig2ComfyNodeDefs } from './pluginConfig2ComfyNodeDefs'
+
+const config = {
+  docSections: {
+    source: 'Source:',
+    args: 'Args:',
+    returns: 'Returns:',
+    outputs: 'Outputs:'
+  },
+
+  defaultNames: {
+    textOutput: 'text_output',
+    primaryData: 'data',
+    secondaryOutput: (index) => `output_${index + 1}`
+  },
+
+  sourceParameterPatterns: [
+    (name) => name === 'data',
+    (name) => name === 'input_data',
+    (name) => name.endsWith('_data'),
+    (name) => name.startsWith('input_'),
+    (name) => Boolean(name.match(/data\d+/)),
+    (name) => name.endsWith('_file'),
+    (name) => name.endsWith('_files'),
+    (name) => name.includes('series'),
+    (name) => name.includes('image'),
+    (name) => name.includes('volume')
+  ],
+
+  dimensionTypeMap: {
+    '2d': { pythonType: 'Matrix', defaultType: '2D' },
+    '3d': { pythonType: 'Volume', defaultType: '3D' },
+    default: { pythonType: 'Array', defaultType: '1D' }
+  },
+
+  requiredAttributes: [
+    { name: 'DESCRIPTION', regex: /DESCRIPTION\s*=\s*["'].*?["']/s },
+    { name: 'VERSION', regex: /VERSION\s*=\s*["'].*?["']/s },
+    { name: 'AUTHOR', regex: /AUTHOR\s*=\s*["'].*?["']/s },
+    { name: 'EXECUTABLE_FUNCTION', regex: /EXECUTABLE_FUNCTION\s*=\s*\[.*?\]/s }
+  ]
+}
+
+function buildSectionRegex(sectionName) {
+  const otherSections = Object.values(config.docSections)
+    .filter((s) => s !== config.docSections[sectionName])
+    .map((s) => s.replace(/([.*+?^=!:${}()|[\]/\\])/g, '\\$1'))
+
+  return new RegExp(
+    `${config.docSections[sectionName].replace(/([.*+?^=!:${}()|[\]/\\])/g, '\\$1')}\\s*\\n([\\s\\S]*?)(?:\\n\\s*(?:${otherSections.join('|')})|$)`
+  )
+}
+
 export async function readFileAsText(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
-    reader.onload = (e) => resolve(e.target.result)
+    reader.onload = (e) => resolve(e.target?.result)
     reader.onerror = () => reject(new Error('Failed to read file'))
     reader.readAsText(file)
   })
 }
 
 export async function extractTypeDefinitions(pythonCode) {
-  const classRegex = /class\s+(\w+)(?:\(([^)]+)\))?:/g
   const typeMapping = {}
+  const sourceTypes = new Set()
 
+  // 提取类定义
+  const classRegex = /class\s+(\w+)(?:\(([^)]+)\))?:/g
   let match
   while ((match = classRegex.exec(pythonCode)) !== null) {
     const className = match[1]
     typeMapping[className] = className
+
+    // 如果类名包含FILE或常见的源类型，则添加到sourceTypes
+    if (
+      className.includes('FILE') ||
+      className === 'Matrix' ||
+      className === 'Volume' ||
+      className === 'Array' ||
+      className === 'Image' ||
+      className === 'SERIES' ||
+      className === 'DICOM_LIST'
+    ) {
+      sourceTypes.add(className)
+    }
   }
 
-  const typeCommentMatch = pythonCode.match(
-    /'''[\s\S]*Type used in pipeline[\s\S]*?'''[\s\S]*?$/m
+  const typeMappingSection = pythonCode.match(
+    /'''[\s\S]*?Type used in pipeline[\s\S]*?'''[\s\S]*?$/m
   )
-  if (typeCommentMatch) {
-    const typeCommentLines = typeCommentMatch[0].split('\n')
 
-    for (const line of typeCommentLines) {
-      const mappingMatch = line.match(/\s*(\w+)\s*->\s*(\w+)(?:\s*->\s*(\w+))?/)
+  if (typeMappingSection) {
+    const lines = typeMappingSection[0].split('\n')
+
+    for (const line of lines) {
+      const mappingMatch = line.match(
+        /\s*(\w+)\s*(?:->|:)\s*(\w+)(?:\s*(?:->|:)\s*(\w+))?/
+      )
       if (mappingMatch) {
         const pythonType = mappingMatch[1]
         const finalType = mappingMatch[3] || mappingMatch[2]
         typeMapping[pythonType] = finalType
+
+        if (
+          finalType.includes('FILE') ||
+          finalType.includes('LIST') ||
+          pythonType === 'Matrix' ||
+          pythonType === 'Volume' ||
+          pythonType === 'Array' ||
+          pythonType === 'Image' ||
+          pythonType === 'Sequence' ||
+          pythonType === 'SERIES' ||
+          pythonType === 'DICOM_LIST'
+        ) {
+          sourceTypes.add(pythonType)
+        }
       }
     }
   }
 
-  return typeMapping
+  return { typeMapping, sourceTypes }
 }
 
 export async function extractOptionDefinitions(pythonCode) {
-  const classRegex = /class\s+(\w+)Options:/g
   const optionsMapping = {}
 
+  // 查找带有'Options'后缀的类定义
+  const optionsClassRegex = /class\s+(\w+)Options\s*:/g
   let match
-  while ((match = classRegex.exec(pythonCode)) !== null) {
+
+  while ((match = optionsClassRegex.exec(pythonCode)) !== null) {
     const baseType = match[1]
 
+    // 查找类主体
     const classBodyStart = pythonCode.indexOf(':', match.index) + 1
     const nextClassIndex = pythonCode.indexOf('class ', classBodyStart)
     const classBody = pythonCode.substring(
@@ -51,9 +139,11 @@ export async function extractOptionDefinitions(pythonCode) {
       nextClassIndex > -1 ? nextClassIndex : pythonCode.length
     )
 
+    // 从__init__方法中提取参数
     const initMatch = classBody.match(
       /def\s+__init__\s*\(\s*self(?:,\s*([^)]+))?\)/
     )
+
     if (initMatch && initMatch[1]) {
       const params = initMatch[1].split(',').map((p) => {
         const [name, defaultValue] = p.split('=').map((s) => s.trim())
@@ -100,25 +190,22 @@ export function parseReturnStatement(returnStatement) {
   return returnValues.map((item, index) => {
     const result = {
       item: item,
-      varName: `output_${index + 1}`,
+      varName: config.defaultNames.secondaryOutput(index),
       isString: item.startsWith('"') || item.startsWith("'")
     }
 
     const varMatch = item.match(/^\s*(\w+)\s*$/)
     if (varMatch) {
       result.varName = varMatch[1]
-      console.log(
-        `Extracted variable name '${result.varName}' from return value: ${item}`
-      )
     } else if (result.isString) {
-      result.varName = 'text_output'
+      result.varName = config.defaultNames.textOutput
     } else if (item.includes('(') && item.includes(')')) {
       const funcCallMatch = item.match(/^\s*(\w+)\(/)
       if (funcCallMatch) {
         result.varName = `${funcCallMatch[1]}_result`
       }
     } else if (index === 0) {
-      result.varName = 'data'
+      result.varName = config.defaultNames.primaryData
     }
 
     return result
@@ -130,6 +217,7 @@ export async function validateTypeFile(typeFile) {
 
   const pythonCode = await readFileAsText(typeFile)
 
+  // 检查是否包含类定义和类型映射指示符
   const hasTypeDefinitions =
     /class\s+\w+(?:\(([^)]+)\))?:/g.test(pythonCode) &&
     pythonCode.includes('Type used in pipeline')
@@ -143,7 +231,7 @@ export async function validateTypeFile(typeFile) {
   return await extractTypeDefinitions(pythonCode)
 }
 
-export async function validateOptionsFile(optionsFile, typeMapping) {
+export async function validateOptionsFile(optionsFile, { typeMapping }) {
   if (!optionsFile) throw new Error('Options definition file is required')
 
   if (!typeMapping || Object.keys(typeMapping).length === 0) {
@@ -168,23 +256,20 @@ export async function validateOptionsFile(optionsFile, typeMapping) {
 export async function parsePythonToJson(
   pythonCode,
   fileName,
-  typeMapping,
+  { typeMapping, sourceTypes },
   optionsMapping
 ) {
-  // 解析文档字符串中的部分（Source、Args、Outputs）
   function parseDocSection(section) {
     if (!section) return []
 
     const lines = section.trim().split('\n')
     const items = []
-
     let currentItem = null
 
     for (const line of lines) {
       const trimmedLine = line.trim()
       if (!trimmedLine) continue
 
-      // 处理以"-"开头的条目（Google风格）
       if (trimmedLine.startsWith('-')) {
         if (currentItem) {
           items.push(currentItem)
@@ -196,9 +281,7 @@ export async function parsePythonToJson(
         const desc = parts.length > 1 ? parts.slice(1).join(':').trim() : name
 
         currentItem = { name, description: desc }
-      }
-      // 处理直接以名称开头的条目（标准模式）
-      else if (trimmedLine.includes(':')) {
+      } else if (trimmedLine.includes(':')) {
         if (currentItem) {
           items.push(currentItem)
         }
@@ -208,9 +291,7 @@ export async function parsePythonToJson(
         const desc = parts.length > 1 ? parts.slice(1).join(':').trim() : name
 
         currentItem = { name, description: desc }
-      }
-      // 处理当前条目的继续行
-      else if (currentItem) {
+      } else if (currentItem) {
         currentItem.description += ' ' + trimmedLine
       }
     }
@@ -222,8 +303,7 @@ export async function parsePythonToJson(
     return items
   }
 
-  const classRegex = /class\s+(\w+)\s*:/
-  const classMatch = pythonCode.match(classRegex)
+  const classMatch = pythonCode.match(/class\s+(\w+)\s*:/)
   const pluginName = classMatch ? classMatch[1] : fileName.replace(/\.py$/, '')
 
   const descriptionMatch = pythonCode.match(
@@ -255,51 +335,104 @@ export async function parsePythonToJson(
     functions: []
   }
 
+  // Extract annotated fields with special handling for COMBO
   const annotatedFields = {}
-  const annotatedRegex =
-    /(\w+)_with_options\s*=\s*Annotated\[(\w+),\s*(\w+)Options\(([^)]*)\)\]/g
+
+  const annotatedRegex = /(\w+)(?:_types)?\s*=\s*Annotated\[(\w+),\s*([^)]+)\)/g
   let annotatedMatch
 
   while ((annotatedMatch = annotatedRegex.exec(pythonCode)) !== null) {
     const fieldName = annotatedMatch[1]
     const fieldType = annotatedMatch[2]
-    const optionsClass = annotatedMatch[3]
-    const optionsArgsStr = annotatedMatch[4]
+    const optionsStr = annotatedMatch[3]
 
-    const optionsArgs = {}
+    if (optionsStr.includes('COMBO') && optionsStr.includes('enum_types')) {
+      const startIndex = optionsStr.indexOf('[')
+      const endIndex = optionsStr.lastIndexOf(']')
 
-    const paramRegex = /(\w+)\s*=\s*([^,]+)(?:,|$)/g
-    let paramMatch
+      if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
+        const enumValuesStr = optionsStr.substring(startIndex + 1, endIndex)
 
-    while ((paramMatch = paramRegex.exec(optionsArgsStr)) !== null) {
-      const paramName = paramMatch[1].trim()
-      let paramValue = paramMatch[2].trim()
+        const enumValues = enumValuesStr
+          .split(',')
+          .map((val) => {
+            return val
+              .trim()
+              .replace(/[\r\n\s]+/g, ' ')
+              .replace(/^['"]|['"]$/g, '')
+          })
+          .filter((val) => val)
 
-      if (
-        paramValue.toLowerCase() === 'true' ||
-        paramValue.toLowerCase() === 'false'
-      ) {
-        paramValue = paramValue.toLowerCase() === 'true'
-      } else if (!isNaN(paramValue)) {
-        if (paramValue.includes('.')) {
-          paramValue = parseFloat(paramValue)
-        } else {
-          paramValue = parseInt(paramValue)
+        annotatedFields[fieldName] = {
+          type: 'COMBO',
+          values: enumValues,
+          optionsArgs: {}
         }
-      } else if (paramValue.startsWith('"') || paramValue.startsWith("'")) {
-        paramValue = paramValue.substring(1, paramValue.length - 1)
       }
+    } else {
+      const optionsClassMatch = optionsStr.match(/(\w+)Options?\(([^)]*)\)/)
+      if (optionsClassMatch) {
+        const optionsClass = optionsClassMatch[1]
+        const optionsArgsStr = optionsClassMatch[2]
+        const optionsArgs = {}
 
-      optionsArgs[paramName] = paramValue
-    }
+        const paramRegex = /(\w+)\s*=\s*([^,]+)(?:,|$)/g
+        let paramMatch
 
-    annotatedFields[fieldName] = {
-      type: fieldType,
-      optionsClass,
-      optionsArgs
+        while ((paramMatch = paramRegex.exec(optionsArgsStr)) !== null) {
+          const paramName = paramMatch[1].trim()
+          let paramValue = paramMatch[2].trim()
+
+          if (
+            paramValue.toLowerCase() === 'true' ||
+            paramValue.toLowerCase() === 'false'
+          ) {
+            paramValue = paramValue.toLowerCase() === 'true'
+          } else if (!isNaN(Number(paramValue))) {
+            if (paramValue.includes('.')) {
+              paramValue = parseFloat(paramValue)
+            } else {
+              paramValue = parseInt(paramValue)
+            }
+          } else if (paramValue.startsWith('"') || paramValue.startsWith("'")) {
+            paramValue = paramValue.substring(1, paramValue.length - 1)
+          }
+
+          optionsArgs[paramName] = paramValue
+        }
+
+        annotatedFields[fieldName] = {
+          type: fieldType,
+          optionsClass,
+          optionsArgs
+        }
+      }
     }
   }
 
+  // 查找具有_types后缀的参数，可能被引用
+  const classBodyMatch = pythonCode.match(
+    /class\s+\w+\s*:([\s\S]*?)(?:class|Z)/i
+  )
+  if (classBodyMatch) {
+    const classBody = classBodyMatch[1]
+    const paramTypesRegex = /(\w+)_types\s*=\s*[^=]*$/gm
+    let paramTypesMatch
+
+    while ((paramTypesMatch = paramTypesRegex.exec(classBody)) !== null) {
+      const baseParamName = paramTypesMatch[1]
+      // 将param_types映射到param
+      if (
+        annotatedFields[baseParamName + '_types'] &&
+        !annotatedFields[baseParamName]
+      ) {
+        annotatedFields[baseParamName] =
+          annotatedFields[baseParamName + '_types']
+      }
+    }
+  }
+
+  // 处理函数
   const funcRegex = /def\s+(\w+)\s*\(([^)]*)\)(?:\s*->\s*([^:]+))?:/g
   const docstringRegex = /"""([\s\S]*?)"""/
 
@@ -332,35 +465,34 @@ export async function parsePythonToJson(
     const docMatch = funcBody.match(docstringRegex)
     const docstring = docMatch ? docMatch[1].trim() : ''
 
-    // 先尝试查找Outputs部分，如果没有再尝试查找Returns部分
-    let outputsSection = docstring.match(/Outputs:\s*\n([\s\S]*?)(?:\n\s*\n|$)/)
-
-    // 如果没有找到Outputs部分，尝试查找Returns部分
+    // 使用配置中的部分名称构建正则表达式
+    let outputsSection = docstring.match(
+      new RegExp(
+        `${config.docSections.outputs.replace(/([.*+?^=!:${}()|[\]/\\])/g, '\\$1')}\\s*\\n([\\s\\S]*?)(?:\\n\\s*\\n|$)`
+      )
+    )
     if (!outputsSection) {
-      outputsSection = docstring.match(/Returns:\s*\n([\s\S]*?)(?:\n\s*\n|$)/)
+      outputsSection = docstring.match(
+        new RegExp(
+          `${config.docSections.returns.replace(/([.*+?^=!:${}()|[\]/\\])/g, '\\$1')}\\s*\\n([\\s\\S]*?)(?:\\n\\s*\\n|$)`
+        )
+      )
     }
 
-    // 创建一个变量名映射表，记录docstring中定义的输出变量名
     const outputVarNames = {}
-
-    // 解析Outputs/Returns部分来找到变量名
     if (outputsSection) {
       const outputsItems = parseDocSection(outputsSection[1])
-
       outputsItems.forEach((item, index) => {
         outputVarNames[index] = item.name
-        console.log(
-          `Found output variable from docs: ${item.name} at position ${index}`
-        )
       })
     }
 
     const descLines = docstring.split('\n')
-    let functionDescription = descLines.length > 0 ? descLines[0].trim() : ''
+    const functionDescription = descLines.length > 0 ? descLines[0].trim() : ''
 
-    const sourceRegex =
-      /Source:\s*\n([\s\S]*?)(?:\n\s*Args:|\n\s*Returns:|\n\s*Outputs:|$)/
-    const argsRegex = /Args:\s*\n([\s\S]*?)(?:\n\s*Returns:|\n\s*Outputs:|$)/
+    // 使用配置中的部分名称
+    const sourceRegex = buildSectionRegex('source')
+    const argsRegex = buildSectionRegex('args')
 
     const sourceMatch = docstring.match(sourceRegex)
     const argsMatch = docstring.match(argsRegex)
@@ -369,6 +501,15 @@ export async function parsePythonToJson(
     const args = []
 
     const paramMap = {}
+
+    const typeToComboMap = {}
+
+    Object.keys(annotatedFields).forEach((key) => {
+      if (key.endsWith('_types') && annotatedFields[key].type === 'COMBO') {
+        typeToComboMap[key] = annotatedFields[key]
+      }
+    })
+
     params.split(',').forEach((p) => {
       const trimParam = p.trim()
       if (trimParam && !trimParam.startsWith('self')) {
@@ -382,10 +523,6 @@ export async function parsePythonToJson(
           const typeAndDefault = parts[1].split('=')
           paramType = typeAndDefault[0].trim()
 
-          if (paramName in annotatedFields) {
-            paramType = annotatedFields[paramName].type
-          }
-
           if (typeAndDefault.length > 1) {
             defaultValue = typeAndDefault[1].trim()
           }
@@ -394,24 +531,42 @@ export async function parsePythonToJson(
           defaultValue = nameAndDefault[1].trim()
         }
 
-        let mappedType = 'STRING'
-        for (const [pythonType, mappedValue] of Object.entries(typeMapping)) {
-          if (paramType && paramType.includes(pythonType)) {
-            mappedType = mappedValue
-            break
+        if (
+          annotatedFields[paramName] &&
+          annotatedFields[paramName].type === 'COMBO'
+        ) {
+          paramMap[paramName] = {
+            type: 'COMBO',
+            default: defaultValue,
+            options: annotatedFields[paramName]
           }
-        }
+        } else if (paramType && typeToComboMap[paramType]) {
+          paramMap[paramName] = {
+            type: 'COMBO',
+            default: defaultValue,
+            options: typeToComboMap[paramType]
+          }
+        } else {
+          let mappedType = 'STRING'
+          for (const [pythonType, mappedValue] of Object.entries(typeMapping)) {
+            if (paramType && paramType.includes(pythonType)) {
+              mappedType = mappedValue
+              break
+            }
+          }
 
-        paramMap[paramName] = {
-          type: mappedType,
-          default: defaultValue,
-          options: annotatedFields[paramName] || null
+          paramMap[paramName] = {
+            type: mappedType,
+            default: defaultValue,
+            options: annotatedFields[paramName] || null
+          }
         }
       }
     })
 
     const sourceParams = new Set()
 
+    // 从文档中处理源参数
     if (sourceMatch) {
       const sourceSection = sourceMatch[1].trim()
       const sourceItems = parseDocSection(sourceSection)
@@ -427,77 +582,48 @@ export async function parsePythonToJson(
             type,
             description,
             options: paramMap[name]?.options?.optionsArgs || {},
-            behavior: 'STATIC', // 添加behavior字段
+            behavior: 'STATIC',
             optional: false
           })
 
           sourceParams.add(name)
-          console.log(`Found source parameter: ${name}`)
         }
       }
     }
 
-    // 源类型集合 - 用于通过类型识别源参数
-    const sourceTypes = new Set([
-      'DICOM_FILE',
-      'IMAGE_FILE',
-      'CSV_FILE',
-      'EXCEL_FILE',
-      'DATA_FILE',
-      'Matrix',
-      'Volume',
-      'Array',
-      'Image',
-      'Sequence',
-      'FILE',
-      'FILES'
-    ])
-
-    // 通过参数类型推断源参数
+    // 通过类型推断其他源参数
     Object.entries(paramMap).forEach(([name, info]) => {
       if (!sourceParams.has(name)) {
-        // 通过类型判断是否为源参数
+        // 使用配置中的sourceTypes集合
         if (sourceTypes.has(info.type)) {
           sources.push({
             name,
             type: info.type,
             description: `Input ${name}`,
             options: info.options?.optionsArgs || {},
-            behavior: 'STATIC', // 添加behavior字段
+            behavior: 'STATIC',
             optional: false
           })
           sourceParams.add(name)
-          console.log(
-            `Inferred source parameter from type: ${name} (${info.type})`
-          )
         }
-        // 通过命名模式判断是否为源参数
+        // 使用配置中的命名模式检查
         else if (
-          name === 'data' ||
-          name === 'input_data' ||
-          name.endsWith('_data') ||
-          name.startsWith('input_') ||
-          name.match(/data\d+/) ||
-          name.endsWith('_file') ||
-          name.endsWith('_files') ||
-          name.includes('series') ||
-          name.includes('image') ||
-          name.includes('volume')
+          config.sourceParameterPatterns.some((pattern) => pattern(name))
         ) {
           sources.push({
             name,
             type: info.type,
             description: `Input ${name}`,
             options: info.options?.optionsArgs || {},
-            behavior: 'STATIC', // 添加behavior字段
+            behavior: 'STATIC',
             optional: false
           })
           sourceParams.add(name)
-          console.log(`Inferred source parameter from name: ${name}`)
         }
       }
     })
 
+    // 从文档中处理args参数
     if (argsMatch) {
       const argsSection = argsMatch[1].trim()
       const argsItems = parseDocSection(argsSection)
@@ -505,10 +631,7 @@ export async function parsePythonToJson(
       for (const item of argsItems) {
         const { name, description } = item
 
-        // 跳过已经标记为源参数的
-        if (sourceParams.has(name)) {
-          continue
-        }
+        if (sourceParams.has(name)) continue
 
         if (name && paramMap[name]) {
           const paramInfo = paramMap[name]
@@ -522,18 +645,29 @@ export async function parsePythonToJson(
             optional: true
           }
 
-          if (paramInfo.options && paramInfo.options.optionsArgs) {
+          if (
+            paramInfo.type === 'COMBO' &&
+            paramInfo.options &&
+            paramInfo.options.values
+          ) {
+            argObj.options = {
+              default: paramInfo.default
+                ? paramInfo.default.replace(/['"]/g, '')
+                : paramInfo.options.values[0],
+              values: paramInfo.options.values
+            }
+          } else if (paramInfo.options && paramInfo.options.optionsArgs) {
             Object.assign(argObj.options, paramInfo.options.optionsArgs)
           }
 
-          if (paramInfo.default) {
+          if (paramInfo.default && !argObj.options.default) {
             let parsedValue = paramInfo.default
             if (
               parsedValue.toLowerCase() === 'true' ||
               parsedValue.toLowerCase() === 'false'
             ) {
               parsedValue = parsedValue.toLowerCase() === 'true'
-            } else if (!isNaN(parsedValue)) {
+            } else if (!isNaN(Number(parsedValue))) {
               if (parsedValue.includes('.')) {
                 parsedValue = parseFloat(parsedValue)
               } else {
@@ -550,7 +684,6 @@ export async function parsePythonToJson(
           }
 
           args.push(argObj)
-          console.log(`Found args parameter: ${name}`)
         }
       }
     }
@@ -566,18 +699,26 @@ export async function parsePythonToJson(
           optional: true
         }
 
-        if (info.options && info.options.optionsArgs) {
+        // COMBO类型的特殊处理
+        if (info.type === 'COMBO' && info.options && info.options.values) {
+          argObj.options = {
+            default: info.default
+              ? info.default.replace(/['"]/g, '')
+              : info.options.values[0],
+            values: info.options.values
+          }
+        } else if (info.options && info.options.optionsArgs) {
           Object.assign(argObj.options, info.options.optionsArgs)
         }
 
-        if (info.default) {
+        if (info.default && !argObj.options.default) {
           let parsedValue = info.default
           if (
             parsedValue.toLowerCase() === 'true' ||
             parsedValue.toLowerCase() === 'false'
           ) {
             parsedValue = parsedValue.toLowerCase() === 'true'
-          } else if (!isNaN(parsedValue)) {
+          } else if (!isNaN(Number(parsedValue))) {
             if (parsedValue.includes('.')) {
               parsedValue = parseFloat(parsedValue)
             } else {
@@ -599,7 +740,7 @@ export async function parsePythonToJson(
 
     const outputs = []
 
-    // 首先尝试查找返回语句
+    // 提取return语句
     const returnLines = []
     const returnRegex = /return\s+(.+?)(?:\n|$)/g
     let returnLineMatch
@@ -608,12 +749,12 @@ export async function parsePythonToJson(
       returnLines.push(returnLineMatch[1].trim())
     }
 
-    // 找出最后一个return语句（通常是函数的实际返回值）
+    // 获取最后一个return语句
     const returnLine =
       returnLines.length > 0 ? returnLines[returnLines.length - 1] : null
 
     if (returnType) {
-      // 使用类型注解来确定返回类型
+      // 使用类型注解确定返回类型
       const returnTypes = returnType.split(',').map((t) => t.trim())
 
       returnTypes.forEach((type, index) => {
@@ -625,20 +766,20 @@ export async function parsePythonToJson(
           }
         }
 
-        // 尝试从Outputs/Returns文档部分获取变量名
         let outputName = outputVarNames[index] || null
 
         if (!outputName && returnLine) {
-          // 如果我们有return语句，尝试从中提取变量名
           const returnValues = parseReturnStatement(returnLine)
           if (returnValues.length > index) {
             outputName = returnValues[index].varName
           }
         }
 
-        // 如果仍然没有找到名称，使用默认值
         if (!outputName) {
-          outputName = index === 0 ? 'data' : `output_${index + 1}`
+          outputName =
+            index === 0
+              ? config.defaultNames.primaryData
+              : config.defaultNames.secondaryOutput(index)
         }
 
         outputs.push({
@@ -652,13 +793,10 @@ export async function parsePythonToJson(
         })
       })
     } else if (returnLine) {
-      // 没有类型注解，但有return语句
+      // 没有类型注解，但我们有return语句
       const returnValues = parseReturnStatement(returnLine)
 
-      console.log(`Parsed return values:`, returnValues)
-
       returnValues.forEach((returnValue, index) => {
-        // 尝试从Outputs/Returns文档部分获取更好的输出名称
         const outputName = outputVarNames[index] || returnValue.varName
 
         // 确定输出类型
@@ -666,14 +804,18 @@ export async function parsePythonToJson(
         if (returnValue.isString) {
           outputType = typeMapping['str'] || 'STRING'
         } else if (index === 0) {
-          // 根据函数名推断第一个返回值的类型
-          outputType = funcName.includes('2d')
-            ? typeMapping['Matrix'] || '2D'
+          // 使用函数名称中的维度提示来推断类型
+          const dimKey = funcName.includes('2d')
+            ? '2d'
             : funcName.includes('3d')
-              ? typeMapping['Volume'] || '3D'
-              : typeMapping['Array'] || '1D'
+              ? '3d'
+              : 'default'
+
+          const defaultMapConfig = config.dimensionTypeMap[dimKey]
+          outputType =
+            typeMapping[defaultMapConfig.pythonType] ||
+            defaultMapConfig.defaultType
         } else {
-          // 为其他返回值尝试更智能的类型推断
           if (
             returnValue.item.toLowerCase().includes('text') ||
             returnValue.item.startsWith('f"') ||
@@ -698,14 +840,19 @@ export async function parsePythonToJson(
         })
       })
     } else {
-      const defaultType = funcName.includes('2d')
-        ? typeMapping['Matrix'] || '2D'
+      // 如果找不到返回类型或语句，则使用默认输出
+      const dimKey = funcName.includes('2d')
+        ? '2d'
         : funcName.includes('3d')
-          ? typeMapping['Volume'] || '3D'
-          : typeMapping['Array'] || '1D'
+          ? '3d'
+          : 'default'
+
+      const defaultMapConfig = config.dimensionTypeMap[dimKey]
+      const defaultType =
+        typeMapping[defaultMapConfig.pythonType] || defaultMapConfig.defaultType
 
       outputs.push({
-        name: 'data',
+        name: config.defaultNames.primaryData,
         type: defaultType,
         description: `Output from ${funcName}`,
         behavior: 'STATIC'
@@ -733,7 +880,7 @@ export async function parsePythonToJson(
 
 export async function validatePythonFile(
   pythonFile,
-  typeMapping,
+  { typeMapping, sourceTypes },
   optionsMapping
 ) {
   if (!pythonFile) throw new Error('Python file is required')
@@ -761,18 +908,13 @@ export async function validatePythonFile(
     )
   }
 
-  const hasDescription = /DESCRIPTION\s*=\s*["'].*?["']/s.test(pythonCode)
-  const hasVersion = /VERSION\s*=\s*["'].*?["']/s.test(pythonCode)
-  const hasAuthor = /AUTHOR\s*=\s*["'].*?["']/s.test(pythonCode)
-  const hasExecutableFunction = /EXECUTABLE_FUNCTION\s*=\s*\[.*?\]/s.test(
-    pythonCode
-  )
-
+  // 检查必需属性
   const missingAttributes = []
-  if (!hasDescription) missingAttributes.push('DESCRIPTION')
-  if (!hasVersion) missingAttributes.push('VERSION')
-  if (!hasAuthor) missingAttributes.push('AUTHOR')
-  if (!hasExecutableFunction) missingAttributes.push('EXECUTABLE_FUNCTION')
+  for (const attr of config.requiredAttributes) {
+    if (!attr.regex.test(pythonCode)) {
+      missingAttributes.push(attr.name)
+    }
+  }
 
   if (missingAttributes.length > 0) {
     throw new Error(
@@ -803,12 +945,22 @@ export async function validatePythonFile(
       if (executableFunctions.includes(funcName)) {
         foundFunctions.add(funcName)
 
-        const hasSourceSection = /Source:\s*\n/i.test(docString)
-        const hasArgsSection = /Args:\s*\n/i.test(docString)
+        const hasSourceSection = new RegExp(
+          config.docSections.source.replace(
+            /([.*+?^=!:${}()|[\]/\\])/g,
+            '\\$1'
+          ) + '\\s*\\n',
+          'i'
+        ).test(docString)
+        const hasArgsSection = new RegExp(
+          config.docSections.args.replace(/([.*+?^=!:${}()|[\]/\\])/g, '\\$1') +
+            '\\s*\\n',
+          'i'
+        ).test(docString)
 
         if (!hasSourceSection || !hasArgsSection) {
           missingDocumentation.push(
-            `${funcName} (missing: ${!hasSourceSection ? 'Source' : ''}${!hasSourceSection && !hasArgsSection ? ', ' : ''}${!hasArgsSection ? 'Args' : ''})`
+            `${funcName} (missing: ${!hasSourceSection ? config.docSections.source.replace(':', '') : ''}${!hasSourceSection && !hasArgsSection ? ', ' : ''}${!hasArgsSection ? config.docSections.args.replace(':', '') : ''})`
           )
         }
       }
@@ -834,94 +986,17 @@ export async function validatePythonFile(
   return await parsePythonToJson(
     pythonCode,
     pythonFile.name,
-    typeMapping,
+    { typeMapping, sourceTypes },
     optionsMapping
   )
 }
 
-export function pluginConfig2ComfyNodeDefs(config, print = true) {
-  const defs = {}
-
-  if (!config || !config.functions) {
-    return defs
-  }
-
-  config.functions.forEach((func) => {
-    const def = {
-      name: `plugin.${config.plugin_name}.${func.function_name}`,
-      category: `plugins/${config.plugin_name}`,
-      display_name: func.display_name,
-      description: func.description,
-      python_module: `custom_nodes.${config.plugin_name}.${func.function_name}`,
-      input: {},
-      input_order: {},
-      output: [],
-      output_name: [],
-      output_is_list: [],
-      output_node: false
-    }
-
-    const input = def.input
-    const input_order = def.input_order
-    if (func.input?.source) {
-      func.input?.source.forEach((src) => {
-        if (!input.required) {
-          input.required = {}
-        }
-        input.required[src.name] = [src.type]
-        if (src.options) {
-          input.required[src.name].push(src.options)
-        }
-        if (!input_order.required) {
-          input_order.required = []
-        }
-        input_order.required.push(src.name)
-      })
-    }
-    if (func.input?.args) {
-      func.input?.args.forEach((arg) => {
-        if (!input.optional) {
-          input.optional = {}
-        }
-        input.optional[arg.name] = [arg.type]
-        if (arg.options) {
-          input.optional[arg.name].push(arg.options)
-        }
-        if (!input_order.optional) {
-          input_order.optional = []
-        }
-        input_order.optional.push(arg.name)
-      })
-    }
-
-    const output = def.output
-    const output_name = def.output_name
-    const output_is_list = def.output_is_list
-    if (func.output) {
-      func.output.forEach((out) => {
-        output.push(out.type)
-        output_name.push(out.name)
-        output_is_list.push(false)
-      })
-    }
-
-    defs[def.name] = def
-  })
-
-  const nodeDefs = JSON.stringify(defs, null, 2)
-  if (print) {
-    console.log(nodeDefs)
-  }
-
-  return JSON.parse(nodeDefs)
-}
-
 export async function validatePythonPlugin(typeFile, optionsFile, pythonFile) {
-  const typeMapping = await validateTypeFile(typeFile)
-  const optionsMapping = await validateOptionsFile(optionsFile, typeMapping)
+  const { typeMapping, sourceTypes } = await validateTypeFile(typeFile)
+  const optionsMapping = await validateOptionsFile(optionsFile, { typeMapping })
   const jsonConfig = await validatePythonFile(
     pythonFile,
-    typeMapping,
+    { typeMapping, sourceTypes },
     optionsMapping
   )
   const nodeDefs = pluginConfig2ComfyNodeDefs(jsonConfig, false)

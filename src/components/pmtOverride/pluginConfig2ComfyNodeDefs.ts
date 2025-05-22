@@ -23,7 +23,7 @@ export function pluginConfig2ComfyNodeDefs(config: any, print = true) {
     const input = def.input as any
     const input_order = def.input_order as any
     if (func.input?.source) {
-      func.input?.source.forEach((src: any) => {
+      func.input.source.forEach((src: any) => {
         if (!input.required) {
           input.required = {}
         }
@@ -38,12 +38,18 @@ export function pluginConfig2ComfyNodeDefs(config: any, print = true) {
       })
     }
     if (func.input?.args) {
-      func.input?.args.forEach((arg: any) => {
+      func.input.args.forEach((arg: any) => {
         if (!input.optional) {
           input.optional = {}
         }
         input.optional[arg.name] = [arg.type]
         if (arg.options && Object.keys(arg.options).length > 0) {
+          if (arg.type === 'COMBO') {
+            if (arg.options.values) {
+              input.optional[arg.name] = [arg.options.values]
+              delete arg.options.values
+            }
+          }
           input.optional[arg.name].push(arg.options)
         }
         if (!input_order.optional) {
@@ -68,9 +74,7 @@ export function pluginConfig2ComfyNodeDefs(config: any, print = true) {
   })
 
   const nodeDefs = JSON.stringify(defs, null, 2)
-  if (print) {
-    console.log(nodeDefs)
-  }
+  console.log(nodeDefs)
 
   return JSON.parse(nodeDefs)
 }
