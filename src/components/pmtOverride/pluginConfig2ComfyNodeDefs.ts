@@ -44,13 +44,11 @@ export function pluginConfig2ComfyNodeDefs(config: any, print = true) {
         }
         input.optional[arg.name] = [arg.type]
         if (arg.options && Object.keys(arg.options).length > 0) {
-          if (arg.type === 'COMBO') {
-            if (arg.options.values) {
-              input.optional[arg.name] = [arg.options.values]
-              delete arg.options.values
-            }
+          const { values, ...options } = arg.options
+          if (arg.type === 'COMBO' && values) {
+            input.optional[arg.name] = [values]
           }
-          input.optional[arg.name].push(arg.options)
+          input.optional[arg.name].push(options)
         }
         if (!input_order.optional) {
           input_order.optional = []
@@ -74,7 +72,7 @@ export function pluginConfig2ComfyNodeDefs(config: any, print = true) {
   })
 
   const nodeDefs = JSON.stringify(defs, null, 2)
-  console.log(nodeDefs)
+  if (print) console.log(nodeDefs)
 
   return JSON.parse(nodeDefs)
 }
