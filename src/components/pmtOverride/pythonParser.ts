@@ -1,60 +1,45 @@
 import { pluginConfig2ComfyNodeDefs } from './pluginConfig2ComfyNodeDefs'
 
-// Types definitions
-interface DocSections {
-  source: string
-  args: string
-  returns: string
-  outputs: string
-}
-
-interface DefaultNames {
-  textOutput: string
-  primaryData: string
-  secondaryOutput: (index: number) => string
-}
-
-interface DimensionTypeMap {
-  [key: string]: {
-    pythonType: string
-    defaultType: string
+interface Config {
+  docSections: {
+    source: string
+    args: string
+    returns: string
+    outputs: string
   }
-}
-
-interface RequiredAttribute {
-  name: string
-  regex: RegExp
-}
-
-interface ConfigType {
-  docSections: DocSections
-  defaultNames: DefaultNames
+  defaultNames: {
+    textOutput: string
+    primaryData: string
+    secondaryOutput: (index: number) => string
+  }
   sourceParameterPatterns: ((name: string) => boolean)[]
-  dimensionTypeMap: DimensionTypeMap
-  requiredAttributes: RequiredAttribute[]
+  dimensionTypeMap: {
+    [key: string]: {
+      pythonType: string
+      defaultType: string
+    }
+  }
+  requiredAttributes: {
+    name: string
+    regex: RegExp
+  }[]
 }
 
-interface TypeDefinition {
-  typeMapping: { [key: string]: string }
-  sourceTypes: Set<string>
+interface AnnotatedField {
+  type: string
+  baseType?: string
+  values?: string[]
+  optionsClass?: string
+  optionsArgs?: Record<string, any>
 }
 
-interface ParamConfig {
+interface ParamInfo {
   type: string
   default: string | null
   options: any
 }
 
-interface OptionParam {
-  name: string
-  defaultValue: string | null
-}
-
-interface OptionsMapping {
-  [key: string]: OptionParam[]
-}
-
-interface ReturnValueInfo {
+interface ReturnValue {
   item: string
   varName: string
   isString: boolean
@@ -65,67 +50,12 @@ interface DocItem {
   description: string
 }
 
-interface AnnotatedField {
-  type: string
-  values?: string[]
-  optionsClass?: string
-  optionsArgs: Record<string, any>
+interface TypeDefinitions {
+  typeMapping: Record<string, string>
+  sourceTypes: Set<string>
 }
 
-interface Source {
-  name: string
-  type: string
-  description: string
-  options: Record<string, any>
-  behavior: string
-  optional: boolean
-}
-
-interface Arg {
-  name: string
-  type: string
-  description: string
-  options: Record<string, any>
-  behavior: string
-  optional: boolean
-}
-
-interface Output {
-  name: string
-  type: string
-  description: string
-  behavior: string
-}
-
-interface FunctionObj {
-  function_name: string
-  display_name: string
-  description: string
-  input: {
-    source: Source[]
-    args: Arg[]
-  }
-  output: Output[]
-}
-
-interface ParsedResult {
-  plugin_name: string
-  description: string
-  version: string
-  author: string
-  functions: FunctionObj[]
-}
-
-interface ValidateResult {
-  jsonConfig: ParsedResult
-  nodeDefs: any
-  typeMapping: { [key: string]: string }
-  optionsMapping: OptionsMapping
-}
-
-// Configuration object for storing configurable parameters and rules
-const config: ConfigType = {
-  // Document section titles
+const config: Config = {
   docSections: {
     source: 'Source:',
     args: 'Args:',
@@ -133,35 +63,31 @@ const config: ConfigType = {
     outputs: 'Outputs:'
   },
 
-  // Default variable names
   defaultNames: {
     textOutput: 'text_output',
     primaryData: 'data',
-    secondaryOutput: (index: number): string => `output_${index + 1}`
+    secondaryOutput: (index: number) => `output_${index + 1}`
   },
 
-  // Parameter naming patterns for identifying source parameters
   sourceParameterPatterns: [
-    (name: string): boolean => name === 'data',
-    (name: string): boolean => name === 'input_data',
-    (name: string): boolean => name.endsWith('_data'),
-    (name: string): boolean => name.startsWith('input_'),
-    (name: string): boolean => Boolean(name.match(/data\d+/)),
-    (name: string): boolean => name.endsWith('_file'),
-    (name: string): boolean => name.endsWith('_files'),
-    (name: string): boolean => name.includes('series'),
-    (name: string): boolean => name.includes('image'),
-    (name: string): boolean => name.includes('volume')
+    (name: string) => name === 'data',
+    (name: string) => name === 'input_data',
+    (name: string) => name.endsWith('_data'),
+    (name: string) => name.startsWith('input_'),
+    (name: string) => Boolean(name.match(/data\d+/)),
+    (name: string) => name.endsWith('_file'),
+    (name: string) => name.endsWith('_files'),
+    (name: string) => name.includes('series'),
+    (name: string) => name.includes('image'),
+    (name: string) => name.includes('volume')
   ],
 
-  // Dimension type mapping
   dimensionTypeMap: {
     '2d': { pythonType: 'Matrix', defaultType: '2D' },
     '3d': { pythonType: 'Volume', defaultType: '3D' },
     default: { pythonType: 'Array', defaultType: '1D' }
   },
 
-  // Required Python module attributes
   requiredAttributes: [
     { name: 'DESCRIPTION', regex: /DESCRIPTION\s*=\s*["'].*?["']/s },
     { name: 'VERSION', regex: /VERSION\s*=\s*["'].*?["']/s },
@@ -170,14 +96,16 @@ const config: ConfigType = {
   ]
 }
 
-// Helper function: build regex for document sections
-function buildSectionRegex(sectionName: keyof DocSections): RegExp {
+function buildSectionRegex(sectionName: string): RegExp {
   const otherSections = Object.values(config.docSections)
-    .filter((s) => s !== config.docSections[sectionName])
-    .map((s) => s.replace(/([.*+?^=!:${}()|[\]/\\])/g, '\\$1')) // Escape special characters
+    .filter(
+      (s) =>
+        s !== config.docSections[sectionName as keyof typeof config.docSections]
+    )
+    .map((s) => s.replace(/([.*+?^=!:${}()|[\]/\\])/g, '\\$1'))
 
   return new RegExp(
-    `${config.docSections[sectionName].replace(/([.*+?^=!:${}()|[\]/\\])/g, '\\$1')}\\s*\\n([\\s\\S]*?)(?:\\n\\s*(?:${otherSections.join('|')})|$)`
+    `${config.docSections[sectionName as keyof typeof config.docSections].replace(/([.*+?^=!:${}()|[\]/\\])/g, '\\$1')}\\s*\\n([\\s\\S]*?)(?:\\n\\s*(?:${otherSections.join('|')})|$)`
   )
 }
 
@@ -192,18 +120,16 @@ export async function readFileAsText(file: File): Promise<string> {
 
 export async function extractTypeDefinitions(
   pythonCode: string
-): Promise<TypeDefinition> {
-  const typeMapping: { [key: string]: string } = {}
+): Promise<TypeDefinitions> {
+  const typeMapping: Record<string, string> = {}
   const sourceTypes = new Set<string>()
 
-  // Extract class definitions
   const classRegex = /class\s+(\w+)(?:\(([^)]+)\))?:/g
   let match: RegExpExecArray | null
   while ((match = classRegex.exec(pythonCode)) !== null) {
     const className = match[1]
     typeMapping[className] = className
 
-    // If class name contains FILE or common source types, add to sourceTypes
     if (
       className.includes('FILE') ||
       className === 'Matrix' ||
@@ -217,7 +143,6 @@ export async function extractTypeDefinitions(
     }
   }
 
-  // Parse special type mapping comment block
   const typeMappingSection = pythonCode.match(
     /'''[\s\S]*?Type used in pipeline[\s\S]*?'''[\s\S]*?$/m
   )
@@ -226,7 +151,6 @@ export async function extractTypeDefinitions(
     const lines = typeMappingSection[0].split('\n')
 
     for (const line of lines) {
-      // Match type mapping format
       const mappingMatch = line.match(
         /\s*(\w+)\s*(?:->|:)\s*(\w+)(?:\s*(?:->|:)\s*(\w+))?/
       )
@@ -235,7 +159,6 @@ export async function extractTypeDefinitions(
         const finalType = mappingMatch[3] || mappingMatch[2]
         typeMapping[pythonType] = finalType
 
-        // Determine source types
         if (
           finalType.includes('FILE') ||
           finalType.includes('LIST') ||
@@ -258,17 +181,20 @@ export async function extractTypeDefinitions(
 
 export async function extractOptionDefinitions(
   pythonCode: string
-): Promise<OptionsMapping> {
-  const optionsMapping: OptionsMapping = {}
+): Promise<
+  Record<string, Array<{ name: string; defaultValue: string | null }>>
+> {
+  const optionsMapping: Record<
+    string,
+    Array<{ name: string; defaultValue: string | null }>
+  > = {}
 
-  // Find classes with 'Options' suffix
   const optionsClassRegex = /class\s+(\w+)Options\s*:/g
   let match: RegExpExecArray | null
 
   while ((match = optionsClassRegex.exec(pythonCode)) !== null) {
     const baseType = match[1]
 
-    // Find class body
     const classBodyStart = pythonCode.indexOf(':', match.index) + 1
     const nextClassIndex = pythonCode.indexOf('class ', classBodyStart)
     const classBody = pythonCode.substring(
@@ -276,14 +202,13 @@ export async function extractOptionDefinitions(
       nextClassIndex > -1 ? nextClassIndex : pythonCode.length
     )
 
-    // Extract parameters from __init__ method
     const initMatch = classBody.match(
       /def\s+__init__\s*\(\s*self(?:,\s*([^)]+))?\)/
     )
 
     if (initMatch && initMatch[1]) {
-      const params: OptionParam[] = initMatch[1].split(',').map((p: string) => {
-        const [name, defaultValue] = p.split('=').map((s: string) => s.trim())
+      const params = initMatch[1].split(',').map((p) => {
+        const [name, defaultValue] = p.split('=').map((s) => s.trim())
         return { name, defaultValue: defaultValue || null }
       })
 
@@ -296,9 +221,7 @@ export async function extractOptionDefinitions(
   return optionsMapping
 }
 
-export function parseReturnStatement(
-  returnStatement: string
-): ReturnValueInfo[] {
+export function parseReturnStatement(returnStatement: string): ReturnValue[] {
   const returnValues: string[] = []
   let currentItem = ''
   let bracketLevel = 0
@@ -327,7 +250,7 @@ export function parseReturnStatement(
   }
 
   return returnValues.map((item, index) => {
-    const result: ReturnValueInfo = {
+    const result: ReturnValue = {
       item: item,
       varName: config.defaultNames.secondaryOutput(index),
       isString: item.startsWith('"') || item.startsWith("'")
@@ -353,12 +276,11 @@ export function parseReturnStatement(
 
 export async function validateTypeFile(
   typeFile: File
-): Promise<TypeDefinition> {
+): Promise<TypeDefinitions> {
   if (!typeFile) throw new Error('Type definition file is required')
 
   const pythonCode = await readFileAsText(typeFile)
 
-  // Check if it contains class definitions and type mapping indicators
   const hasTypeDefinitions =
     /class\s+\w+(?:\(([^)]+)\))?:/g.test(pythonCode) &&
     pythonCode.includes('Type used in pipeline')
@@ -374,8 +296,10 @@ export async function validateTypeFile(
 
 export async function validateOptionsFile(
   optionsFile: File,
-  { typeMapping }: { typeMapping: { [key: string]: string } }
-): Promise<OptionsMapping> {
+  { typeMapping }: { typeMapping: Record<string, string> }
+): Promise<
+  Record<string, Array<{ name: string; defaultValue: string | null }>>
+> {
   if (!optionsFile) throw new Error('Options definition file is required')
 
   if (!typeMapping || Object.keys(typeMapping).length === 0) {
@@ -400,10 +324,13 @@ export async function validateOptionsFile(
 export async function parsePythonToJson(
   pythonCode: string,
   fileName: string,
-  { typeMapping, sourceTypes }: TypeDefinition,
-  optionsMapping: OptionsMapping
-): Promise<ParsedResult> {
-  function parseDocSection(section: string | null | undefined): DocItem[] {
+  { typeMapping, sourceTypes }: TypeDefinitions,
+  optionsMapping: Record<
+    string,
+    Array<{ name: string; defaultValue: string | null }>
+  >
+): Promise<any> {
+  function parseDocSection(section: string | null): DocItem[] {
     if (!section) return []
 
     const lines = section.trim().split('\n')
@@ -471,15 +398,25 @@ export async function parsePythonToJson(
       .filter((f) => f)
   }
 
-  const result: ParsedResult = {
+  interface FunctionDefinition {
+    function_name: string
+    display_name: string
+    description: string
+    input: {
+      source: any[]
+      args: any[]
+    }
+    output: any[]
+  }
+
+  const result = {
     plugin_name: pluginName,
     description: description,
     version: version,
     author: author,
-    functions: []
+    functions: [] as FunctionDefinition[]
   }
 
-  // Extract annotated fields with special handling for COMBO
   const annotatedFields: Record<string, AnnotatedField> = {}
 
   const annotatedRegex = /(\w+)(?:_types)?\s*=\s*Annotated\[(\w+),\s*([^)]+)\)/g
@@ -509,14 +446,15 @@ export async function parsePythonToJson(
 
         annotatedFields[fieldName] = {
           type: 'COMBO',
+          baseType: fieldType,
           values: enumValues,
           optionsArgs: {}
         }
       }
     } else {
-      const optionsClassMatch = optionsStr.match(/(\w+)Options?\(([^)]*)\)/)
+      const optionsClassMatch = optionsStr.match(/(\w+)Options?\(([^)]*)/)
       if (optionsClassMatch) {
-        const optionsClass = optionsClassMatch[1]
+        const optionsType = optionsClassMatch[1]
         const optionsArgsStr = optionsClassMatch[2]
         const optionsArgs: Record<string, any> = {}
 
@@ -525,7 +463,7 @@ export async function parsePythonToJson(
 
         while ((paramMatch = paramRegex.exec(optionsArgsStr)) !== null) {
           const paramName = paramMatch[1].trim()
-          let paramValue: string | number | boolean = paramMatch[2].trim()
+          let paramValue: any = paramMatch[2].trim()
 
           if (
             paramValue.toLowerCase() === 'true' ||
@@ -545,16 +483,23 @@ export async function parsePythonToJson(
           optionsArgs[paramName] = paramValue
         }
 
+        let mappedType = optionsType
+        for (const [pythonType, mappedValue] of Object.entries(typeMapping)) {
+          if (fieldType === pythonType) {
+            mappedType = mappedValue
+            break
+          }
+        }
+
         annotatedFields[fieldName] = {
-          type: fieldType,
-          optionsClass,
+          type: mappedType,
+          baseType: optionsType,
           optionsArgs
         }
       }
     }
   }
 
-  // Find parameters with _types suffix that might be referenced
   const classBodyMatch = pythonCode.match(
     /class\s+\w+\s*:([\s\S]*?)(?:class|Z)/i
   )
@@ -565,7 +510,6 @@ export async function parsePythonToJson(
 
     while ((paramTypesMatch = paramTypesRegex.exec(classBody)) !== null) {
       const baseParamName = paramTypesMatch[1]
-      // Map param_types to param
       if (
         annotatedFields[baseParamName + '_types'] &&
         !annotatedFields[baseParamName]
@@ -576,7 +520,6 @@ export async function parsePythonToJson(
     }
   }
 
-  // Process functions
   const funcRegex = /def\s+(\w+)\s*\(([^)]*)\)(?:\s*->\s*([^:]+))?:/g
   const docstringRegex = /"""([\s\S]*?)"""/
 
@@ -609,7 +552,6 @@ export async function parsePythonToJson(
     const docMatch = funcBody.match(docstringRegex)
     const docstring = docMatch ? docMatch[1].trim() : ''
 
-    // Using section names from config to build regex
     let outputsSection = docstring.match(
       new RegExp(
         `${config.docSections.outputs.replace(/([.*+?^=!:${}()|[\]/\\])/g, '\\$1')}\\s*\\n([\\s\\S]*?)(?:\\n\\s*\\n|$)`
@@ -634,19 +576,18 @@ export async function parsePythonToJson(
     const descLines = docstring.split('\n')
     const functionDescription = descLines.length > 0 ? descLines[0].trim() : ''
 
-    // Using section names from config
     const sourceRegex = buildSectionRegex('source')
     const argsRegex = buildSectionRegex('args')
 
     const sourceMatch = docstring.match(sourceRegex)
     const argsMatch = docstring.match(argsRegex)
 
-    const sources: Source[] = []
-    const args: Arg[] = []
+    const sources: any[] = []
+    const args: any[] = []
 
-    const paramMap: Record<string, ParamConfig> = {}
+    const paramMap: Record<string, ParamInfo> = {}
 
-    const typeToComboMap: Record<string, AnnotatedField> = {}
+    const typeToComboMap: Record<string, any> = {}
 
     Object.keys(annotatedFields).forEach((key) => {
       if (key.endsWith('_types') && annotatedFields[key].type === 'COMBO') {
@@ -675,7 +616,13 @@ export async function parsePythonToJson(
           defaultValue = nameAndDefault[1].trim()
         }
 
-        if (
+        if (paramType && annotatedFields[paramType]) {
+          paramMap[paramName] = {
+            type: annotatedFields[paramType].type,
+            default: defaultValue,
+            options: annotatedFields[paramType]
+          }
+        } else if (
           annotatedFields[paramName] &&
           annotatedFields[paramName].type === 'COMBO'
         ) {
@@ -710,7 +657,6 @@ export async function parsePythonToJson(
 
     const sourceParams = new Set<string>()
 
-    // Process source parameters from documentation
     if (sourceMatch) {
       const sourceSection = sourceMatch[1].trim()
       const sourceItems = parseDocSection(sourceSection)
@@ -735,10 +681,8 @@ export async function parsePythonToJson(
       }
     }
 
-    // Infer other source parameters by type
     Object.entries(paramMap).forEach(([name, info]) => {
       if (!sourceParams.has(name)) {
-        // Use sourceTypes set from config
         if (sourceTypes.has(info.type)) {
           sources.push({
             name,
@@ -749,9 +693,7 @@ export async function parsePythonToJson(
             optional: false
           })
           sourceParams.add(name)
-        }
-        // Use naming patterns from config
-        else if (
+        } else if (
           config.sourceParameterPatterns.some((pattern) => pattern(name))
         ) {
           sources.push({
@@ -767,7 +709,6 @@ export async function parsePythonToJson(
       }
     })
 
-    // Process args parameters from documentation
     if (argsMatch) {
       const argsSection = argsMatch[1].trim()
       const argsItems = parseDocSection(argsSection)
@@ -780,7 +721,7 @@ export async function parsePythonToJson(
         if (name && paramMap[name]) {
           const paramInfo = paramMap[name]
 
-          const argObj: Arg = {
+          const argObj: any = {
             name,
             type: paramInfo.type,
             description,
@@ -789,7 +730,6 @@ export async function parsePythonToJson(
             optional: true
           }
 
-          // Special handling for COMBO type
           if (
             paramInfo.type === 'COMBO' &&
             paramInfo.options &&
@@ -806,7 +746,7 @@ export async function parsePythonToJson(
           }
 
           if (paramInfo.default && !argObj.options.default) {
-            let parsedValue: string | number | boolean = paramInfo.default
+            let parsedValue: any = paramInfo.default
             if (
               parsedValue.toLowerCase() === 'true' ||
               parsedValue.toLowerCase() === 'false'
@@ -833,10 +773,9 @@ export async function parsePythonToJson(
       }
     }
 
-    // Add remaining parameters as args
     Object.entries(paramMap).forEach(([name, info]) => {
       if (!sourceParams.has(name) && !args.find((a) => a.name === name)) {
-        const argObj: Arg = {
+        const argObj: any = {
           name,
           type: info.type,
           description: name,
@@ -845,7 +784,6 @@ export async function parsePythonToJson(
           optional: true
         }
 
-        // Special handling for COMBO type
         if (info.type === 'COMBO' && info.options && info.options.values) {
           argObj.options = {
             default: info.default
@@ -858,7 +796,7 @@ export async function parsePythonToJson(
         }
 
         if (info.default && !argObj.options.default) {
-          let parsedValue: string | number | boolean = info.default
+          let parsedValue: any = info.default
           if (
             parsedValue.toLowerCase() === 'true' ||
             parsedValue.toLowerCase() === 'false'
@@ -884,9 +822,8 @@ export async function parsePythonToJson(
       }
     })
 
-    const outputs: Output[] = []
+    const outputs: any[] = []
 
-    // Extract return statements
     const returnLines: string[] = []
     const returnRegex = /return\s+(.+?)(?:\n|$)/g
     let returnLineMatch: RegExpExecArray | null
@@ -895,12 +832,10 @@ export async function parsePythonToJson(
       returnLines.push(returnLineMatch[1].trim())
     }
 
-    // Get the last return statement
     const returnLine =
       returnLines.length > 0 ? returnLines[returnLines.length - 1] : null
 
     if (returnType) {
-      // Use type annotation to determine return type
       const returnTypes = returnType.split(',').map((t) => t.trim())
 
       returnTypes.forEach((type, index) => {
@@ -939,18 +874,15 @@ export async function parsePythonToJson(
         })
       })
     } else if (returnLine) {
-      // No type annotation, but we have a return statement
       const returnValues = parseReturnStatement(returnLine)
 
       returnValues.forEach((returnValue, index) => {
         const outputName = outputVarNames[index] || returnValue.varName
 
-        // Determine output type
         let outputType
         if (returnValue.isString) {
           outputType = typeMapping['str'] || 'STRING'
         } else if (index === 0) {
-          // Use dimension hints in function name to infer type
           const dimKey = funcName.includes('2d')
             ? '2d'
             : funcName.includes('3d')
@@ -986,7 +918,6 @@ export async function parsePythonToJson(
         })
       })
     } else {
-      // If no return type or statement found, use default output
       const dimKey = funcName.includes('2d')
         ? '2d'
         : funcName.includes('3d')
@@ -1005,7 +936,7 @@ export async function parsePythonToJson(
       })
     }
 
-    const functionObj: FunctionObj = {
+    const functionObj = {
       function_name: funcName,
       display_name: funcName
         .replace(/_/g, ' ')
@@ -1026,9 +957,12 @@ export async function parsePythonToJson(
 
 export async function validatePythonFile(
   pythonFile: File,
-  { typeMapping, sourceTypes }: TypeDefinition,
-  optionsMapping: OptionsMapping
-): Promise<ParsedResult> {
+  { typeMapping, sourceTypes }: TypeDefinitions,
+  optionsMapping: Record<
+    string,
+    Array<{ name: string; defaultValue: string | null }>
+  >
+): Promise<any> {
   if (!pythonFile) throw new Error('Python file is required')
 
   if (!typeMapping || Object.keys(typeMapping).length === 0) {
@@ -1054,7 +988,6 @@ export async function validatePythonFile(
     )
   }
 
-  // Check required attributes
   const missingAttributes: string[] = []
   for (const attr of config.requiredAttributes) {
     if (!attr.regex.test(pythonCode)) {
@@ -1141,7 +1074,15 @@ export async function validatePythonPlugin(
   typeFile: File,
   optionsFile: File,
   pythonFile: File
-): Promise<ValidateResult> {
+): Promise<{
+  jsonConfig: any
+  nodeDefs: any
+  typeMapping: Record<string, string>
+  optionsMapping: Record<
+    string,
+    Array<{ name: string; defaultValue: string | null }>
+  >
+}> {
   const { typeMapping, sourceTypes } = await validateTypeFile(typeFile)
   const optionsMapping = await validateOptionsFile(optionsFile, { typeMapping })
   const jsonConfig = await validatePythonFile(

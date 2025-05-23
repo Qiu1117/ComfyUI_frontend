@@ -3,7 +3,7 @@ import {
   validateOptionsFile,
   validatePythonFile,
   validateTypeFile
-} from './pythonParser.js'
+} from './pythonParser.ts'
 
 class PythonValidator {
   constructor() {
