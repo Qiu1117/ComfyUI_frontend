@@ -144,7 +144,7 @@ export async function extractTypeDefinitions(
   }
 
   const typeMappingSection = pythonCode.match(
-    /'''[\s\S]*?Type used in pipeline[\s\S]*?'''[\s\S]*?$/m
+    /'''[\s\S]*?Type used in pipeline[\s\S]*?'''/
   )
 
   if (typeMappingSection) {
@@ -152,11 +152,11 @@ export async function extractTypeDefinitions(
 
     for (const line of lines) {
       const mappingMatch = line.match(
-        /\s*(\w+)\s*(?:->|:)\s*(\w+)(?:\s*(?:->|:)\s*(\w+))?/
+        /\s*(\w+)\s*->\s*(?:[\w.]+\s*->)?\s*(\w+)/
       )
       if (mappingMatch) {
         const pythonType = mappingMatch[1]
-        const finalType = mappingMatch[3] || mappingMatch[2]
+        const finalType = mappingMatch[2]
         typeMapping[pythonType] = finalType
 
         if (
@@ -253,7 +253,13 @@ export function parseReturnStatement(returnStatement: string): ReturnValue[] {
     const result: ReturnValue = {
       item: item,
       varName: config.defaultNames.secondaryOutput(index),
-      isString: item.startsWith('"') || item.startsWith("'")
+      isString:
+        item.startsWith('"') ||
+        item.startsWith("'") ||
+        item.startsWith('f"') ||
+        item.startsWith("f'") ||
+        Boolean(item.match(/^[\w_]+_txt$/)) ||
+        Boolean(item.match(/^[\w_]*text[\w_]*$/))
     }
 
     const varMatch = item.match(/^\s*(\w+)\s*$/)
@@ -839,11 +845,16 @@ export async function parsePythonToJson(
       const returnTypes = returnType.split(',').map((t) => t.trim())
 
       returnTypes.forEach((type, index) => {
-        let mappedType = typeMapping['Array'] || '1D'
-        for (const [pythonType, mappedValue] of Object.entries(typeMapping)) {
-          if (type.includes(pythonType)) {
-            mappedType = mappedValue
-            break
+        let mappedType
+        if (type.toLowerCase().includes('str')) {
+          mappedType = typeMapping['str'] || 'STRING'
+        } else {
+          mappedType = typeMapping['Array'] || '1D'
+          for (const [pythonType, mappedValue] of Object.entries(typeMapping)) {
+            if (type.includes(pythonType)) {
+              mappedType = mappedValue
+              break
+            }
           }
         }
 
@@ -880,7 +891,13 @@ export async function parsePythonToJson(
         const outputName = outputVarNames[index] || returnValue.varName
 
         let outputType
-        if (returnValue.isString) {
+        if (
+          returnValue.isString ||
+          returnValue.item.includes('txt') ||
+          returnValue.item.includes('text') ||
+          returnValue.item.startsWith('f"') ||
+          returnValue.item.startsWith("f'")
+        ) {
           outputType = typeMapping['str'] || 'STRING'
         } else if (index === 0) {
           const dimKey = funcName.includes('2d')
@@ -896,6 +913,7 @@ export async function parsePythonToJson(
         } else {
           if (
             returnValue.item.toLowerCase().includes('text') ||
+            returnValue.item.includes('txt') ||
             returnValue.item.startsWith('f"') ||
             returnValue.item.startsWith("f'")
           ) {
