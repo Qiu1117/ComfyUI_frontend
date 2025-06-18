@@ -526,7 +526,7 @@ export async function parsePythonToJson(
     }
   }
 
-  const funcRegex = /def\s+(\w+)\s*\(([^)]*)\)(?:\s*->\s*([^:]+))?:/g
+  const funcRegex = /def\s+(\w+)\s*\(([\s\S]*?)\)(?:\s*->\s*([^:]+))?:/g
   const docstringRegex = /"""([\s\S]*?)"""/
 
   let match: RegExpExecArray | null
@@ -540,7 +540,47 @@ export async function parsePythonToJson(
       continue
     }
 
-    const params = match[2].trim()
+    const paramString = match[2].trim()
+    const parameters: string[] = []
+    let currentParam = ''
+    let bracketLevel = 0
+    let inString = false
+    let stringChar = ''
+
+    for (let i = 0; i < paramString.length; i++) {
+      const char = paramString[i]
+      const prevChar = i > 0 ? paramString[i - 1] : ''
+
+      if ((char === '"' || char === "'") && prevChar !== '\\') {
+        if (!inString) {
+          inString = true
+          stringChar = char
+        } else if (char === stringChar) {
+          inString = false
+        }
+      }
+
+      if (!inString) {
+        if (char === '[' || char === '(') {
+          bracketLevel++
+        } else if (char === ']' || char === ')') {
+          bracketLevel--
+        } else if (char === ',' && bracketLevel === 0) {
+          if (currentParam.trim()) {
+            parameters.push(currentParam.trim())
+          }
+          currentParam = ''
+          continue
+        }
+      }
+
+      currentParam += char
+    }
+
+    if (currentParam.trim()) {
+      parameters.push(currentParam.trim())
+    }
+
     const returnType = match[3] ? match[3].trim() : ''
 
     const funcPos = match.index + match[0].length
@@ -601,52 +641,41 @@ export async function parsePythonToJson(
       }
     })
 
-    params.split(',').forEach((p) => {
+    parameters.forEach((p) => {
       const trimParam = p.trim()
       if (trimParam && !trimParam.startsWith('self')) {
-        const parts = trimParam.split(':')
-        const paramName = parts[0].trim()
+        const inlineAnnotatedMatch = trimParam.match(
+          /(\w+):\s*Annotated\[([^,]+),\s*(\w+Options?\([^)]*\))\](?:\s*=\s*(.+))?/
+        )
 
-        let paramType: string | null = null
-        let defaultValue: string | null = null
+        if (inlineAnnotatedMatch) {
+          const paramName = inlineAnnotatedMatch[1].trim()
+          const baseType = inlineAnnotatedMatch[2].trim()
+          const optionsStr = inlineAnnotatedMatch[3].trim()
+          const defaultValue = inlineAnnotatedMatch[4]
+            ? inlineAnnotatedMatch[4].trim()
+            : null
 
-        if (parts.length > 1) {
-          const typeAndDefault = parts[1].split('=')
-          paramType = typeAndDefault[0].trim()
+          const optionsArgs: Record<string, any> = {}
+          const paramRegex = /(\w+)\s*=\s*([^,)]+)/g
+          let paramMatch: RegExpExecArray | null
 
-          if (typeAndDefault.length > 1) {
-            defaultValue = typeAndDefault[1].trim()
-          }
-        } else if (trimParam.includes('=')) {
-          const nameAndDefault = trimParam.split('=')
-          defaultValue = nameAndDefault[1].trim()
-        }
+          while ((paramMatch = paramRegex.exec(optionsStr)) !== null) {
+            const argName = paramMatch[1].trim()
+            let argValue: any = paramMatch[2].trim()
 
-        if (paramType && annotatedFields[paramType]) {
-          paramMap[paramName] = {
-            type: annotatedFields[paramType].type,
-            default: defaultValue,
-            options: annotatedFields[paramType]
+            if (!isNaN(Number(argValue))) {
+              argValue = argValue.includes('.')
+                ? parseFloat(argValue)
+                : parseInt(argValue)
+            }
+
+            optionsArgs[argName] = argValue
           }
-        } else if (
-          annotatedFields[paramName] &&
-          annotatedFields[paramName].type === 'COMBO'
-        ) {
-          paramMap[paramName] = {
-            type: 'COMBO',
-            default: defaultValue,
-            options: annotatedFields[paramName]
-          }
-        } else if (paramType && typeToComboMap[paramType]) {
-          paramMap[paramName] = {
-            type: 'COMBO',
-            default: defaultValue,
-            options: typeToComboMap[paramType]
-          }
-        } else {
-          let mappedType = 'STRING'
+
+          let mappedType = baseType
           for (const [pythonType, mappedValue] of Object.entries(typeMapping)) {
-            if (paramType && paramType.includes(pythonType)) {
+            if (baseType === pythonType) {
               mappedType = mappedValue
               break
             }
@@ -655,7 +684,64 @@ export async function parsePythonToJson(
           paramMap[paramName] = {
             type: mappedType,
             default: defaultValue,
-            options: annotatedFields[paramName] || null
+            options: { optionsArgs }
+          }
+        } else {
+          const parts = trimParam.split(':')
+          const paramName = parts[0].trim()
+
+          let paramType: string | null = null
+          let defaultValue: string | null = null
+
+          if (parts.length > 1) {
+            const typeAndDefault = parts[1].split('=')
+            paramType = typeAndDefault[0].trim()
+
+            if (typeAndDefault.length > 1) {
+              defaultValue = typeAndDefault[1].trim()
+            }
+          } else if (trimParam.includes('=')) {
+            const nameAndDefault = trimParam.split('=')
+            defaultValue = nameAndDefault[1].trim()
+          }
+
+          if (paramType && annotatedFields[paramType]) {
+            paramMap[paramName] = {
+              type: annotatedFields[paramType].type,
+              default: defaultValue,
+              options: annotatedFields[paramType]
+            }
+          } else if (
+            annotatedFields[paramName] &&
+            annotatedFields[paramName].type === 'COMBO'
+          ) {
+            paramMap[paramName] = {
+              type: 'COMBO',
+              default: defaultValue,
+              options: annotatedFields[paramName]
+            }
+          } else if (paramType && typeToComboMap[paramType]) {
+            paramMap[paramName] = {
+              type: 'COMBO',
+              default: defaultValue,
+              options: typeToComboMap[paramType]
+            }
+          } else {
+            let mappedType = 'STRING'
+            for (const [pythonType, mappedValue] of Object.entries(
+              typeMapping
+            )) {
+              if (paramType && paramType.includes(pythonType)) {
+                mappedType = mappedValue
+                break
+              }
+            }
+
+            paramMap[paramName] = {
+              type: mappedType,
+              default: defaultValue,
+              options: annotatedFields[paramName] || null
+            }
           }
         }
       }
@@ -1030,7 +1116,7 @@ export async function validatePythonFile(
       .filter((f) => f)
 
     const functionDocRegex =
-      /def\s+(\w+)\s*\([^)]*\)(?:\s*->.*?)?:\s*(?:"""|''')([\s\S]*?)(?:"""|''')/g
+      /def\s+(\w+)\s*\([\s\S]*?\)(?:\s*->\s*[\s\S]*?)?:\s*(?:"""|''')([\s\S]*?)(?:"""|''')/g
     const foundFunctions = new Set<string>()
     const missingDocumentation: string[] = []
 
@@ -1049,15 +1135,10 @@ export async function validatePythonFile(
           ) + '\\s*\\n',
           'i'
         ).test(docString)
-        const hasArgsSection = new RegExp(
-          config.docSections.args.replace(/([.*+?^=!:${}()|[\]/\\])/g, '\\$1') +
-            '\\s*\\n',
-          'i'
-        ).test(docString)
 
-        if (!hasSourceSection || !hasArgsSection) {
+        if (!hasSourceSection) {
           missingDocumentation.push(
-            `${funcName} (missing: ${!hasSourceSection ? config.docSections.source.replace(':', '') : ''}${!hasSourceSection && !hasArgsSection ? ', ' : ''}${!hasArgsSection ? config.docSections.args.replace(':', '') : ''})`
+            `${funcName} (missing: ${config.docSections.source.replace(':', '')})`
           )
         }
       }
