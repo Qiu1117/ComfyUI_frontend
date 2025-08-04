@@ -607,30 +607,28 @@ export function parseReturnStatement(returnStatement: string): ReturnValue[] {
   }
 
   return returnValues.map((item, index) => {
+    const trimmedItem = item.trim()
     const result: ReturnValue = {
-      item: item,
-      varName: config.defaultNames.secondaryOutput(index),
+      item: trimmedItem,
+      varName:
+        index === 0
+          ? config.defaultNames.primaryData
+          : config.defaultNames.secondaryOutput(index - 1),
       isString:
-        item.startsWith('"') ||
-        item.startsWith("'") ||
-        item.startsWith('f"') ||
-        item.startsWith("f'") ||
-        Boolean(item.match(/^[\w_]+_txt$/)) ||
-        Boolean(item.match(/^[\w_]*text[\w_]*$/))
+        trimmedItem.startsWith('"') ||
+        trimmedItem.startsWith("'") ||
+        trimmedItem.startsWith('f"') ||
+        trimmedItem.startsWith("f'") ||
+        Boolean(trimmedItem.match(/^[\w_]+_txt$/)) ||
+        Boolean(trimmedItem.match(/^[\w_]*text[\w_]*$/))
     }
 
-    const varMatch = item.match(/^\s*(\w+)\s*$/)
+    // Simple variable name (like "data" or "test_txt")
+    const varMatch = trimmedItem.match(/^(\w+)$/)
     if (varMatch) {
       result.varName = varMatch[1]
     } else if (result.isString) {
       result.varName = config.defaultNames.textOutput
-    } else if (item.includes('(') && item.includes(')')) {
-      const funcCallMatch = item.match(/^\s*(\w+)\(/)
-      if (funcCallMatch) {
-        result.varName = `${funcCallMatch[1]}_result`
-      }
-    } else if (index === 0) {
-      result.varName = config.defaultNames.primaryData
     }
 
     return result
@@ -1113,19 +1111,32 @@ export async function parsePythonToJson(
       for (const item of sourceItems) {
         const { name, description } = item
 
-        if (name && paramMap[name]) {
-          const type = paramMap[name].type
+        // Find actual parameter name that matches the documented name
+        const actualParam = Object.keys(paramMap).find((paramName) => {
+          // Check if documented name matches parameter name directly
+          if (paramName === name) return true
+
+          // Check if parameter has source type
+          const paramInfo = paramMap[paramName]
+          return (
+            sourceTypes.has(paramInfo.type) ||
+            config.sourceParameterPatterns.some((pattern) => pattern(paramName))
+          )
+        })
+
+        if (actualParam && paramMap[actualParam]) {
+          const type = paramMap[actualParam].type
 
           sources.push({
-            name,
+            name: actualParam, // Use actual parameter name
             type,
             description,
-            options: paramMap[name]?.options?.optionsArgs || {},
+            options: paramMap[actualParam]?.options?.optionsArgs || {},
             behavior: 'STATIC',
             optional: false
           })
 
-          sourceParams.add(name)
+          sourceParams.add(actualParam)
         }
       }
     }
@@ -1286,9 +1297,21 @@ export async function parsePythonToJson(
       documentedOutputs.push(...parseDocSection(outputsSection[1]))
     }
 
+    const returnLines: string[] = []
+    const returnRegex = /return\s+([^;]+)/g
+    let returnLineMatch: RegExpExecArray | null
+
+    while ((returnLineMatch = returnRegex.exec(funcBody)) !== null) {
+      const returnStatement = returnLineMatch[1].trim()
+      // Clean up the return statement by removing trailing comments and extra whitespace
+      const cleaned = returnStatement.split('\n')[0].trim()
+      if (cleaned) {
+        returnLines.push(cleaned)
+      }
+    }
+
     if (returnType) {
       if (returnType.includes('Tuple') || returnType.includes('tuple')) {
-        // Parse tuple types
         const tupleMatch = returnType.match(/(?:Tuple|tuple)\[(.*)\]/)
         if (tupleMatch) {
           const types = parseTupleTypes(tupleMatch[1])
@@ -1296,10 +1319,19 @@ export async function parsePythonToJson(
             const cleanType = type.trim()
             const mappedType = typeMapping[cleanType] || cleanType
 
-            // Use documented name if available, otherwise generate name
+            // Use return statement variable name
+            console.log(returnLines)
             let outputName: string
-            if (documentedOutputs[index]) {
-              outputName = documentedOutputs[index].name
+            if (returnLines.length > 0) {
+              const returnValues = parseReturnStatement(
+                returnLines[returnLines.length - 1]
+              )
+              console.log(returnValues, index)
+              outputName =
+                returnValues[index]?.varName ||
+                (index === 0
+                  ? config.defaultNames.primaryData
+                  : config.defaultNames.secondaryOutput(index - 1))
             } else {
               outputName =
                 index === 0
@@ -1307,53 +1339,59 @@ export async function parsePythonToJson(
                   : config.defaultNames.secondaryOutput(index)
             }
 
+            // Match with documented outputs for description
+            let description = `Output ${outputName} from ${funcName}`
+            const matchedDoc = documentedOutputs.find(
+              (doc) => doc.name === outputName
+            )
+            if (matchedDoc) {
+              description = matchedDoc.description
+            }
+
             outputs.push({
               name: outputName,
               type: mappedType,
-              description:
-                documentedOutputs[index]?.description ||
-                `Output ${outputName} from ${funcName}`,
+              description: description,
               behavior: 'STATIC'
             })
           })
         }
       } else {
-        // Single return type
         const cleanType = returnType.trim()
         const mappedType = typeMapping[cleanType] || cleanType
-        const outputName =
-          documentedOutputs[0]?.name || config.defaultNames.primaryData
+
+        let outputName = config.defaultNames.primaryData
+        if (returnLines.length > 0) {
+          const returnValues = parseReturnStatement(
+            returnLines[returnLines.length - 1]
+          )
+          outputName =
+            returnValues[0]?.varName || config.defaultNames.primaryData
+        }
+
+        let description = `Output ${outputName} from ${funcName}`
+        const matchedDoc = documentedOutputs.find(
+          (doc) => doc.name === outputName
+        )
+        if (matchedDoc) {
+          description = matchedDoc.description
+        }
 
         outputs.push({
           name: outputName,
           type: mappedType,
-          description:
-            documentedOutputs[0]?.description ||
-            `Output ${outputName} from ${funcName}`,
+          description: description,
           behavior: 'STATIC'
         })
       }
     } else {
-      // No return type annotation, try to parse return statement
-      const returnLines: string[] = []
-      const returnRegex = /return\s+(.+?)(?:\n|$)/g
-      let returnLineMatch: RegExpExecArray | null
-
-      while ((returnLineMatch = returnRegex.exec(funcBody)) !== null) {
-        returnLines.push(returnLineMatch[1].trim())
-      }
-
+      // No return type annotation, parse return statement directly
       if (returnLines.length > 0) {
         const returnLine = returnLines[returnLines.length - 1]
         const returnValues = parseReturnStatement(returnLine)
 
         returnValues.forEach((returnValue, index) => {
-          let outputName: string
-          if (documentedOutputs[index]) {
-            outputName = documentedOutputs[index].name
-          } else {
-            outputName = returnValue.varName
-          }
+          const outputName = returnValue.varName
 
           let outputType: string
           if (returnValue.isString) {
@@ -1365,24 +1403,35 @@ export async function parsePythonToJson(
                 : typeMapping['Array'] || '1D'
           }
 
+          let description = `Output ${outputName} from ${funcName}`
+          const matchedDoc = documentedOutputs.find(
+            (doc) => doc.name === outputName
+          )
+          if (matchedDoc) {
+            description = matchedDoc.description
+          }
+
           outputs.push({
             name: outputName,
             type: outputType,
-            description:
-              documentedOutputs[index]?.description ||
-              `Output ${outputName} from ${funcName}`,
+            description: description,
             behavior: 'STATIC'
           })
         })
       } else {
-        // Default output
-        const outputName =
-          documentedOutputs[0]?.name || config.defaultNames.primaryData
+        const outputName = config.defaultNames.primaryData
+        let description = `Output from ${funcName}`
+        const matchedDoc = documentedOutputs.find(
+          (doc) => doc.name === outputName
+        )
+        if (matchedDoc) {
+          description = matchedDoc.description
+        }
+
         outputs.push({
           name: outputName,
           type: typeMapping['Matrix'] || '2D',
-          description:
-            documentedOutputs[0]?.description || `Output from ${funcName}`,
+          description: description,
           behavior: 'STATIC'
         })
       }
