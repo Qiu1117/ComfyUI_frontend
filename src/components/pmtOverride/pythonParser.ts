@@ -109,6 +109,363 @@ function buildSectionRegex(sectionName: string): RegExp {
   )
 }
 
+function parseTupleTypes(tupleContent: string): string[] {
+  const types: string[] = []
+  let current = ''
+  let bracketLevel = 0
+  let inString = false
+  let stringChar = ''
+
+  for (let i = 0; i < tupleContent.length; i++) {
+    const char = tupleContent[i]
+    const prevChar = i > 0 ? tupleContent[i - 1] : ''
+
+    if ((char === '"' || char === "'") && prevChar !== '\\') {
+      if (!inString) {
+        inString = true
+        stringChar = char
+      } else if (char === stringChar) {
+        inString = false
+      }
+    }
+
+    if (!inString) {
+      if (char === '[' || char === '(' || char === '{') {
+        bracketLevel++
+      } else if (char === ']' || char === ')' || char === '}') {
+        bracketLevel--
+      } else if (char === ',' && bracketLevel === 0) {
+        if (current.trim()) {
+          types.push(current.trim())
+        }
+        current = ''
+        continue
+      }
+    }
+
+    current += char
+  }
+
+  if (current.trim()) {
+    types.push(current.trim())
+  }
+
+  return types
+}
+
+function generateOutputNamesFromReturnType(
+  returnType: string,
+  typeMapping: Record<string, string>
+): string[] {
+  const outputs: string[] = []
+
+  const getOutputName = (cleanType: string, index: number): string => {
+    const mappedType = typeMapping[cleanType]
+
+    if (!mappedType) {
+      throw new Error(
+        `Unknown type: ${cleanType}. Please ensure this type is defined in your type mapping file.`
+      )
+    }
+
+    // Use the mapped type directly as base name, or provide reasonable defaults
+    let baseName = mappedType.toLowerCase()
+
+    // For special cases, adjust the name
+    if (mappedType === '2D') {
+      baseName = config.defaultNames.primaryData
+    } else if (mappedType.includes('FILE')) {
+      baseName = 'file'
+    } else if (mappedType.includes('LIST')) {
+      baseName = 'list'
+    }
+
+    return index === 0
+      ? baseName
+      : baseName === config.defaultNames.primaryData
+        ? config.defaultNames.secondaryOutput(index)
+        : `${baseName}_${index + 1}`
+  }
+
+  if (returnType.includes('Tuple')) {
+    const tupleMatch = returnType.match(/Tuple\[(.*)\]/)
+    if (tupleMatch) {
+      const types = parseTupleTypes(tupleMatch[1])
+      types.forEach((type, index) => {
+        outputs.push(getOutputName(type.trim(), index))
+      })
+    }
+  } else {
+    outputs.push(getOutputName(returnType.trim(), 0))
+  }
+
+  return outputs
+}
+
+function generateDefaultDocumentation(
+  funcName: string,
+  parameters: string[],
+  returnType: string,
+  { typeMapping, sourceTypes }: TypeDefinitions
+): string {
+  const lines = [`${funcName.replace(/_/g, ' ')}`]
+
+  const sourceParams = parameters.filter((p) => {
+    const paramName = p.split(':')[0].trim()
+    if (paramName === 'self') return false
+
+    const typeMatch = p.match(/:(\w+)/)
+    if (typeMatch && sourceTypes.has(typeMatch[1])) return true
+
+    return config.sourceParameterPatterns.some((pattern) => pattern(paramName))
+  })
+
+  if (sourceParams.length > 0) {
+    lines.push('', 'Source:')
+    sourceParams.forEach((p) => {
+      const paramName = p.split(':')[0].trim()
+      lines.push(`    ${paramName}: default`)
+    })
+  }
+
+  const argParams = parameters.filter((p) => {
+    const paramName = p.split(':')[0].trim()
+    if (paramName === 'self') return false
+    return !sourceParams.some((sp) => sp.split(':')[0].trim() === paramName)
+  })
+
+  if (argParams.length > 0) {
+    lines.push('', 'Args:')
+    argParams.forEach((p) => {
+      const paramName = p.split(':')[0].trim()
+      lines.push(`    ${paramName}: default`)
+    })
+  }
+
+  lines.push('', 'Outputs:')
+
+  if (returnType) {
+    const outputNames = generateOutputNamesFromReturnType(
+      returnType,
+      typeMapping
+    )
+    outputNames.forEach((name) => {
+      lines.push(`    ${name}: default`)
+    })
+  } else {
+    lines.push(`    ${config.defaultNames.primaryData}: default`)
+  }
+
+  return lines.join('\n        ')
+}
+
+function parseDocSection(section: string | null): DocItem[] {
+  if (!section) return []
+
+  const lines = section.trim().split('\n')
+  const items: DocItem[] = []
+  let currentItem: DocItem | null = null
+
+  for (const line of lines) {
+    const trimmedLine = line.trim()
+    if (!trimmedLine) continue
+
+    if (trimmedLine.startsWith('-')) {
+      if (currentItem) {
+        items.push(currentItem)
+      }
+
+      const content = trimmedLine.substring(1).trim()
+      const parts = content.split(':')
+      const name = parts[0].trim()
+      const desc =
+        parts.length > 1 ? parts.slice(1).join(':').trim() : 'default'
+
+      currentItem = { name, description: desc }
+    } else if (trimmedLine.includes(':')) {
+      if (currentItem) {
+        items.push(currentItem)
+      }
+
+      const parts = trimmedLine.split(':')
+      const name = parts[0].trim()
+      const desc =
+        parts.length > 1 ? parts.slice(1).join(':').trim() : 'default'
+
+      currentItem = { name, description: desc }
+    } else if (currentItem) {
+      currentItem.description += ' ' + trimmedLine
+    }
+  }
+
+  if (currentItem) {
+    items.push(currentItem)
+  }
+
+  return items
+}
+
+function fixDocumentation(
+  pythonCode: string,
+  { typeMapping, sourceTypes }: TypeDefinitions
+): string {
+  const funcRegex =
+    /def\s+(\w+)\s*\(([\s\S]*?)\)(?:\s*->\s*([^:]+))?:\s*("""[\s\S]*?"""|'''[\s\S]*?'''|)/g
+
+  return pythonCode.replace(
+    funcRegex,
+    (match, funcName, paramString, returnType, docstring) => {
+      if (funcName === '__init__' || funcName.startsWith('_')) {
+        return match
+      }
+
+      const parameters: string[] = []
+      let currentParam = ''
+      let bracketLevel = 0
+      let inString = false
+      let stringChar = ''
+
+      for (let i = 0; i < paramString.length; i++) {
+        const char = paramString[i]
+        const prevChar = i > 0 ? paramString[i - 1] : ''
+
+        if ((char === '"' || char === "'") && prevChar !== '\\') {
+          if (!inString) {
+            inString = true
+            stringChar = char
+          } else if (char === stringChar) {
+            inString = false
+          }
+        }
+
+        if (!inString) {
+          if (char === '[' || char === '(') {
+            bracketLevel++
+          } else if (char === ']' || char === ')') {
+            bracketLevel--
+          } else if (char === ',' && bracketLevel === 0) {
+            if (currentParam.trim()) {
+              parameters.push(currentParam.trim())
+            }
+            currentParam = ''
+            continue
+          }
+        }
+
+        currentParam += char
+      }
+
+      if (currentParam.trim()) {
+        parameters.push(currentParam.trim())
+      }
+
+      const finalReturnType = returnType ? returnType.trim() : ''
+
+      let needsFixing = false
+      let existingDoc = ''
+
+      if (
+        !docstring ||
+        docstring.trim() === '""""""' ||
+        docstring.trim() === "''''''"
+      ) {
+        needsFixing = true
+      } else {
+        existingDoc = docstring.replace(/^("""|''')|("""|''')$/g, '').trim()
+
+        const sourceRegex = buildSectionRegex('source')
+        const argsRegex = buildSectionRegex('args')
+        const outputsRegex = buildSectionRegex('outputs')
+
+        const sourceMatch = existingDoc.match(sourceRegex)
+        const argsMatch = existingDoc.match(argsRegex)
+        const outputsMatch = existingDoc.match(outputsRegex)
+
+        const sourceParams = parameters.filter((p) => {
+          const paramName = p.split(':')[0].trim()
+          if (paramName === 'self') return false
+
+          const typeMatch = p.match(/:(\w+)/)
+          if (typeMatch && sourceTypes.has(typeMatch[1])) return true
+
+          return config.sourceParameterPatterns.some((pattern) =>
+            pattern(paramName)
+          )
+        })
+
+        const argParams = parameters.filter((p) => {
+          const paramName = p.split(':')[0].trim()
+          if (paramName === 'self') return false
+          return !sourceParams.some(
+            (sp) => sp.split(':')[0].trim() === paramName
+          )
+        })
+
+        if (sourceParams.length > 0) {
+          if (!sourceMatch) {
+            needsFixing = true
+          } else {
+            const documentedSources = parseDocSection(sourceMatch[1])
+            const documentedSourceNames = new Set(
+              documentedSources.map((d) => d.name)
+            )
+            const actualSourceNames = new Set(
+              sourceParams.map((p) => p.split(':')[0].trim())
+            )
+
+            if (
+              documentedSourceNames.size !== actualSourceNames.size ||
+              ![...actualSourceNames].every((name) =>
+                documentedSourceNames.has(name)
+              )
+            ) {
+              needsFixing = true
+            }
+          }
+        }
+
+        if (argParams.length > 0) {
+          if (!argsMatch) {
+            needsFixing = true
+          } else {
+            const documentedArgs = parseDocSection(argsMatch[1])
+            const documentedArgNames = new Set(
+              documentedArgs.map((d) => d.name)
+            )
+            const actualArgNames = new Set(
+              argParams.map((p) => p.split(':')[0].trim())
+            )
+
+            if (
+              documentedArgNames.size !== actualArgNames.size ||
+              ![...actualArgNames].every((name) => documentedArgNames.has(name))
+            ) {
+              needsFixing = true
+            }
+          }
+        }
+
+        if (finalReturnType && !outputsMatch) {
+          needsFixing = true
+        }
+      }
+
+      if (needsFixing) {
+        const newDoc = generateDefaultDocumentation(
+          funcName,
+          parameters,
+          finalReturnType,
+          { typeMapping, sourceTypes }
+        )
+        const functionDef = `def ${funcName}(${paramString})${returnType ? ` -> ${returnType}` : ''}:`
+        return `${functionDef}\n        """\n        ${newDoc}\n        """`
+      }
+
+      return match
+    }
+  )
+}
+
 export async function readFileAsText(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -916,128 +1273,119 @@ export async function parsePythonToJson(
 
     const outputs: any[] = []
 
-    const returnLines: string[] = []
-    const returnRegex = /return\s+(.+?)(?:\n|$)/g
-    let returnLineMatch: RegExpExecArray | null
+    // Parse outputs section from documentation
+    const outputsRegex = buildSectionRegex('outputs')
 
-    while ((returnLineMatch = returnRegex.exec(funcBody)) !== null) {
-      returnLines.push(returnLineMatch[1].trim())
+    if (!outputsSection) {
+      const returnsRegex = buildSectionRegex('returns')
+      outputsSection = docstring.match(returnsRegex)
     }
 
-    const returnLine =
-      returnLines.length > 0 ? returnLines[returnLines.length - 1] : null
+    const documentedOutputs: DocItem[] = []
+    if (outputsSection) {
+      documentedOutputs.push(...parseDocSection(outputsSection[1]))
+    }
 
     if (returnType) {
-      const returnTypes = returnType.split(',').map((t) => t.trim())
+      if (returnType.includes('Tuple') || returnType.includes('tuple')) {
+        // Parse tuple types
+        const tupleMatch = returnType.match(/(?:Tuple|tuple)\[(.*)\]/)
+        if (tupleMatch) {
+          const types = parseTupleTypes(tupleMatch[1])
+          types.forEach((type, index) => {
+            const cleanType = type.trim()
+            const mappedType = typeMapping[cleanType] || cleanType
 
-      returnTypes.forEach((type, index) => {
-        let mappedType
-        if (type.toLowerCase().includes('str')) {
-          mappedType = typeMapping['str'] || 'STRING'
-        } else {
-          mappedType = typeMapping['Array'] || '1D'
-          for (const [pythonType, mappedValue] of Object.entries(typeMapping)) {
-            if (type.includes(pythonType)) {
-              mappedType = mappedValue
-              break
+            // Use documented name if available, otherwise generate name
+            let outputName: string
+            if (documentedOutputs[index]) {
+              outputName = documentedOutputs[index].name
+            } else {
+              outputName =
+                index === 0
+                  ? config.defaultNames.primaryData
+                  : config.defaultNames.secondaryOutput(index)
             }
-          }
-        }
 
-        let outputName = outputVarNames[index] || null
-
-        if (!outputName && returnLine) {
-          const returnValues = parseReturnStatement(returnLine)
-          if (returnValues.length > index) {
-            outputName = returnValues[index].varName
-          }
+            outputs.push({
+              name: outputName,
+              type: mappedType,
+              description:
+                documentedOutputs[index]?.description ||
+                `Output ${outputName} from ${funcName}`,
+              behavior: 'STATIC'
+            })
+          })
         }
-
-        if (!outputName) {
-          outputName =
-            index === 0
-              ? config.defaultNames.primaryData
-              : config.defaultNames.secondaryOutput(index)
-        }
+      } else {
+        // Single return type
+        const cleanType = returnType.trim()
+        const mappedType = typeMapping[cleanType] || cleanType
+        const outputName =
+          documentedOutputs[0]?.name || config.defaultNames.primaryData
 
         outputs.push({
           name: outputName,
           type: mappedType,
           description:
-            index === 0
-              ? `Output data from ${funcName}`
-              : `Output ${index + 1} from ${funcName}`,
+            documentedOutputs[0]?.description ||
+            `Output ${outputName} from ${funcName}`,
           behavior: 'STATIC'
         })
-      })
-    } else if (returnLine) {
-      const returnValues = parseReturnStatement(returnLine)
+      }
+    } else {
+      // No return type annotation, try to parse return statement
+      const returnLines: string[] = []
+      const returnRegex = /return\s+(.+?)(?:\n|$)/g
+      let returnLineMatch: RegExpExecArray | null
 
-      returnValues.forEach((returnValue, index) => {
-        const outputName = outputVarNames[index] || returnValue.varName
+      while ((returnLineMatch = returnRegex.exec(funcBody)) !== null) {
+        returnLines.push(returnLineMatch[1].trim())
+      }
 
-        let outputType
-        if (
-          returnValue.isString ||
-          returnValue.item.includes('txt') ||
-          returnValue.item.includes('text') ||
-          returnValue.item.startsWith('f"') ||
-          returnValue.item.startsWith("f'")
-        ) {
-          outputType = typeMapping['str'] || 'STRING'
-        } else if (index === 0) {
-          const dimKey = funcName.includes('2d')
-            ? '2d'
-            : funcName.includes('3d')
-              ? '3d'
-              : 'default'
+      if (returnLines.length > 0) {
+        const returnLine = returnLines[returnLines.length - 1]
+        const returnValues = parseReturnStatement(returnLine)
 
-          const defaultMapConfig = config.dimensionTypeMap[dimKey]
-          outputType =
-            typeMapping[defaultMapConfig.pythonType] ||
-            defaultMapConfig.defaultType
-        } else {
-          if (
-            returnValue.item.toLowerCase().includes('text') ||
-            returnValue.item.includes('txt') ||
-            returnValue.item.startsWith('f"') ||
-            returnValue.item.startsWith("f'")
-          ) {
+        returnValues.forEach((returnValue, index) => {
+          let outputName: string
+          if (documentedOutputs[index]) {
+            outputName = documentedOutputs[index].name
+          } else {
+            outputName = returnValue.varName
+          }
+
+          let outputType: string
+          if (returnValue.isString) {
             outputType = typeMapping['str'] || 'STRING'
           } else {
-            outputType = typeMapping['Array'] || '1D'
+            outputType =
+              index === 0
+                ? typeMapping['Matrix'] || '2D'
+                : typeMapping['Array'] || '1D'
           }
-        }
 
+          outputs.push({
+            name: outputName,
+            type: outputType,
+            description:
+              documentedOutputs[index]?.description ||
+              `Output ${outputName} from ${funcName}`,
+            behavior: 'STATIC'
+          })
+        })
+      } else {
+        // Default output
+        const outputName =
+          documentedOutputs[0]?.name || config.defaultNames.primaryData
         outputs.push({
           name: outputName,
-          type: outputType,
+          type: typeMapping['Matrix'] || '2D',
           description:
-            index === 0
-              ? `Output data from ${funcName}`
-              : returnValue.isString
-                ? 'Text output'
-                : `Output ${index + 1} from ${funcName}`,
+            documentedOutputs[0]?.description || `Output from ${funcName}`,
           behavior: 'STATIC'
         })
-      })
-    } else {
-      const dimKey = funcName.includes('2d')
-        ? '2d'
-        : funcName.includes('3d')
-          ? '3d'
-          : 'default'
-
-      const defaultMapConfig = config.dimensionTypeMap[dimKey]
-      const defaultType =
-        typeMapping[defaultMapConfig.pythonType] || defaultMapConfig.defaultType
-
-      outputs.push({
-        name: config.defaultNames.primaryData,
-        type: defaultType,
-        description: `Output from ${funcName}`,
-        behavior: 'STATIC'
-      })
+      }
     }
 
     const functionObj = {
@@ -1081,7 +1429,9 @@ export async function validatePythonFile(
     )
   }
 
-  const pythonCode = await readFileAsText(pythonFile)
+  let pythonCode = await readFileAsText(pythonFile)
+
+  pythonCode = fixDocumentation(pythonCode, { typeMapping, sourceTypes })
 
   const hasClassDefinition = /class\s+\w+\s*:/g.test(pythonCode)
   const hasFunctionDefinition = /def\s+\w+\s*\(/g.test(pythonCode)
