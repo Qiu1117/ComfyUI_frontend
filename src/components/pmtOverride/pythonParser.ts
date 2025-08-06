@@ -1052,6 +1052,12 @@ export async function parsePythonToJson(
             const typeAndDefault = parts[1].split('=')
             paramType = typeAndDefault[0].trim()
 
+            if (paramType && paramType.includes('|')) {
+              const unionTypes = paramType.split('|').map((t) => t.trim())
+              // Use the first non-None type
+              paramType = unionTypes.find((t) => t !== 'None') || unionTypes[0]
+            }
+
             if (typeAndDefault.length > 1) {
               defaultValue = typeAndDefault[1].trim()
             }
@@ -1514,33 +1520,12 @@ export async function validatePythonFile(
       .map((f) => f.trim().replace(/['"]/g, ''))
       .filter((f) => f)
 
-    const functionDocRegex =
-      /def\s+(\w+)\s*\([\s\S]*?\)(?:\s*->\s*[\s\S]*?)?:\s*(?:"""|''')([\s\S]*?)(?:"""|''')/g
+    const functionRegex = /def\s+(\w+)\s*\(/g
     const foundFunctions = new Set<string>()
-    const missingDocumentation: string[] = []
 
     let functionMatch: RegExpExecArray | null
-    while ((functionMatch = functionDocRegex.exec(pythonCode)) !== null) {
-      const funcName = functionMatch[1]
-      const docString = functionMatch[2]
-
-      if (executableFunctions.includes(funcName)) {
-        foundFunctions.add(funcName)
-
-        const hasSourceSection = new RegExp(
-          config.docSections.source.replace(
-            /([.*+?^=!:${}()|[\]/\\])/g,
-            '\\$1'
-          ) + '\\s*\\n',
-          'i'
-        ).test(docString)
-
-        if (!hasSourceSection) {
-          missingDocumentation.push(
-            `${funcName} (missing: ${config.docSections.source.replace(':', '')})`
-          )
-        }
-      }
+    while ((functionMatch = functionRegex.exec(pythonCode)) !== null) {
+      foundFunctions.add(functionMatch[1])
     }
 
     const missingFunctions = executableFunctions.filter(
@@ -1550,12 +1535,6 @@ export async function validatePythonFile(
     if (missingFunctions.length > 0) {
       throw new Error(
         `Some executable functions were declared but not found in the code: ${missingFunctions.join(', ')}`
-      )
-    }
-
-    if (missingDocumentation.length > 0) {
-      throw new Error(
-        `Some functions are missing required documentation sections: ${missingDocumentation.join('; ')}`
       )
     }
   }
