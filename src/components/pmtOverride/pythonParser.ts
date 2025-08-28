@@ -105,7 +105,7 @@ function buildSectionRegex(sectionName: string): RegExp {
     .map((s) => s.replace(/([.*+?^=!:${}()|[\]/\\])/g, '\\$1'))
 
   return new RegExp(
-    `${config.docSections[sectionName as keyof typeof config.docSections].replace(/([.*+?^=!:${}()|[\]/\\])/g, '\\$1')}\\s*\\n([\\s\\S]*?)(?:\\n\\s*(?:${otherSections.join('|')})|$)`
+    `${config.docSections[sectionName as keyof typeof config.docSections].replace(/([.*+?^=!:${}()|[\]/\\])/g, '\\$1')}\\s*([\\s\\S]*?)(?:\\n\\s*(?:${otherSections.join('|')})|\\s*$)`
   )
 }
 
@@ -270,24 +270,24 @@ function parseDocSection(section: string | null): DocItem[] {
     const trimmedLine = line.trim()
     if (!trimmedLine) continue
 
-    if (trimmedLine.startsWith('-')) {
+    // 处理你的格式：Rmpfsl_Map: Calculated Rmpfsl map
+    const colonMatch = trimmedLine.match(/^(\w+):\s*(.*)/)
+    if (colonMatch) {
+      if (currentItem) {
+        items.push(currentItem)
+      }
+
+      const name = colonMatch[1]
+      const desc = colonMatch[2] || 'default'
+
+      currentItem = { name, description: desc }
+    } else if (trimmedLine.startsWith('-')) {
       if (currentItem) {
         items.push(currentItem)
       }
 
       const content = trimmedLine.substring(1).trim()
       const parts = content.split(':')
-      const name = parts[0].trim()
-      const desc =
-        parts.length > 1 ? parts.slice(1).join(':').trim() : 'default'
-
-      currentItem = { name, description: desc }
-    } else if (trimmedLine.includes(':')) {
-      if (currentItem) {
-        items.push(currentItem)
-      }
-
-      const parts = trimmedLine.split(':')
       const name = parts[0].trim()
       const desc =
         parts.length > 1 ? parts.slice(1).join(':').trim() : 'default'
@@ -578,13 +578,15 @@ export async function extractOptionDefinitions(
   return optionsMapping
 }
 
-export function parseReturnStatement(returnStatement: string): ReturnValue[] {
+function parseReturnStatement(returnStatement: string): ReturnValue[] {
+  const cleaned = returnStatement.replace(/\s+/g, ' ').trim()
+  console.log('Cleaned return statement:', cleaned)
   const returnValues: string[] = []
   let currentItem = ''
   let bracketLevel = 0
 
-  for (let i = 0; i < returnStatement.length; i++) {
-    const char = returnStatement[i]
+  for (let i = 0; i < cleaned.length; i++) {
+    const char = cleaned[i]
 
     if (char === '(' || char === '[' || char === '{') {
       bracketLevel++
@@ -608,30 +610,24 @@ export function parseReturnStatement(returnStatement: string): ReturnValue[] {
 
   return returnValues.map((item, index) => {
     const trimmedItem = item.trim()
-    const result: ReturnValue = {
+
+    // 简单变量名匹配
+    if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(trimmedItem)) {
+      return {
+        item: trimmedItem,
+        varName: trimmedItem,
+        isString: false
+      }
+    }
+
+    return {
       item: trimmedItem,
       varName:
         index === 0
           ? config.defaultNames.primaryData
           : config.defaultNames.secondaryOutput(index - 1),
-      isString:
-        trimmedItem.startsWith('"') ||
-        trimmedItem.startsWith("'") ||
-        trimmedItem.startsWith('f"') ||
-        trimmedItem.startsWith("f'") ||
-        Boolean(trimmedItem.match(/^[\w_]+_txt$/)) ||
-        Boolean(trimmedItem.match(/^[\w_]*text[\w_]*$/))
+      isString: trimmedItem.startsWith('"') || trimmedItem.startsWith("'")
     }
-
-    // Simple variable name (like "data" or "test_txt")
-    const varMatch = trimmedItem.match(/^(\w+)$/)
-    if (varMatch) {
-      result.varName = varMatch[1]
-    } else if (result.isString) {
-      result.varName = config.defaultNames.textOutput
-    }
-
-    return result
   })
 }
 
@@ -1303,49 +1299,78 @@ export async function parsePythonToJson(
       documentedOutputs.push(...parseDocSection(outputsSection[1]))
     }
 
-    const returnLines: string[] = []
-    const returnRegex = /return\s+([^;]+)/g
-    let returnLineMatch: RegExpExecArray | null
+    const returnLines: {
+      statement: string
+      indent: number
+      lineNumber: number
+    }[] = []
+    const funcBodyLines = funcBody.split('\n')
 
-    while ((returnLineMatch = returnRegex.exec(funcBody)) !== null) {
-      const returnStatement = returnLineMatch[1].trim()
-      // Clean up the return statement by removing trailing comments and extra whitespace
-      const cleaned = returnStatement.split('\n')[0].trim()
-      if (cleaned) {
-        returnLines.push(cleaned)
+    // 找到下一个def的行号，限制搜索范围
+    let nextDefLine = funcBodyLines.length
+    for (let i = 1; i < funcBodyLines.length; i++) {
+      if (funcBodyLines[i].trim().startsWith('def ')) {
+        nextDefLine = i
+        break
       }
     }
+
+    funcBodyLines.forEach((line, index) => {
+      if (index >= nextDefLine) return // 只搜索当前函数范围内
+
+      const returnMatch = line.match(/^(\s*)return\s+(.+)/)
+      if (returnMatch) {
+        const indent = returnMatch[1].length
+        const statement = returnMatch[2].trim()
+
+        returnLines.push({
+          statement: statement.split('#')[0].trim(),
+          indent,
+          lineNumber: index
+        })
+      }
+    })
+
+    let selectedReturn: string | undefined
+    if (returnLines.length > 0) {
+      const indents = returnLines.map((r) => r.indent)
+      const minIndent = Math.min(...indents)
+      const mainReturns = returnLines.filter((r) => r.indent === minIndent)
+      selectedReturn = mainReturns[mainReturns.length - 1]?.statement
+    }
+
+    console.log(
+      `Function ${funcName} - Found ${returnLines.length} returns, selected:`,
+      selectedReturn
+    )
 
     if (returnType) {
       if (returnType.includes('Tuple') || returnType.includes('tuple')) {
         const tupleMatch = returnType.match(/(?:Tuple|tuple)\[(.*)\]/)
         if (tupleMatch) {
           const types = parseTupleTypes(tupleMatch[1])
+
+          // 获取return语句中的变量名
+          let returnVarNames: string[] = []
+          if (returnLines.length > 0) {
+            const returnValues = selectedReturn
+              ? parseReturnStatement(selectedReturn)
+              : []
+            returnVarNames = returnValues.map((rv) => rv.varName)
+          }
+
           types.forEach((type, index) => {
             const cleanType = type.trim()
             const mappedType = typeMapping[cleanType] || cleanType
 
-            // Use return statement variable name
-            console.log(returnLines)
-            let outputName: string
-            if (returnLines.length > 0) {
-              const returnValues = parseReturnStatement(
-                returnLines[returnLines.length - 1]
-              )
-              console.log(returnValues, index)
-              outputName =
-                returnValues[index]?.varName ||
-                (index === 0
-                  ? config.defaultNames.primaryData
-                  : config.defaultNames.secondaryOutput(index - 1))
-            } else {
-              outputName =
-                index === 0
-                  ? config.defaultNames.primaryData
-                  : config.defaultNames.secondaryOutput(index)
-            }
+            // 优先使用return语句中的变量名
+            const outputName =
+              returnVarNames[index] ||
+              (index === 0
+                ? config.defaultNames.primaryData
+                : config.defaultNames.secondaryOutput(index - 1))
 
-            // Match with documented outputs for description
+            // 匹配文档中的描述
             let description = `Output ${outputName} from ${funcName}`
             const matchedDoc = documentedOutputs.find(
               (doc) => doc.name === outputName
@@ -1367,10 +1392,8 @@ export async function parsePythonToJson(
         const mappedType = typeMapping[cleanType] || cleanType
 
         let outputName = config.defaultNames.primaryData
-        if (returnLines.length > 0) {
-          const returnValues = parseReturnStatement(
-            returnLines[returnLines.length - 1]
-          )
+        if (selectedReturn) {
+          const returnValues = parseReturnStatement(selectedReturn)
           outputName =
             returnValues[0]?.varName || config.defaultNames.primaryData
         }
@@ -1393,37 +1416,40 @@ export async function parsePythonToJson(
     } else {
       // No return type annotation, parse return statement directly
       if (returnLines.length > 0) {
-        const returnLine = returnLines[returnLines.length - 1]
-        const returnValues = parseReturnStatement(returnLine)
+        if (selectedReturn) {
+          const returnLine = selectedReturn
 
-        returnValues.forEach((returnValue, index) => {
-          const outputName = returnValue.varName
+          const returnValues = parseReturnStatement(returnLine)
 
-          let outputType: string
-          if (returnValue.isString) {
-            outputType = typeMapping['str'] || 'STRING'
-          } else {
-            outputType =
-              index === 0
-                ? typeMapping['Matrix'] || '2D'
-                : typeMapping['Array'] || '1D'
-          }
+          returnValues.forEach((returnValue, index) => {
+            const outputName = returnValue.varName
 
-          let description = `Output ${outputName} from ${funcName}`
-          const matchedDoc = documentedOutputs.find(
-            (doc) => doc.name === outputName
-          )
-          if (matchedDoc) {
-            description = matchedDoc.description
-          }
+            let outputType: string
+            if (returnValue.isString) {
+              outputType = typeMapping['str'] || 'STRING'
+            } else {
+              outputType =
+                index === 0
+                  ? typeMapping['Matrix'] || '2D'
+                  : typeMapping['Array'] || '1D'
+            }
 
-          outputs.push({
-            name: outputName,
-            type: outputType,
-            description: description,
-            behavior: 'STATIC'
+            let description = `Output ${outputName} from ${funcName}`
+            const matchedDoc = documentedOutputs.find(
+              (doc) => doc.name === outputName
+            )
+            if (matchedDoc) {
+              description = matchedDoc.description
+            }
+
+            outputs.push({
+              name: outputName,
+              type: outputType,
+              description: description,
+              behavior: 'STATIC'
+            })
           })
-        })
+        }
       } else {
         const outputName = config.defaultNames.primaryData
         let description = `Output from ${funcName}`
