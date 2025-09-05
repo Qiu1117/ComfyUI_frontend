@@ -1105,147 +1105,43 @@ export async function parsePythonToJson(
     })
 
     const sourceParams = new Set<string>()
-
-    if (sourceMatch) {
-      const sourceSection = sourceMatch[1].trim()
-      const sourceItems = parseDocSection(sourceSection)
-
-      for (const item of sourceItems) {
-        const { name, description } = item
-
-        // Find actual parameter name that matches the documented name
-        const actualParam = Object.keys(paramMap).find((paramName) => {
-          // Check if documented name matches parameter name directly
-          if (paramName === name) return true
-
-          // Check if parameter has source type
-          const paramInfo = paramMap[paramName]
-          return (
-            sourceTypes.has(paramInfo.type) ||
-            config.sourceParameterPatterns.some((pattern) => pattern(paramName))
-          )
-        })
-
-        if (actualParam && paramMap[actualParam]) {
-          const type = paramMap[actualParam].type
-
-          sources.push({
-            name: actualParam, // Use actual parameter name
-            type,
-            description,
-            options: paramMap[actualParam]?.options?.optionsArgs || {},
-            behavior: 'STATIC',
-            optional: false
-          })
-
-          sourceParams.add(actualParam)
-        }
-      }
-    }
+    const argParams = new Set<string>()
 
     Object.entries(paramMap).forEach(([name, info]) => {
-      if (!sourceParams.has(name)) {
-        if (sourceTypes.has(info.type)) {
-          sources.push({
-            name,
-            type: info.type,
-            description: `Input ${name}`,
-            options: info.options?.optionsArgs || {},
-            behavior: 'STATIC',
-            optional: false
-          })
-          sourceParams.add(name)
-        } else if (
-          config.sourceParameterPatterns.some((pattern) => pattern(name))
-        ) {
-          sources.push({
-            name,
-            type: info.type,
-            description: `Input ${name}`,
-            options: info.options?.optionsArgs || {},
-            behavior: 'STATIC',
-            optional: false
-          })
-          sourceParams.add(name)
-        }
+      if (info.default !== null) {
+        // 有默认值 -> args
+        argParams.add(name)
+      } else {
+        // 无默认值 -> source
+        sourceParams.add(name)
       }
     })
 
-    if (argsMatch) {
-      const argsSection = argsMatch[1].trim()
-      const argsItems = parseDocSection(argsSection)
-
-      for (const item of argsItems) {
-        const { name, description } = item
-
-        if (sourceParams.has(name)) continue
-
-        if (name && paramMap[name]) {
-          const paramInfo = paramMap[name]
-
-          const argObj: any = {
-            name,
-            type: paramInfo.type,
-            description,
-            options: {},
-            behavior: 'STATIC',
-            optional: true
-          }
-
-          if (
-            paramInfo.type === 'COMBO' &&
-            paramInfo.options &&
-            paramInfo.options.values
-          ) {
-            argObj.options = {
-              default: paramInfo.default
-                ? paramInfo.default.replace(/['"]/g, '')
-                : paramInfo.options.values[0],
-              values: paramInfo.options.values
-            }
-          } else if (paramInfo.options && paramInfo.options.optionsArgs) {
-            Object.assign(argObj.options, paramInfo.options.optionsArgs)
-          }
-
-          if (paramInfo.default && !argObj.options.default) {
-            let parsedValue: any = paramInfo.default
-            if (
-              parsedValue.toLowerCase() === 'true' ||
-              parsedValue.toLowerCase() === 'false'
-            ) {
-              parsedValue = parsedValue.toLowerCase() === 'true'
-            } else if (!isNaN(Number(parsedValue))) {
-              if (parsedValue.includes('.')) {
-                parsedValue = parseFloat(parsedValue)
-              } else {
-                parsedValue = parseInt(parsedValue)
-              }
-            } else if (
-              parsedValue.startsWith('"') ||
-              parsedValue.startsWith("'")
-            ) {
-              parsedValue = parsedValue.substring(1, parsedValue.length - 1)
-            }
-
-            argObj.options.default = parsedValue
-          }
-
-          args.push(argObj)
-        }
+    Object.entries(paramMap).forEach(([name, info]) => {
+      if (sourceParams.has(name)) {
+        sources.push({
+          name,
+          type: info.type,
+          description: `Input ${name}`,
+          options: info.options?.optionsArgs || {},
+          behavior: 'STATIC',
+          optional: false // 无默认值 = 必需
+        })
       }
-    }
+    })
 
     Object.entries(paramMap).forEach(([name, info]) => {
-      if (!sourceParams.has(name) && !args.find((a) => a.name === name)) {
+      if (argParams.has(name)) {
         const argObj: any = {
           name,
           type: info.type,
           description: name,
           options: {},
           behavior: 'STATIC',
-          optional: true
+          optional: true // 有默认值 = 可选
         }
 
+        // 处理选项和默认值
         if (info.type === 'COMBO' && info.options && info.options.values) {
           argObj.options = {
             default: info.default
@@ -1276,14 +1172,12 @@ export async function parsePythonToJson(
           ) {
             parsedValue = parsedValue.substring(1, parsedValue.length - 1)
           }
-
           argObj.options.default = parsedValue
         }
 
         args.push(argObj)
       }
     })
-
     const outputs: any[] = []
 
     // Parse outputs section from documentation
