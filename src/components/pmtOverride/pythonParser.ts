@@ -35,8 +35,10 @@ interface AnnotatedField {
 
 interface ParamInfo {
   type: string
+  originalType?: string
   default: string | null
   options: any
+  optional?: boolean
 }
 
 interface ReturnValue {
@@ -1006,7 +1008,21 @@ export async function parsePythonToJson(
           const defaultValue = inlineAnnotatedMatch[4]
             ? inlineAnnotatedMatch[4].trim()
             : null
+          let isOptional = false
+          let originalType = baseType
 
+          // 检查是否有默认值
+          if (defaultValue !== null) {
+            isOptional = true
+          }
+
+          if (baseType.includes('|')) {
+            const unionTypes = baseType.split('|').map((t) => t.trim())
+            if (unionTypes.includes('None')) {
+              isOptional = true
+            }
+            originalType = unionTypes.find((t) => t !== 'None') || unionTypes[0]
+          }
           const optionsArgs: Record<string, any> = {}
           const paramRegex = /(\w+)\s*=\s*([^,)]+)/g
           let paramMatch: RegExpExecArray | null
@@ -1024,7 +1040,7 @@ export async function parsePythonToJson(
             optionsArgs[argName] = argValue
           }
 
-          let mappedType = baseType
+          let mappedType = originalType
           for (const [pythonType, mappedValue] of Object.entries(typeMapping)) {
             if (baseType === pythonType) {
               mappedType = mappedValue
@@ -1034,15 +1050,18 @@ export async function parsePythonToJson(
 
           paramMap[paramName] = {
             type: mappedType,
+            originalType: originalType,
             default: defaultValue,
-            options: { optionsArgs }
+            options: { optionsArgs },
+            optional: isOptional
           }
         } else {
           const parts = trimParam.split(':')
           const paramName = parts[0].trim()
 
-          let paramType: string | null = null
+          let paramType: string | undefined = undefined
           let defaultValue: string | null = null
+          let isOptional = false
 
           if (parts.length > 1) {
             const typeAndDefault = parts[1].split('=')
@@ -1051,22 +1070,32 @@ export async function parsePythonToJson(
             if (paramType && paramType.includes('|')) {
               const unionTypes = paramType.split('|').map((t) => t.trim())
               // Use the first non-None type
+              if (unionTypes.includes('None')) {
+                isOptional = true
+              }
               paramType = unionTypes.find((t) => t !== 'None') || unionTypes[0]
             }
 
             if (typeAndDefault.length > 1) {
               defaultValue = typeAndDefault[1].trim()
+              if (!isOptional) {
+                // Only set if not already set by union type
+                isOptional = true
+              }
             }
           } else if (trimParam.includes('=')) {
             const nameAndDefault = trimParam.split('=')
             defaultValue = nameAndDefault[1].trim()
+            isOptional = true
           }
 
           if (paramType && annotatedFields[paramType]) {
             paramMap[paramName] = {
               type: annotatedFields[paramType].type,
+              originalType: paramType,
               default: defaultValue,
-              options: annotatedFields[paramType]
+              options: annotatedFields[paramType],
+              optional: isOptional
             }
           } else if (
             annotatedFields[paramName] &&
@@ -1074,14 +1103,18 @@ export async function parsePythonToJson(
           ) {
             paramMap[paramName] = {
               type: 'COMBO',
+              originalType: paramType,
               default: defaultValue,
-              options: annotatedFields[paramName]
+              options: annotatedFields[paramName],
+              optional: isOptional
             }
           } else if (paramType && typeToComboMap[paramType]) {
             paramMap[paramName] = {
               type: 'COMBO',
+              originalType: paramType,
               default: defaultValue,
-              options: typeToComboMap[paramType]
+              options: typeToComboMap[paramType],
+              optional: isOptional
             }
           } else {
             let mappedType = 'STRING'
@@ -1096,8 +1129,10 @@ export async function parsePythonToJson(
 
             paramMap[paramName] = {
               type: mappedType,
+              originalType: paramType,
               default: defaultValue,
-              options: annotatedFields[paramName] || null
+              options: annotatedFields[paramName] || null,
+              optional: isOptional
             }
           }
         }
@@ -1105,43 +1140,140 @@ export async function parsePythonToJson(
     })
 
     const sourceParams = new Set<string>()
-    const argParams = new Set<string>()
 
-    Object.entries(paramMap).forEach(([name, info]) => {
-      if (info.default !== null) {
-        // 有默认值 -> args
-        argParams.add(name)
-      } else {
-        // 无默认值 -> source
-        sourceParams.add(name)
-      }
-    })
+    if (sourceMatch) {
+      const sourceSection = sourceMatch[1].trim()
+      const sourceItems = parseDocSection(sourceSection)
 
-    Object.entries(paramMap).forEach(([name, info]) => {
-      if (sourceParams.has(name)) {
-        sources.push({
-          name,
-          type: info.type,
-          description: `Input ${name}`,
-          options: info.options?.optionsArgs || {},
-          behavior: 'STATIC',
-          optional: false // 无默认值 = 必需
+      for (const item of sourceItems) {
+        const { name, description } = item
+
+        // Find actual parameter name that matches the documented name
+        const actualParam = Object.keys(paramMap).find((paramName) => {
+          // Check if documented name matches parameter name directly
+          if (paramName === name) return true
+
+          // Check if parameter has source type
+          const paramInfo = paramMap[paramName]
+          return (
+            sourceTypes.has(paramInfo.type) ||
+            config.sourceParameterPatterns.some((pattern) => pattern(paramName))
+          )
         })
+
+        if (actualParam && paramMap[actualParam]) {
+          const paramInfo = paramMap[actualParam]
+          const type = paramInfo.type
+
+          sources.push({
+            name: actualParam, // Use actual parameter name
+            type,
+            description,
+            options: paramMap[actualParam]?.options?.optionsArgs || {},
+            behavior: 'STATIC',
+            optional: paramInfo.optional || false
+          })
+
+          sourceParams.add(actualParam)
+        }
+      }
+    }
+
+    Object.entries(paramMap).forEach(([name, info]) => {
+      if (!sourceParams.has(name)) {
+        if (
+          (info.originalType && sourceTypes.has(info.originalType)) ||
+          sourceTypes.has(info.type) ||
+          config.sourceParameterPatterns.some((pattern) => pattern(name))
+        ) {
+          sources.push({
+            name,
+            type: info.type,
+            description: `Input ${name}`,
+            options: info.options?.optionsArgs || {},
+            behavior: 'STATIC',
+            optional: info.optional || false
+          })
+          sourceParams.add(name)
+        }
       }
     })
 
+    if (argsMatch) {
+      const argsSection = argsMatch[1].trim()
+      const argsItems = parseDocSection(argsSection)
+
+      for (const item of argsItems) {
+        const { name, description } = item
+
+        if (sourceParams.has(name)) continue
+
+        if (name && paramMap[name]) {
+          const paramInfo = paramMap[name]
+
+          const argObj: any = {
+            name,
+            type: paramInfo.type,
+            description,
+            options: {},
+            behavior: 'STATIC',
+            optional: true
+          }
+
+          if (
+            paramInfo.type === 'COMBO' &&
+            paramInfo.options &&
+            paramInfo.options.values
+          ) {
+            argObj.options = {
+              default: paramInfo.default
+                ? paramInfo.default.replace(/['"]/g, '')
+                : paramInfo.options.values[0],
+              values: paramInfo.options.values
+            }
+          } else if (paramInfo.options && paramInfo.options.optionsArgs) {
+            Object.assign(argObj.options, paramInfo.options.optionsArgs)
+          }
+
+          if (paramInfo.default && !argObj.options.default) {
+            let parsedValue: any = paramInfo.default
+            if (
+              parsedValue.toLowerCase() === 'true' ||
+              parsedValue.toLowerCase() === 'false'
+            ) {
+              parsedValue = parsedValue.toLowerCase() === 'true'
+            } else if (!isNaN(Number(parsedValue))) {
+              if (parsedValue.includes('.')) {
+                parsedValue = parseFloat(parsedValue)
+              } else {
+                parsedValue = parseInt(parsedValue)
+              }
+            } else if (
+              parsedValue.startsWith('"') ||
+              parsedValue.startsWith("'")
+            ) {
+              parsedValue = parsedValue.substring(1, parsedValue.length - 1)
+            }
+
+            argObj.options.default = parsedValue
+          }
+
+          args.push(argObj)
+        }
+      }
+    }
+
     Object.entries(paramMap).forEach(([name, info]) => {
-      if (argParams.has(name)) {
+      if (!sourceParams.has(name) && !args.find((a) => a.name === name)) {
         const argObj: any = {
           name,
           type: info.type,
           description: name,
           options: {},
           behavior: 'STATIC',
-          optional: true // 有默认值 = 可选
+          optional: true
         }
 
-        // 处理选项和默认值
         if (info.type === 'COMBO' && info.options && info.options.values) {
           argObj.options = {
             default: info.default
@@ -1172,12 +1304,14 @@ export async function parsePythonToJson(
           ) {
             parsedValue = parsedValue.substring(1, parsedValue.length - 1)
           }
+
           argObj.options.default = parsedValue
         }
 
         args.push(argObj)
       }
     })
+
     const outputs: any[] = []
 
     // Parse outputs section from documentation
